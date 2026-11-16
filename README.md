@@ -44,7 +44,7 @@ desktop/main.js（壳托管模式）──────┘         │
 
 - `main.js`：薄壳，只做三件事——探测/挂载 3080 服务、未运行时调 `serve-harness.mjs` 拉起、提供无浏览器 chrome 的窗口与托盘（单实例锁保留：重复启动聚焦既有窗口）。**通知深链 `orcamind://` 已于 2026-10-06 移除**：协议处理器指向便携自解压 exe，每次点击通知都要完整解压启动一个 Electron 实例（数秒延迟），得不偿失；壳不再注册协议，注册表残留键已清理。
 - `desktop.config.json`：`{ "DSH_ROOT": "D:/Tools/DeepSeek Harness", "port": 3080 }`，可被环境变量覆盖。
-- `dist/`：打包产物，`OrcaMind.exe`（无版本号）为首选便携版；`build/` 内是图标；`scripts/make-icon.js` 生成图标。**改过 main.js 后要重新 `npm run dist`。**
+- `dist/`：打包产物，`OrcaMind.exe`（无版本号）为首选便携版；`build/` 内是图标；`scripts/make-icon.js` 生成图标。**改过 main.js 后要重新 `npm run dist`。**（2026-11-17：main.js 改为外置读 `oauth-client.local.json` 后曾两度重建，均因沙箱网络拉不动 electron 分发而失败（TLS 断连，ELECTRON_MIRROR 亦无效）；现行 exe 仍为 10-15 版——内嵌凭据与外置文件同值，行为完全等同，下次在正常网络环境重建即可，`package.json` build.files 已含该凭据文件。）
 
 ### `Plugins/` — 自研插件
 

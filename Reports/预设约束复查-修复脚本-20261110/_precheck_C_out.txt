@@ -1,0 +1,26 @@
+=== VN-工作流改造施工文档.md lines 3-9 (index 2:9) ===
+  3| > ⚠️ **本文件是 2026-11-07 施工期的历史记录，已不是现行规范源。**
+  4| > 2026-11-10 完成「预设瘦身与矛盾清理」（见 `Reports/预设约束互博成因与治理方案-20261110.md`）：7 个 VN persona 已重写为「宪法 + 独有职责 + 共用规范引用 + 默认节奏」，删除全部 plan-mode 段，移除 77 处「最后一个工具调用必须是 ask_user_question」硬门禁，重写 `vn-shared` 三份 SKILL.md 并清理 36 份阶段 SKILL.md。
+  5| > 本文的「三道锁 / 硬门禁 / 禁止软词 / T 块唯一真源 / 旧行号引用 / 逐字硬约束」等设计已废止；现行规范以 `Plugins/dsh-user-presets/cordis.patch.yml` 的 7 个 VN persona【指令裁决】段 + `skills/vn-shared/` 三份 SKILL.md 为准。本文仅作施工过程与决策留档，不要据此判断现行行为或要求模型遵守。
+  6| 
+  7| > 本文件是**施工依据**，不是讨论稿。经双方确认后据以改动 `Plugins/dsh-user-presets/`。
+  8| > 本轮只产出本文档，**不修改** `cordis.patch.yml`、不安装 bundle、不改动任何 skills。
+  9| > 工作区根：`D:\Tools\DeepSeek Harness`。若无特别说明，路径一律相对 `<作品名>/` 项目目录。
+=== VN-工作流改造说明.md lines 3-9 (index 2:9) ===
+  3| > ⚠️ **本文件与 `VN-工作流改造施工文档.md` 均为 2026-11-07 施工期的历史记录，已不是现行规范源。**
+  4| > 2026-11-10 完成「预设瘦身与矛盾清理」（见 `Reports/预设约束互博成因与治理方案-20261110.md`），现行规范以 `Plugins/dsh-user-presets/cordis.patch.yml` 的 7 个 VN persona【指令裁决】段 + `skills/vn-shared/` 三份 SKILL.md 为准。
+  5| > 本文件内的「三道锁 / 单轮单条目硬门禁 / 每轮最后一个工具调用必须是 ask_user_question / T 块唯一真源 / 旧行号引用 / §7.2 运行时校验清单」等表述**均已废止**，仅作施工过程留档；不要据此判断现行行为或要求模型遵守。
+  6| 
+  7| > 施工依据：`VN-工作流改造施工文档.md`（2753 行，修订 `6a7b79c1…`）。
+  8| > 施工日期：2026-11-07。范围：7 个 VN 预设一次做完（用户确认「建议叫几个子智能体来一次做完七个再核查」），装配后核查；**不执行** §7.3 回退演练、不执行 §8 既有项目迁移。
+  9| > 本文件是该次施工的交付说明；施工文档本身在施工期内曾是权威规范源。
+
+4.3 idx(1-based)=[2352] ; 5. idx(1-based)=[2482] ; delta=130
+
+B6 row present: 1
+77 line present: 1
+§7 header present: 1
+
+README99 fragment: 1
+bundle 注册方式 anchor: 1
+bundle 13 preset line: 1

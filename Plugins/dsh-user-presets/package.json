@@ -1,0 +1,12 @@
+{
+  "name": "@dsh-external/dsh-user-presets",
+  "version": "1.5.0",
+  "private": true,
+  "type": "module",
+  "description": "用户自建 agent 预设（论文撰写、小说创作、ComfyUI工作……），从 .agent-presets 目录迁移而来；含 VN-* 七预设工作流与 vn-shared 共享规范",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

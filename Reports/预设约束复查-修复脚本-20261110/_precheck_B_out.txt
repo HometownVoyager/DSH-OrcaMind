@@ -1,0 +1,17 @@
+A1 game desc     1
+A1 三道门禁 tail     1
+A2 must          1
+A2 未确认禁止         1
+§2.4 yml         1
+B6 s1            1
+B6 s2            1
+B6 s3            1
+N1 comment       1
+
+--- frontmatter closing '---\n\n' counts ---
+total files: 29, bad frontmatter pattern: 0
+
+--- N2 / N5 strings ---
+genre-fiction/novel-project-bootstrap/SKILL.md -> 1
+novel-writing/novel-project-bootstrap/SKILL.md -> 1
+comfyui-work/moss-image-guide/SKILL.md -> 1

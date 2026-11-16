@@ -1,0 +1,31 @@
+VN-工作流改造施工文档.md (base=.): links=4 missing=4
+   MISSING ../Plugins/dsh-user-presets/VN-工作流现行规范.md
+   MISSING ../Reports/预设约束互博成因与治理方案-20261110.md
+   MISSING ../Reports/预设约束互博治理后复查-20261110.md
+   MISSING ../Plugins/dsh-user-presets/VN-工作流现行规范.md
+VN-工作流改造说明.md (base=.): links=5 missing=4
+   MISSING ../Plugins/dsh-user-presets/VN-工作流现行规范.md
+   MISSING ../Reports/预设约束互博成因与治理方案-20261110.md
+   MISSING ../Reports/预设约束互博治理后复查-20261110.md
+   MISSING ../Reports/预设约束互博治理后复查-20261110.md
+
+--- 施工文档 header links (raw) ---
+  VN-工作流现行规范.md -> ../Plugins/dsh-user-presets/VN-工作流现行规范.md
+  成因调查 -> ../Reports/预设约束互博成因与治理方案-20261110.md
+  治理后复查 -> ../Reports/预设约束互博治理后复查-20261110.md
+
+--- 说明 header links (raw) ---
+  施工文档 -> VN-工作流改造施工文档.md
+  VN-工作流现行规范.md -> ../Plugins/dsh-user-presets/VN-工作流现行规范.md
+  成因调查 -> ../Reports/预设约束互博成因与治理方案-20261110.md
+  治理后复查 -> ../Reports/预设约束互博治理后复查-20261110.md
+
+--- 现行规范 links ---
+  治理后复查 -> ../Reports/预设约束互博治理后复查-20261110.md
+
+--- 原预设完整保留 comments with owning preset ---
+     25 - id: preset-game-design | # 派生自 `vn-design`（原预设完整保留、一律不动）：完整继承其工具行与
+    688 - id: preset-language-learning | # 派生自 `science-learning`（原预设完整保留、一律不动）：完整继承其工具行、
+   1347 - id: preset-official-docs | # 派生自 `novel-writing`（原预设完整保留、一律不动）：完整继承其工具行与
+   1706 - id: preset-paper-writing | # 派生自 `novel-writing`（原预设完整保留、一律不动）：完整继承其工具行与
+   2955 - id: preset-social-issues | # 派生自 `novel-writing`（原预设完整保留、一律不动）：完整继承其工具行与

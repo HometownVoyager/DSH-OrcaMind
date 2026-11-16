@@ -1,0 +1,14 @@
+
+=== Plugins/dsh-user-presets/skills/comfyui-work/moss-image-guide/SKILL.md ===
+  54| 本预设技能目录 `Plugins/dsh-user-presets/skills/comfyui-work/moss-image-prompt-enhancer/`（含
+  65| python Plugins/dsh-user-presets/skills/comfyui-work/moss-image-prompt-enhancer/scripts/compile_prompt.py \
+
+=== Plugins/dsh-user-presets/skills/prompt-writing/dsh-preset-craft/SKILL.md ===
+  19| 一个预设 Bundle 目录（如 `Plugins/dsh-user-presets/`）包含：
+  70| - `skill-filesystem`（`@deepseek-ai/dsh-skill-filesystem`）：`config.customSkillDirs` 使用绝对路径指向本 bundle 内对应的技能目录（如 `D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/<preset-id>`）。
+
+=== root README:99 full ===
+| VN 系文档 7 份（平铺根层） | `VN-工作流改造方案-v1-已废弃.md`（更早归档）+ 2026-11-09 移入的 6 份：`VN-工作流改造施工文档.md.bak`（主文件 11-07 已改定，备份失去意义）与 `VN-目录对齐-执行报告.md`/`-执行日志.txt`/`-映射.csv`/`-最终执行清单.md`/`VN-目录对齐方案-待确认.md`（11-07 目录对齐任务的一次性产物）。主目录仍在役的 VN 文档：`VN-工作流改造施工文档.md`、`VN-工作流改造说明.md` |
+
+=== root README:55 dsh-user-presets full ===
+| `dsh-user-presets` | 13 个自建 agent 预设 bundle（论文撰写、小说创作等）+ 7 个 `VN-*` 工作流预设（2026-11-07 施工，共 20 条 `preset-*`）；注册在 `~/.dsh/profiles/web/package.json` 的 `link:` 依赖 + `dsh.profile.bundles`；**skills 路径是绝对路径，挪动本目录必须同步改 `cordis.patch.yml`；委托行严禁 `toolFilter` / `persona`（0.2.1 加载即拒，会让新建会话报 `agent-preset/invalid`）；`cordis:group` 行禁止与组内子行同 id（同名会让 DSH 启动静默挂起、CPU 满转）**，详见其 README。**2026-11-10 瘦身重构**：7 个 VN persona 由 509 行压到 184 行（加【指令裁决】宪法段、删重复块）、移除 7 处 planning 组与全部 77 处末位 `ask_user_question` 硬门禁、重写 `vn-shared` 三份 SKILL.md 并清理 36 份阶段 SKILL.md；现行规范入口为 `VN-工作流现行规范.md`，旧施工/说明文档已标注为历史留档；改造前备份在 `Archive/Plugins/dsh-user-presets-slim-20261110-slim/`。**Godot MCP（`mcp-godot-ai`，godot-ai 后端）以 preset 作用域挂在本 bundle 的 godot-dev 预设内**：插件与 uv 工具链在 `D:/Tools/GoDot/`（工作区外），架构/接入/纪律见 `D:/Tools/GoDot/GODOT_MCP_GUIDE.md`（2026-10-27 从 godot-mcp-enhanced 换为 hi-godot/godot-ai，旧后端与 3 个候选残留已清） |

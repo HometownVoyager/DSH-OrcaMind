@@ -1,0 +1,21 @@
+# ===== 不入库:官方源码 / 运行时 / 本机 agent 配置 =====
+/source/
+/Dependency/
+/.zcode/
+/tmp/
+
+# ===== 第三方插件(release tgz 安装 + 上游 fork,均可随时重装) =====
+/Plugins/dsh-ops/
+/Plugins/dsh-providers-hub/
+
+# ===== 依赖与构建产物 =====
+node_modules/
+dist/
+*.log
+
+# ===== 系统杂项 =====
+Thumbs.db
+.DS_Store
+
+# ===== 本机专属凭据(不入库) =====
+oauth-client.local.json

@@ -1,0 +1,6 @@
+node_modules/
+lib/
+*.tsbuildinfo
+*.tgz
+# tests/e2e-paper-export.mjs 的产物目录（每次运行重新生成）
+tests/out/

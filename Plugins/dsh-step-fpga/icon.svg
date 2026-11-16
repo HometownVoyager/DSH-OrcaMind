@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="STEP FPGA">
+  <rect x="1" y="1" width="62" height="62" rx="10" fill="#10233a"/>
+  <!-- pin banks (top / bottom / left / right) -->
+  <g fill="#3f7fbf">
+    <rect x="14" y="4" width="4" height="7" rx="1"/>
+    <rect x="23" y="4" width="4" height="7" rx="1"/>
+    <rect x="32" y="4" width="4" height="7" rx="1"/>
+    <rect x="41" y="4" width="4" height="7" rx="1"/>
+    <rect x="14" y="53" width="4" height="7" rx="1"/>
+    <rect x="23" y="53" width="4" height="7" rx="1"/>
+    <rect x="32" y="53" width="4" height="7" rx="1"/>
+    <rect x="41" y="53" width="4" height="7" rx="1"/>
+    <rect x="4" y="18" width="7" height="4" rx="1"/>
+    <rect x="4" y="27" width="7" height="4" rx="1"/>
+    <rect x="4" y="36" width="7" height="4" rx="1"/>
+    <rect x="53" y="18" width="7" height="4" rx="1"/>
+    <rect x="53" y="27" width="7" height="4" rx="1"/>
+    <rect x="53" y="36" width="7" height="4" rx="1"/>
+  </g>
+  <!-- die -->
+  <rect x="13" y="13" width="38" height="38" rx="5" fill="#1d4e7d" stroke="#5fb0e8" stroke-width="1.5"/>
+  <!-- clock pulse -->
+  <path d="M20 40 h6 v-14 h6 v14 h6 v-14 h6 v14 h4" fill="none" stroke="#7fe0a8" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- LED dot -->
+  <circle cx="44" cy="21" r="3" fill="#ffcf5c"/>
+</svg>

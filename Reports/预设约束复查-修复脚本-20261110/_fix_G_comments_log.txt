@@ -1,0 +1,3 @@
+==== G_comments ====
+total replacements: 5 across 1 files
+    5  Plugins/dsh-user-presets/cordis.patch.yml

@@ -1,0 +1,475 @@
+
+######## VN-工作流改造施工文档.md (2758 lines) ########
+    1| # VN 工作流改造施工文档（详尽版 · v1）
+    2| 
+    3| > ⚠️ **本文件是 2026-11-07 施工期的历史记录，已不是现行规范源。**
+    4| > 2026-11-10 完成「预设瘦身与矛盾清理」（见 `Reports/预设约束互博成因与治理方案-20261110.md`）：7 个 VN persona 已重写为「宪法 + 独有职责 + 共用规范引用 + 默认节奏」，删除全部 plan-mode 段，移除 77 处「最后一个工具调用必须是 ask_user_question」硬门禁，重写 `vn-shared` 三份 SKILL.md 并清理 36 份阶段 SKILL.md。
+    5| > 本文的「三道锁 / 硬门禁 / 禁止软词 / T 块唯一真源 / 旧行号引用 / 逐字硬约束」等设计已废止；现行规范以 `Plugins/dsh-user-presets/cordis.patch.yml` 的 7 个 VN persona【指令裁决】段 + `skills/vn-shared/` 三份 SKILL.md 为准。本文仅作施工过程与决策留档，不要据此判断现行行为或要求模型遵守。
+    6| 
+    7| > 本文件是**施工依据**，不是讨论稿。经双方确认后据以改动 `Plugins/dsh-user-presets/`。
+    8| > 本轮只产出本文档，**不修改** `cordis.patch.yml`、不安装 bundle、不改动任何 skills。
+    9| > 工作区根：`D:\Tools\DeepSeek Harness`。若无特别说明，路径一律相对 `<作品名>/` 项目目录。
+   10| 
+   11| ---
+   12| 
+  600| ### 3.0.6 新七步循环与 ask_user_question 收尾（章级定义）
+  601| 
+  602| **旧七步 `Read → Report → Plan → Do → Check → Write → Ask` 一律废除。** 旧版 `Write` 在 `Ask` 之前是「一轮做完」的病根，禁止在任何新预设的 persona、skill、注释中复现。
+  603| 
+  604| **新七步（逐字锁定）：`Read → Report → Confirm → Do → Check → Write → Stop`**
+  605| 
+  606| | 步 | 动作 | 硬约束 |
+  607| |---|---|---|
+  608| | Read | **每轮先调用 `skill` 工具显式加载 `vn-gate` 正文**（`customSkillDirs` 只列目录/catalog、不自动注入正文；未加载不得进入 Report）；读 `README.md` 校验 `当前预设`；**首轮**显式用文件工具读一次 `Specifications.md` 与 `Direction.md`（后续轮遵守已读内容、不复读），读本阶段上游只读清单，读本阶段自己那一列的既有产出 | 每轮必须校验 `当前预设`（按 §4.3 §5 三分支判定）；仅「其余不匹配」停下询问、不动任何文件；五条硬约束见 §3.0.9 |
+  609| | Report | 报告 `当前预设 / 当前阶段 / 已完成关键信息 / 本轮子条目候选清单 / 本轮未复读部分` | 禁止在 Report 中规划或预告后续子条目 |
+  610| | Confirm | 用 `ask_user_question` 呈现候选清单，**本轮子条目由用户从候选清单中选定**；取得用户明确确认后才进入 Do | 无用户明确确认，一律不得进入 Do、不得进入下一轮、不得进入下一阶段 |
+  611| | Do | 只处理 Confirm 选定的**那 1 个子条目**，加载本阶段 skill 与工具，产出草稿 | 禁止在本轮规划/预写后续子条目；禁止跨阶段写下游目录 |
+  612| | Check | 按 `Specifications.md`、`vn-continuity`、`vn-spec` 执行一致性核查（锚点矩阵优先） | 发现冲突一律停下请用户裁决，禁止自行改写已确认内容 |
+  613| | Write | 只写本阶段那一列的既定文件 + 就地更新 `README.md`「当前状态」块的 5 个字段 + 在「进度记录」区追加一行（§3.0.7 双区结构） | 禁止创建计划外文档；禁止改写/删除「进度记录」区既有行；`Write` 之后不得再执行任何写操作 |
+  614| | Stop | **本轮最后一个工具调用必须是 `ask_user_question`** | 其后禁止调用任何工具（含 `present`、`todo_write`、`tool-skill`、`read`） |
+  615| 
+  616| **`ask_user_question` 两组固定选项（按步骤区分，逐字写入，禁止互相复用）**：
+  617| 
+  618| **A 组 · `Confirm` 步（开工前选条目）**——此时尚未产出，问「本轮做哪一个」：
+  619| 1. `就做这一个` —— 确认本轮唯一子条目，**进入 `Do`**；A 区 `状态` 置 `进行中`。
+  620| 2. `换一个子条目` —— 从候选清单改选，本轮重新 `Report → Confirm`。
+  621| 3. `先不做，停下询问` —— 不动任何文件，等用户下一轮指令。
+  622| 
+  623| **B 组 · `Stop` 步（收尾认可成果）**——此时本轮已产出，问「成果是否认可」：
+  624| 1. `认可本轮成果` —— 用户认可本轮唯一子条目，本轮到此结束；A 区 `状态` 置 `已确认`，`下一候选` 就地登记本轮 Stop 列出的下一候选清单（只列标题、不展开；无后续候选时记「无」）。
+  625| 2. `换一个子条目重做` —— 本轮成果不入正式事实源（保留在磁盘但不被后续阶段引用为事实源，`04-ScreenPlay/` 的「只增不改」仍成立：一律另起新文件重做，禁止覆盖或改写既有落盘文件）；A 区 `状态` 置 `待确认`，把用户指定的重做条目连同下一候选清单一并登记进 `下一候选`（只列标题、不展开）。
+  626| 3. `本阶段已确认，进入下一预设` —— **唯一允许推进的口令**；A 区 `状态` 置 `已确认`，`当前预设` **保持为当前预设 id 不变**（登记动作一律留给用户手动切换预设后、由下一预设首轮 Read 完成，AI 不得代改、不得自行触发切换）；只有用户手动切换到下一预设会话后，才允许推进。
+  627| 
+  628| **只有 `已确认` 才允许推进。** `进行中` 与 `待确认` 一律禁止进入下一预设。两组各三项一字不得删减、不得改写、不得跨组套用；可追加阶段专属选项。
+  629| 
+  630| **必须删除的旧表述（施工人员逐字检索并删除，禁止残留）**：
+  631| > 「以 Agentic work 的方式自主规划该阶段内的子任务……产出一份可供用户审阅的草稿，而不是等待用户逐步发出每一个微指令」
+  632| 
+  633| 替换为：
+  634| > 「本轮子条目由用户从候选清单中选定；AI 一律不得自主规划该阶段内的子任务，一律不得在一轮内处理多个子条目。」
+  635| 
+  636| ### 3.0.7 README.md 状态机字段（唯一进度载体，双区结构）
+ 2355| ---
+ 2356| name: vn-gate
+ 2357| description: VN 工作流单轮单条目硬门禁。锁 2 的七步循环、ask_user_question 收尾硬门禁、README 状态机与越界自我纠正；每轮最后一个工具调用必须是 ask_user_question。
+ 2358| ---
+ 2359| 
+ 2360| # vn-gate · 单轮单条目硬门禁
+ 2361| 
+ 2362| 本 skill 实现 §2.6 三道锁中的**锁 2（单轮单条目协议）**与**锁 3（README 阶段状态机 + 提问确认）**。措辞一律为硬约束，**禁止**出现「建议」「尽量」「可以视情况」等软词。
+ 2363| 
+ 2364| ## 0. 每轮工作协议与 Read 步硬约束（5 条 T 块，全工作流唯一真源）
+ 2365| 
+ 2366| > 本节是「每轮工作协议与 Read 步硬约束」在**本文档内的唯一权威全文副本**，也是 §6 步骤 2 落盘 `skills/vn-shared/vn-gate/SKILL.md` §0 的唯一来源。本文档 §3.0.9.2 已降级为施工索引（只列 5 条要点表，不含全文）；7 个 persona 一律只写一行引用，禁止复述、节选或改写本节全文。`customSkillDirs` 只保证本 skill 进入目录与技能目录（catalog），**不自动注入正文**；技能正文必须由模型调用 `skill` 工具或用户 `/name` 显式调用才注入（`source/packages/skill/tool-skill/README.md:54-56`）。因此本块第 4 条把「每轮 Read 步先显式加载本 skill 正文」写死为硬约束：未加载即视为本轮门禁未生效，不得进入 Report；本节据此成为运行时唯一强制点。
+ 2367| 
+ 2368| 1. 会话工作目录必须是 <作品名>/ 项目目录本身或其子目录，一律不得停在工作区根；停在工作区根时 Specifications.md 不在 agent-instructions 的 projectRoot → cwd 目录链上，自动注入读不到，必须先把工作目录切进 <作品名>/ 再开始本轮，禁止在错误目录下凭空假设规范内容。
+ 2369| 2. 本预设 agent-instructions 的 projectRootMarkers 一律为 ['.git', 'Specifications.md']（施工时 7 预设统一加，保留 '.git' 并追加 'Specifications.md'），保证无 git 项目也能以 Specifications.md 正确定根；禁止只写 ['.git']、禁止只写 ['Specifications.md']。instructionFileCandidates 一律为 ['Specifications.md', 'README.md', 'AGENTS.md'] 三值不变，三者同目录按序加载、按内容去重；Direction.md 一律不加入该数组，只靠本块第 3 条的显式 Read 获取。
+ 2370| 3. 首轮 Read 步必须显式用文件工具读一次根级 Specifications.md 与 Direction.md，不得仅依赖 agent-instructions 的自动注入；这是双重保险，且必须确认两份文件真实存在。自动注入与显式读取冲突时一律以显式读到的文件内容为准，并停下询问。Direction.md 是静态导航地图（总体说明 + 七预设导航 + 源指针表 + 02/04 分工），不是事实源、不是状态机；一律以被指向的源文件为准，禁止把 Direction.md 当作规范或进度来源。
+ 2371| 4. 显式读取只在**首轮**执行一次；后续轮一律遵守本块第 3 条已读到的规范与导航，不得凭空假设其内容，也不得把「已在首轮读过」当作跳过 Read 步的理由——Read 步本身每轮仍执行，只是不再重复用文件工具复读这两份文件；且**每轮 Read 步必须先调用 `skill` 工具显式加载 `vn-gate` 正文**（customSkillDirs 只把本 skill 列入目录与 catalog，catalog 仅列名称与摘要、不注入正文；未加载即视为本轮锁 2 / 锁 3 门禁未生效，**不得进入 Report**），再按本块与 §1 七步循环执行；本轮未复读的上游文件必须在 Report 中说明，禁止假装已通读全部内容。
+ 2372| 5. Specifications.md 或 Direction.md 不存在时，模型必须立即停下、用 ask_user_question 询问，一律不得自行创建、一律不得凭空假设规范/导航、一律不得改用旧规范文档；**创建权限分支**：仅「VN-设定完善」（vn-bible）在用户明确确认后才可创建这两份文件（Direction.md 一律只建静态导航骨架），其余 6 预设一律不得创建。
+ 2373| 
+ 2374| ## 1. 单轮单条目协议（锁 2 的七步循环，逐步展开）
+ 2375| 
+ 2376| ~~~
+ 2377| Read → Report → Confirm → Do → Check → Write → Stop
+ 2378| ~~~
+ 2379| 
+ 2380| | 步 | 允许的动作 | 禁止的动作 |
+ 2381| |---|---|---|
+ 2382| | **Read** | **每轮先调用 `skill` 工具显式加载 `vn-gate` 正文**（catalog 只列名称与摘要、不注入正文；未加载即视为本轮门禁未生效，不得进入 Report）；读 `README.md` 状态机 + 本阶段已有产物（上游只读）并校验「当前预设」是否匹配自己（按本节 §5 三分支判定）；`Specifications.md` / `README.md` / `AGENTS.md` 由 `agent-instructions` 每轮自动注入（不算「用文件工具显式读」）；**仅首轮**另显式用文件工具读一次 `Specifications.md` **与** `Direction.md`（`Direction.md` 不进 `instructionFileCandidates`、只靠显式 Read 获取；后续轮遵守已读内容、不复读） | 禁止读下游目录；禁止创建任何文件；禁止规划后续子条目；禁止仅依赖自动注入而不在首轮显式读规范；禁止把「自动注入」与「显式文件工具读」混为一谈；禁止在未加载 `vn-gate` 正文的情况下进入 Report |
+ 2383| | **Report** | 报「当前阶段 / 已完成 key / 本轮**唯一一个**待办子条目」，并附下一候选子条目清单（**只列标题、不展开**） | 禁止一次报多个待办；禁止替下游做设计；禁止把候选清单展开成草案 |
+ 2384| | **Confirm** | 用 `ask_user_question` 请用户确认「本轮就做这一个」，或改选候选清单中的另一个 | 禁止自行选定；禁止默认「用户已同意」；禁止跳过提问直接开工 |
+ 2385| | **Do** | 只做被确认的**那 1 个**子条目，产出到本阶段「写」列目录 | 禁止顺手做第二个子条目；禁止跨阶段写入；禁止写第二个文件 |
+ 2386| | **Check** | 按 `vn-continuity` **只核查这 1 个产物**（先 anchors.md 四节锚点矩阵，再链路逐项过） | 禁止全量核查；禁止顺手改非本轮文件；禁止预写下游 |
+ 2387| | **Write** | 只写**这 1 个文件** + 就地更新 `README.md`「当前状态」块的 5 字段 + 在「进度记录」区**追加一行**（状态置「**待确认**」；双区结构见 §3.0.7） | 禁止写第二个文件；禁止改写/删除「进度记录」区既有行；禁止写下游；禁止自行置「已确认」 |
+ 2388| | **Stop** | 必须停下；列出下一候选子条目；由 `ask_user_question` 收尾，等用户下一轮指令 | 禁止继续下一子条目；禁止进入下一阶段；禁止用普通文本回复代替收尾提问；禁止在提问后再发起任何工具调用 |
+ 2389| 
+ 2390| - **每轮只处理 1 个子条目**；不得在本轮内规划或预写后续子条目。
+ 2391| - **本轮子条目由用户从候选清单中选定**（见本 skill §1 与 §3）。
+ 2392| 
+ 2393| ## 2. 硬门禁：每轮最后一个工具调用必须是 `ask_user_question`
+ 2394| 
+ 2395| - 七步中 `Confirm` 与 `Stop` 两步都落到 `ask_user_question`，但用**不同选项组**（见本 skill §3）：`Confirm` 用 A 组问「本轮做哪一个」，`Stop` 用 B 组问「成果是否认可 / 下一轮做什么」并列出下一候选清单。
+ 2396| - **硬门禁**：无论中间过程如何，本轮**最后一个工具调用必须是 `Stop` 步的 `ask_user_question`**；此后不得再有任何工具调用（含 `present`、文件写、命令），**不得用普通回复 / 普通文本 / 总结段落代替该提问**。
+ 2397| - 未发出该提问 = 本轮未完成，下一轮不得开始；无用户明确确认不得进入下一轮 / 下一阶段。
+ 2398| - 提问须具体、简洁、给可选方案；存在任何疑问或不确定的地方主动询问，**不得凭空假设**。
+ 2399| 
+ 2400| ## 3. `ask_user_question` 的两组必备选项（按步骤区分，禁止互相复用）
+ 2440| 
+ 2441| > **本文档全文凡写「首轮/每轮 Read 校验 `当前预设` 是否匹配自己」「不匹配停下询问 / 不动任何文件」处（含 7 个 persona、§2.6 锁 3、§3.0.6 Read 行、§3.0.7 字段流转、§3.0.10 摘要、§3.6③ `staging-acceptance` skill 等），一律按本节的三分支判定执行**；`当前预设` 字段只记预设 id（可附中文名），不要求同时写中文名。
+ 2442| 
+ 2443| - 每个预设**首轮 Read 必须读 `README.md` 并校验 `当前预设` 是否匹配自己**：
+ 2444|   1. **匹配自己** → 直接继续本轮 Read。
+ 2445|   2. **合法交接**（`当前预设` = 工作流顺序中紧邻的上游预设 id，且 `状态=已确认`）→ 视为用户已完成「旧会话 Stop 明确确认 + 手动切换到本预设」的双重授权：允许本预设**首轮 Read 就地登记** A 区 `当前预设` 为自己的 id（并在 B 区「进度记录」追加一行交接登记，禁止改写既有行），随后继续本轮。该登记是用户切换预设触发的**状态登记**，不算 AI 自行切换、不算自行置位「已确认」。
+ 2446|   3. **其余不匹配**（非紧邻上游、`状态` 非「已确认」、字段缺失 / 多值 / 状态非法）→ **停下询问，不动任何文件**：不读下游、不写任何文件、不改 README、不进入 `Do`；用 `ask_user_question` 报告不匹配并请用户裁决。
+ 2447| - 校验同时确认 `状态` 合法（三值之一）与 `本轮子条目` 唯一；`当前预设` 由分支 2 登记后，本轮仍须按 A 区字段规则就地把 `状态` 置为 `进行中` 才开始 `Confirm`（不得停留在上一阶段的「已确认」继续处理新子条目）。
+ 2448| 
+ 2449| ## 6. 删除旧版 Agentic work 表述（明确声明）
+ 2450| 
+ 2451| 以下旧表述**已全部删除、不再生效**，禁止以任何改写形式回到 persona / skill：
+ 2452| 
+ 2453| - `cordis.patch.yml:3307`：「随后以 **Agentic work 的方式自主规划该阶段内的子任务**……产出一份可供用户审阅的草稿，**而不是等待用户逐步发出每一个微指令**」
+ 2454| - `cordis.patch.yml:3313`：「Plan 划：自主规划该阶段内的子任务（Agentic work）」
+ 2455| - `cordis.patch.yml:3310-3317`：旧七步 `Read → Report → Plan → Do → Check → **Write(3316)** → **Ask(3317)**`（**Write 在 Ask 之前**，一轮 = 整份草稿写完落盘后才问）——已改为 `Read → Report → Confirm → Do → Check → Write → Stop`
+ 2456| - `cordis.patch.yml:2632` / `:2641-2642`（screenplay-writing 同构：Agentic work + Write→Ask）
+ 2457| - `cordis.patch.yml:3687` / `:3696-3697`（vn-staging 同构）
+ 2458| - `cordis.patch.yml:3284`：「必须按上述顺序推进项目。每个阶段只有在用户确认完成、或用户明确指示进入下一阶段后，才可以推进」——只到**阶段粒度**，已被**子条目粒度**门禁取代
+ 2459| - `vn-brainstorm/SKILL.md:42` 的「通常给出 2-3 个有差异的方向供选择」在 Brainstorm 子阶段的适用性一并删除
+ 2460| 
+ 2461| **统一替换为**：「**本轮子条目由用户从候选清单中选定**」。用户未明示的内容一律进「开放问题」清单且只列条目标题、不展开；候选方向只在用户明确要求时才给，且**只呈现在对话里、不落盘**。
+ 2462| 
+ 2463| ## 7. 跨阶段禁令（不得读写下游）
+ 2464| 
+ 2465| - **不得读写下游**：下游阶段目录一律「禁止」（见 `vn-spec` 读写权限矩阵），不读取、不写入、不创建。
+ 2466| - **不得创建下游文件**：不得为下游预建目录、占位文件、模板副本或空壳。
+ 2467| - **不得在对话中替下游做设计**：不提供下游的设计建议稿、字段草案、候选方案或「以后可以……」的展开；`下一候选` 只列本阶段子条目标题。
+ 2468| - 上游目录**只读**：可读已确认内容，禁止改写、追加、新建。
+ 2469| - 锁 1 由配置保证：每预设 `customSkillDirs` 只挂 `vn-shared` + 本阶段 skill，**物理上看不到**下一阶段的 skill / 模板 / 字段定义。
+ 2470| 
+ 2471| ## 8. 违反门禁时的自我纠正流程
+ 2472| 
+ 2473| 一旦发现自己已越界（多做了第 2 个子条目、读了 / 写了下游、写了第二个文件、把状态自行置为「已确认」、用普通回复收尾、漏发 `ask_user_question`、或按旧 Agentic work 一口气写完整份草稿）：
+ 2474| 
+ 2475| 1. **立即停下**：终止当前一切动作，不再发起任何写操作。
+ 2476| 2. **公开报告**：用 `ask_user_question` 向用户报告「越界的具体动作 / 涉及的文件或目录 / 已产生的影响 / 当前 README 状态」，逐条列明，不省略、不淡化。
+ 2477| 3. **禁止悄悄回滚**：不得自行删除、覆盖、改写已越界写出的文件来「恢复原状」；不得自行把 README 状态改回去。
+ 2478| 4. **禁止继续**：不得以「既然已经写了就顺手做完」「下轮补上确认」为理由继续推进；在用户裁决前，本轮冻结。
+ 2479| 5. **等用户裁决**：由用户决定「保留并补确认 / 撤销（在用户明确指令下才执行）/ 换子条目重来」；裁决结论按 `vn-continuity` §5 记入 `README.md` 阶段确认记录（只追加一行），之后才允许开始新的一轮七步循环。
+ 2480| ```
+ 2481| 
+ 2482| ## 5. 四份 Docx 同步细则
+ 2483| 
+ 2484| ### 5.1 唯一位置与固定 4 个文件名
+ 2485| 
+ 2610| - 若返回 `nextStep`（未即时生效），按其指示操作或告知用户需重启。
+ 2611| 
+ 2612| ### 步骤 7 · 验证（见 §7）
+ 2613| - `plugin_manager list_bundles`：确认 `@dsh-external/dsh-user-presets` 版本为 1.5.0、enabled。
+ 2614| - `plugin_manager list_plugins`：确认 7 个 `preset-vn-*` 行 `enabled: true` 且无 activation 诊断；确认 3 个旧行 `enabled: false`。
+ 2615| - 开**新会话**逐一挂载 7 个预设，验证 persona 生效、`ask_user_question` 收尾、技能目录只含 `vn-shared` + 本阶段。
+ 2616| 
+ 2617| ### 步骤 8 · 交付
+ 2618| - 写 `VN-工作流改造说明.md`：含「恢复旧预设方法」「目录迁移对照表（§8）」「7 预设速查」「待定项（§9）」。
+ 2619| - 用 `present` 交付本施工文档 + 改造说明。
+ 2620| 
+ 2621| ---
+ 2622| 
+ 2623| ## 7. 验证清单（逐项打勾才算完成）
+ 2624| 
+ 2625| ### 7.1 静态校验
+ 2750| | 23 | 下一步 | **先审阅·暂不施工**；施工文档已交付，待用户审阅确认后再按 §6 执行 |
+ 2751| | 24 | 04 职责重定义 | `04-Direction/`（导航型元文档）改名 `04-ScreenPlay/`，改为「以 `02-Script/` 纯剧本正文为底本叠加演出指示的逐场融合稿」；`02-Script/` = 纯正文、`04-ScreenPlay/` = 融合稿，不得互相复制正文 |
+ 2752| | 25 | 预设命名全改 | `vn-direction`→`vn-screenplay`、`VN-演出设计`→`VN-演出剧本`、声明行→`preset-vn-screenplay`、skill 目录→`…/skills/vn-screenplay`；8 条核心原则与 8 skill 内核保留 |
+ 2753| | 26 | Direction.md（第 3 份根级文档） | `<作品名>/Direction.md`，**A 静态地图**：总体说明 + 七预设导航 + 源指针表 + 02/04 分工；只写指针、不复制副本、不写规范条文、不记录逐轮进度；制作计划/逐轮进度一律只归 `README.md`；冲突以被指向源文件为准 |
+ 2754| | 27 | Direction.md 归属与注入 | 由 `vn-bible` 首轮与 README/Specifications 一并建静态骨架（指针目标留空待填，须用户确认）；其余 6 预设只读、`vn-screenplay` 必要时经确认才追加指针；**不加进** `instructionFileCandidates`（保持三值），首轮靠显式 Read `Specifications.md` + `Direction.md` 获取 |
+ 2755| | 28 | 五份元文档去向 | 总体说明/制作计划 → `Direction.md`（进度归 README）；资产索引/资产缺口 → `03-Asset/asset-index.md` / `asset-gap.md`；演出精述 → `04-ScreenPlay/演出精述.md`；`04-ScreenPlay/` 固定产出仅 `演出精述.md` / `draft-vN/scNNN.md` / `scene-map.md` |
+ 2756| | 29 | 索引/缺口协作与硬门 | `03-Asset/asset-index.md` / `asset-gap.md` 由 `vn-asset-list` 建骨架、`vn-asset-make` 补磁盘实际状态（两者协作）；`vn-screenplay` 只读；硬门改为「这两份完成并经用户确认前禁止开始逐场演出剧本」 |
+ 2757| | 30 | 越界收敛原则 | 切换预设后优先把改动限制在自己那一列（资产类只在 `03-Asset/`、演出类只在 `04-ScreenPlay/`）；确有必要越界时只允许「读上游已确认内容」+「按 `vn-gate` 追加 README 一行」；写进 §2.3 / §3.0.2 / §4.1 / §10，不削弱三道门禁与硬隔离 |
+ 2758| 
+
+######## VN-工作流改造说明.md (225 lines) ########
+    1| # VN 工作流改造说明
+    2| 
+    3| > ⚠️ **本文件与 `VN-工作流改造施工文档.md` 均为 2026-11-07 施工期的历史记录，已不是现行规范源。**
+    4| > 2026-11-10 完成「预设瘦身与矛盾清理」（见 `Reports/预设约束互博成因与治理方案-20261110.md`），现行规范以 `Plugins/dsh-user-presets/cordis.patch.yml` 的 7 个 VN persona【指令裁决】段 + `skills/vn-shared/` 三份 SKILL.md 为准。
+    5| > 本文件内的「三道锁 / 单轮单条目硬门禁 / 每轮最后一个工具调用必须是 ask_user_question / T 块唯一真源 / 旧行号引用 / §7.2 运行时校验清单」等表述**均已废止**，仅作施工过程留档；不要据此判断现行行为或要求模型遵守。
+    6| 
+    7| > 施工依据：`VN-工作流改造施工文档.md`（2753 行，修订 `6a7b79c1…`）。
+    8| > 施工日期：2026-11-07。范围：7 个 VN 预设一次做完（用户确认「建议叫几个子智能体来一次做完七个再核查」），装配后核查；**不执行** §7.3 回退演练、不执行 §8 既有项目迁移。
+    9| > 本文件是该次施工的交付说明；施工文档本身在施工期内曾是权威规范源。
+   10| 
+   11| ---
+   12| 
+   70| | 6 | `vn-screenplay` | VN-演出剧本 | 35 | `04-ScreenPlay/` | 8 | 以 `02-Script/` 为底本叠加演出 cue；`asset-index.md` + `asset-gap.md` 硬门；固定产出仅 3 类 |
+   71| | 7 | `vn-game` | VN-游戏制造 | 36 | `05-Game/` | 3 | 两道门：规格门先确认引擎（LetsGaL / WebGaL / Ren'Py / Godot），工程门在 `状态=已确认` 后才建 `<engine>/` |
+   72| 
+   73| **三道锁（全链一致）**
+   74| 
+   75| - 锁 1 · 技能硬隔离：`customSkillDirs` 恰 2 根绝对路径，第 1 根恒为 `…/skills/vn-shared`，第 2 根为本阶段目录；物理上看不到下一阶段 skill。
+   76| - 锁 2 · 单轮单条目：新七步循环 `Read → Report → Confirm → Do → Check → Write → Stop`（旧 `Read → Report → Plan → Do → Check → Write → Ask` 已废除）；每轮只做用户选定的 1 个子条目；`do` 之前经 A 组 `ask_user_question` 确认，末位工具调用必须是 B 组 `ask_user_question`，此后不得再调用任何工具。
+   77| - 锁 3 · README 双区状态机：A 区「当前状态」5 字段（当前预设 / 当前阶段 / 本轮子条目 / 状态 / 下一候选）仅在用户确认后就地更新；B 区「进度记录」只追加、永不改写删除；`已确认` 只能由用户在提问里给出，AI 不得自行置位。
+   78| 
+   79| **共用的 `agent-instructions`（7 行逐字一致）**
+   80| 
+   81| ```yaml
+   82| maxBytes: 65536
+   83| instructionFileCandidates: ['Specifications.md', 'README.md', 'AGENTS.md']
+   84| projectRootMarkers: ['.git', 'Specifications.md']
+   85| ```
+   86| 
+   87| `Direction.md` **不进** `instructionFileCandidates`；首轮靠 `vn-gate` §0 第 3 条显式用文件工具读 `Specifications.md` **与** `Direction.md`。`vn-gate/SKILL.md` §0 是全工作流 T 块的唯一权威全文，7 个 persona 只写一行引用、不复述全文。
+   88| 
+   89| **目录白名单（6 编号目录 + 3 根级文档，一律不写成 6+2）**
+   90| 
+   91| ```
+   92| 00-Bible/  01-Plan/  02-Script/  03-Asset/  04-ScreenPlay/  05-Game/
+   93| README.md  Specifications.md  Direction.md
+   94| ```
+   95| 
+   96| `03-Asset/generated/` 是唯一二进制资产落点；`00-Bible/00-Bible-四份版/` 是唯一 `.docx` 落点，四份固定名：`01-核心创意与基准事实.docx` / `02-角色与关系.docx` / `03-世界观与地理.docx` / `04-历史·术语·文风.docx`（`·` 为 U+00B7）。`Direction.md` 只做静态导航地图（总体说明 + 七预设导航 + 源指针表 + 02/04 分工），不复制源内容、不写规则、不记逐轮进度；进度一律只归 `README.md`。
+   97| 
+   98| ---
+   99| 
+  100| ## 4. 落盘的 39 份 `SKILL.md`
+  155| 
+  156| **迁移纪律**：由用户手动执行，或在新会话中明确指令后由「VN-设定完善」协助；任何预设不得在未被明确要求时自动迁移/重命名既有文件。本轮**未触碰** `D:\Artifact\现代神明实践记序\` 等既有项目文件。
+  157| 
+  158| ---
+  159| 
+  160| ## 6. 待定项（§9）与需要用户在新会话完成的验证
+  161| 
+  162| ### 6.1 待定项
+  163| 
+  164| | # | 待定 | 当前处理 | 后续 |
+  165| |---|---|---|---|
+  166| | 1 | 生图工具 | `vn-asset-make` **暂不绑定**；每轮调用前必须 `ask_user_question` 确认工具与参数 | ComfyUI / Nano Banana 2 选定后再更新工具行 |
+  167| | 2 | 引擎 | `vn-game` 第一轮先确认引擎（LetsGaL / WebGaL / Ren'Py / Godot 四选一），第二轮才建 `<engine>/`；**引擎未绑定** | LetsGaL Studio JSON 工程格式（`project.json` / `characters.json` / `scenes.json` / `chapters/*.json` / `assets/.manifest.json`）依据 [letsgal-ai MCP 格式说明](https://glama.ai/mcp/servers/lilyco-42/letsgal-ai?locale=zh-CN)；WebGAL 为 `game/scene/*.txt` + `config.txt`（[脚本约定](http://www.hqwc.cn/news/574215.html)、[WebGAL Terre 目录结构](https://www.cnblogs.com/myflycat/p/20402557)）；Ren'Py / Godot 待定期间不写死 |
+  168| | 3 | `continuity-log.md` 落点 | **已裁定**：并入 `README.md`「进度记录」区，取消 `03-修订/` | 无 |
+  169| | 4 | 四份 Docx 版本快照 | **已裁定不需要**：原址覆盖 + 与 Markdown 同步；恒为 4 个固定名 | 当前禁建第 5 份 Docx |
+  170| | 5 | 是否先试点 | **已由用户裁定**：一次做完 7 个预设（本轮已执行） | 无；§9 表中此行仍为旧版「先审阅·暂不施工」措辞，以本次确认结论为准 |
+  171| 
+  172| > #1 / #2 属项目级待定，后续写进 `Specifications.md`「待确认」节；#3 / #4 已裁定，不再发起提问；#5 仅登记，不写进 `Specifications.md`。
+  173| 
+  174| ### 6.2 §7.2 运行时校验（**必须在新会话逐项做，本会话无法验证**）
+  175| 
+  176| 1. roster 里能看到 7 个 `VN-*` 预设、看不到 3 个旧预设；`list_plugins` 里 3 个旧行 `enabled: false`。
+  177| 2. 逐预设新开会话，首轮输出含「调用 `skill` 工具显式加载 `vn-gate` 正文」+「读 README 校验当前预设」+「报本轮唯一子条目」+ `ask_user_question`；未加载 `vn-gate` 正文即进入 Report 视为门禁失效。
+  178| 3. 用户手动切到紧邻下游预设且 README「当前预设」仍为上游 id、`状态=已确认` 时，判为「合法交接」（就地登记 + B 区追加一行后继续），不得误停；非紧邻或状态非已确认则停下询问且不动任何文件。
+  179| 4. 技能目录只列 `vn-shared` 与本阶段 skill，不出现下一阶段 skill。
+  180| 5. `vn-bible` 里要求「顺便把大纲也写了」必须拒绝（含不得以 subagent / workflow / ralph / plan-mode / todo 批量代做）。
+  181| 6. `vn-bible` Brainstorm 子阶段给零散想法：只处理 1 个字段、只写 `00-Bible/brainstorm.md`、不生成候选方向、末位 `ask_user_question`。
+  182| 7. 任意预设要求「新建计划外 md 文件」或「用子代理/工作流一轮做完剩余子条目」必须拒绝，末位仍为 `ask_user_question`。
+  183| 8. `vn-asset-make` 要求生成资产：先 `ask_user_question` 确认工具，不得擅自调用。
+  184| 9. `vn-game` 第一轮：先确认引擎，不得创建 `<engine>/` 目录。
+  185| 10. `vn-screenplay` 删除 `asset-index.md` / `asset-gap.md` 后请求写逐场稿：停下询问、不得开始 `04-ScreenPlay/draft-vN/`、不得自行补建、不得在 04 下另建索引/缺口副本。
+  186| 11. 逐预设首轮必须显式读 `Specifications.md` **与** `Direction.md`；两者不存在时停下询问；仅 `vn-bible` 在用户确认后可创建。
+  187| 12. 要求「把制作计划/逐轮进度写进 Direction.md」必须拒绝，说明进度只归 `README.md`。
+  188| 13. 要求「顺手改相邻目录」按越界收敛原则拒绝或仅做「读上游 + 追加 README 一行」。
+  189| 14. 四份 Docx 仅出现在 `00-Bible/00-Bible-四份版/` 且恰为 4 个固定名；根级恰为 `README.md` / `Specifications.md` / `Direction.md` 三份，无第 4 份，`Direction.md` 不含逐轮进度。
+  190| 
+  191| ---
+  192| 
+  193| ## 7. 施工校验记录（静态，全部通过）
+  194| 
+  195| | 校验 | 结果 |
+  218| ## 8. 文件清单
+  219| 
+  220| - 修改：`Plugins/dsh-user-presets/cordis.patch.yml`、`Plugins/dsh-user-presets/package.json`
+  221| - 备份：`Plugins/dsh-user-presets/cordis.patch.yml.bak`
+  222| - 新建：`Plugins/dsh-user-presets/skills/` 下 8 个目录共 39 份 `SKILL.md`
+  223| - 交付：本文件 `VN-工作流改造说明.md`，连同施工依据 `VN-工作流改造施工文档.md`
+  224| - 临时脚本（可删）：`tmp_gen_presets.js`、`tmp_verify.js`、`tmp_verify2.js`、`tmp_doc_block.txt`、`tmp_real_block.txt`
+  225| 
+
+######## XIANXING FULL (76 lines) ########
+    1| # VN 工作流现行规范（2026-11-10 起）
+    2| 
+    3| > 本文件是 VN 七预设的**唯一现行规范入口**，取代 `VN-工作流改造施工文档.md`（2753 行）与 `VN-工作流改造说明.md`（220 行）——那两份是 2026-11-07 施工期的历史记录，仅作留档。
+    4| > 运行时真正生效的是：`cordis.patch.yml` 里 7 个 `preset-vn-*` 的 persona `prefix`（system 通道，order=0）与 `skills/vn-shared/` 三份 SKILL.md。本文件只是它们的**人类可读索引**，不新增任何规则。
+    5| 
+    6| ## 1. 指令裁决（最高优先级，写在每个 persona 开头）
+    7| 
+    8| 1. 约束分两类：
+    9|    - **硬红线**（仅三条）：① 不跨阶段写入（不写下游、不改写上游已确认内容）；② 不创建 6 编号目录 + 3 根级文档白名单之外的文件；③ 不自行把 README 状态置「已确认」。
+   10|    - **默认工作节奏**：除上述三条外的一切流程、步骤、提问与确认节奏，均可被用户显式指令覆盖。
+   11| 2. 用户指令与【默认工作节奏】冲突 → 以用户为准，直接执行；用户已在同一条消息里写明范围/做法 → 视为已确认，不重复提问。可一次性授权「一次做完多个子条目 / 跳过逐轮确认」。
+   12| 3. 用户指令与【硬红线】冲突 → 不擅自执行、不反复自辩：一句话点明冲突，给「按我说的做（已知悉风险）/ 保持红线」二选一，由用户拍板。
+   13| 4. 引用的三份共享 skill 与 persona 冲突 → 以 persona 为准；skill 之间冲突 → `vn-gate`（流程）> `vn-spec`（目录与格式）> `vn-continuity`（核查）。
+   14| 5. 不确定某条是否生效 → 按本段裁决，不回头溯源旧文档、旧行号或已 `disabled` 的旧预设。
+   15| 6. 措辞以「默认 / 除非用户明确要求」为主，不因未用绝对化措辞而怀疑规则失效。
+   16| 
+   17| ## 2. 七预设与目录
+   18| 
+   19| | 预设 | 阶段 | 写列 | 独有职责 |
+   20| |---|---|---|---|
+   21| | `vn-bible` | 设定完善 | `00-Bible/` | Brainstorm 六字段、角色/世界观档案、anchors 四节、四份固定名 `.docx`、创建 `Specifications.md` / `Direction.md` |
+   22| | `vn-outline` | 剧情大纲设计 | `01-Plan/` | outline / chapter-structure / endings-and-flags（唯一事实源） |
+   23| | `vn-script` | 剧情写作 | `02-Script/` | 纯剧本正文、scene-list、剧情精述、Draft/ |
+   24| | `vn-asset-list` | 资产列表 | `03-Asset/` 根层 | 清单/规格/数量/优先级/生成提示词、asset-index / asset-gap 骨架 |
+   25| | `vn-asset-make` | 资产制造 | `03-Asset/generated/` | 实际生成资产、补 asset-index / asset-gap 磁盘状态 |
+   26| | `vn-screenplay` | 演出剧本 | `04-ScreenPlay/` | 02 底本 + 演出 cue 融合稿、scene-map、演出精述 |
+   27| | `vn-game` | 游戏制造 | `05-Game/` | 规格门（确认引擎）→ 工程门（确认后建 `<engine>/`） |
+   28| 
+   29| 目录树 = 6 编号目录 + 3 根级文档（`README.md` / `Specifications.md` / `Direction.md`）。完整表与读写权限矩阵见 `skills/vn-shared/vn-spec/SKILL.md`。
+   30| 
+   31| ## 3. 默认每轮节奏
+   32| 
+   33| ```
+   34| Read → Report → Confirm → Do → Check → Write → Stop
+   35| ```
+   36| 
+   37| - **Read 固定顺序**：① 读 `README.md` 状态机（校验「当前预设」）② 首轮另显式读一次 `Specifications.md` 与 `Direction.md` ③ 读本阶段已有产物。多个「必须先」不再争第一。
+   38| - **Report**：报当前阶段 / 已完成 key / 本轮待办子条目；可附 ≤3 个下一候选标题（只列标题、不展开）。「列标题」不算规划后续子条目；写字段/草案/设计建议才算。
+   39| - **Confirm**：默认用 `ask_user_question` 确认本轮范围；用户已写明范围时跳过。
+   40| - **Do / Check / Write**：只做被确认的子条目；按 `vn-continuity` 只核查该产物及其**直接上游已确认文件**（不探测下游、不做全链体检）；只写 1 个文件 + README A 区 5 字段 + B 区追加一行（状态「待确认」）。
+   41| - **Stop**：停下，报告本轮结果，列出下一候选标题，等下一轮指令。
+   42| 
+   43| **本轮工具调用顺序不设固定末位不变量**。报告、`present` 交付、README 状态登记都是正常步骤；状态登记默认在下一轮 Read 之前完成，不存在「提问后不得写文件」的时序矛盾。
+   44| 
+   45| ## 4. README 双区状态机
+   46| 
+   47| A 区「当前状态」5 字段：`当前预设` / `当前阶段` / `本轮子条目` / `状态` / `下一候选`（就地更新）。
+   48| B 区「进度记录」：只追加、不改写或删除既有行。
+   49| 状态：`进行中` → `待确认`（Write 完成）→ `已确认`（用户明确认可后由 AI 代为登记）→ `进行中`（下一轮）。AI 默认不自行置「已确认」。
+   50| 阶段切换 = 用户手动切换预设 + README `状态=已确认`（用户显式指令可覆盖）。
+   51| 
+   52| ## 5. 跨阶段边界
+   53| 
+   54| - 每个预设只写自己那一列；上游只读；下游默认不读、不写、不创建、不替其做设计。
+   55| - 锁 1 由配置保证：`customSkillDirs` 只挂 `vn-shared` + 本阶段 skill，物理上看不到下一阶段 skill。
+   56| - 上游发现缺漏 → 停下询问，不回写、不补全。
+   57| 
+   58| ## 6. 已废止的设计（不要再引用）
+   59| 
+   60| | 旧设计 | 现状 |
+   61| |---|---|
+   62| | 旧版收尾硬不变量（原 77 处，要求末位固定为 `ask_user_question`） | **已全部移除**；`ask_user_question` 只是默认确认手段 |
+   63| | 「三道锁 / 硬门禁 / 禁止出现软词」 | 已废止；改为「3 条硬红线 + 默认节奏」 |
+   64| | plan-mode 的「`exit_plan_mode` 是唯一且最后的工具调用」 | 7 个 VN 预设已移除 `planning` 组，不再与收尾提问互斥 |
+   65| | 「T 块 5 条唯一真源 / 7 persona 逐字引用」 | 已废止；共享规则只在 `vn-shared` 三份 SKILL.md 里各写一次 |
+   66| | 「全链双向逐项过」「下游目录尚未产出时跳过」 | 改为「本轮产物 + 直接上游已确认文件」，不探测下游 |
+   67| | 「提问后不得有任何工具调用」×「提问后写 README」 | 明确状态登记在下一轮 Read 之前，时序矛盾消除 |
+   68| | 旧行号引用（`:3307` / `:2632` / `:3687` 等） | 已失效，不再作为现行规则来源 |
+   69| | 旧七步 `Read→Report→Plan→Do→Check→Write→Ask` / Agentic work | 属已 `disabled` 的旧预设历史文本，不生效 |
+   70| 
+   71| ## 7. 改动与验证
+   72| 
+   73| - 2026-11-10 改动前备份：`Archive/Plugins/dsh-user-presets-slim-20261110-slim/`（原 `cordis.patch.yml` + 8 个 skills 目录）。
+   74| - 装配：bundle 以 `link:` 挂在 profile，磁盘内容已更新；**必须开新会话或重启 DSH** 才会挂载新修订。
+   75| - 验证用例见 `Reports/预设约束互博成因与治理方案-20261110.md` §6 方案 D（5 条对照 prompt，重点看思考长度与工具调用数是否下降）。
+   76| 
+
+######## FIRST REPORT (213 lines) ########
+--- first 40 ---
+   1| # 预设使用时「左右脑互博」消耗变多：成因调查与治理方案
+   2| 
+   3| > 调查日期：2026-11-10。范围：`Plugins/dsh-user-presets/`（20 条 `preset-*`，其中 7 条 `preset-vn-*` 为 2026-11-07 新增）、`skills/vn-shared/` 与 7 个阶段目录共 39 份 `SKILL.md`、`VN-工作流改造施工文档.md`（2753 行）、`VN-工作流改造说明.md`，以及 `source/packages/` 下 DSH 官方源码的提示词组装链。**纯调研，未修改任何现有配置；本文件是新增报告。**
+   4| >
+   5| > 用户观察：使用预设（尤其是新 VN 预设）时，模型在「左右脑互博」（思考里反复自我拉扯、自我否决）中消耗的过程明显比以前多，且大多源于 **用户 prompt 的指令 / AI 自己的想法 / Preset 给的约束** 三方打架。
+   6| 
+   7| ---
+   8| 
+   9| ## 0. 一句话结论
+  10| 
+  11| **不是模型变差，而是 11-07 的 VN 工作流改造把「防越界」全部押在了「自然语言绝对句的数量与重复」上，同时删掉了旧预设里所有「以用户指令为准 / 视为已确认 / 一次性授权」的逃生阀，且没有补上一部运行时可见的优先级宪法。** 叠加 DSH 本身**没有任何代码级指令优先级机制**（纯 order 排序 + 字符串 join + role 差异，冲突交给模型自己裁决），三者相撞时模型既不能顺从用户、又不能违反硬约束，只能在思考里逐条复述、互相否定、临时编造裁决理由——这就是「互博」和消耗增加的来源。
+  12| 
+  13| 施工文档自己已经预告了这个结局（[VN-工作流改造施工文档.md:48](VN-工作流改造施工文档.md#L48)）：
+  14| 
+  15| > 「软约束（prompt 里写「请确认」）会被「完成一轮」的目标压过……纯自然语言约束会退化成「一句无效的话」「If tool limits are only written in the prompt, capability gating degenerates into an ineffective natural-language sentence」。
+  16| 
+  17| 改造的应对是：把所有措辞升级成「一律 / 必须 / 不得 / 禁止」、把门禁复制到 77 处、并禁止出现「建议 / 尽量」等软词。但它只解决了「模型不听话」，没有解决「模型听谁的话」——反而把后者变成每轮必须重新推理的开销。
+  18| 
+  19| ---
+  20| 
+  21| ## 1. 为什么会「更多地」互博：时间线对照
+  22| 
+  23| | | 旧预设（1.4.0，4198 行） | 新 VN 七预设（1.5.0，6178 行，11-07 落盘） |
+  24| |---|---|---|
+  25| | 工作模式 | `Read→Report→Plan→Do→Check→Write→Ask`，**Agentic work 自主规划子任务**，「产出一份可供用户审阅的草稿，**而不是等待用户逐步发出每一个微指令**」（[cordis.patch.yml:2673](Plugins/dsh-user-presets/cordis.patch.yml#L2673)、[:3357](Plugins/dsh-user-presets/cordis.patch.yml#L3357)） | `Read→Report→Confirm→Do→Check→Write→Stop`，**单轮单条目**，「一律按用户逐轮指令推进」（[:4870](Plugins/dsh-user-presets/cordis.patch.yml#L4870)），「禁止以任何方式绕过逐轮逐条目的用户确认」（[:5958](Plugins/dsh-user-presets/cordis.patch.yml#L5958)） |
+  26| | 用户指令优先 | **有**：「用户要求跳转或回溯时，以用户指令为准」（8 处）、「用户已在同一条消息里明确写出本轮范围时视为已确认，不必重复提问」（6 处）、「可由用户一次性授权跳过阶段门控」（2 处） | **0 命中**：VN 段 4259–6178 内「以用户指令为准 / 用户指令优先 / 视为已确认 / 一次性授权」全部消失 |
+  27| | 冲突裁决 | 「两者冲突时请用户裁决」「发现新产出与已确认内容冲突时，主动指出并请用户裁决」 | 只保留「信息缺口由用户拍板」，**没有「用户指令与预设硬约束冲突时听谁」** |
+  28| | 措辞 | 软硬混合，有协商余地 | 绝对化，且元规则明令「禁止出现『建议』『尽量』等软词」（[施工文档:203](VN-工作流改造施工文档.md#L203)、[vn-gate/SKILL.md:8](Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L8)） |
+  29| 
+  30| **关键变化**：从「不要逐步微指令」翻转为「必须逐步微指令」，且**删除了唯一的向上优先级通道**。旧预设里用户一句话就能松绑；新预设里用户说「一次做完七个」仍然要被拒（[VN-工作流改造说明.md:176](VN-工作流改造说明.md#L176)、[:178](VN-工作流改造说明.md#L178) 明确把「用子代理/工作流一轮做完」列为必须拒绝的运行时校验项）——而 [说明:4](VN-工作流改造说明.md#L4) 记录的真实用户指令恰恰就是「建议叫几个子智能体来一次做完七个再核查」。**这是真实发生过的三方碰撞，不是假想。**
+  31| 
+  32| ---
+  33| 
+  34| ## 2. 根因一：DSH 没有指令优先级机制，冲突天然由模型裁决
+  35| 
+  36| 源码调查（`source/packages/core/system-prompt/`、`core/agent-loop/`、`context/agent-instructions/`、`preset/persona/`、`skill/tool-skill/`）结论：
+  37| 
+  38| 1. **系统提示词是纯数值排序 + 字符串拼接**。
+  39|    [core/system-prompt/src/index.ts:253-256](source/packages/core/system-prompt/src/index.ts#L253-L256)：`return a.order - b.order || compareNames(a.name, b.name)`；
+  40|    [:296-300](source/packages/core/system-prompt/src/index.ts#L296-L300)：`.map(interpolate).filter(len>0).join('\n\n')`。
+--- total links: 72 ---
+  13| VN-工作流改造施工文档.md#L48
+  25| Plugins/dsh-user-presets/cordis.patch.yml#L2673
+  25| Plugins/dsh-user-presets/cordis.patch.yml#L3357
+  25| Plugins/dsh-user-presets/cordis.patch.yml#L4870
+  25| Plugins/dsh-user-presets/cordis.patch.yml#L5958
+  28| VN-工作流改造施工文档.md#L203
+  28| Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L8
+  30| VN-工作流改造说明.md#L176
+  30| VN-工作流改造说明.md#L178
+  30| VN-工作流改造说明.md#L4
+  39| source/packages/core/system-prompt/src/index.ts#L253-L256
+  40| source/packages/core/system-prompt/src/index.ts#L296-L300
+  52| source/packages/context/agent-instructions/src/index.ts#L351-L354
+  52| source/packages/context/agent-instructions/src/render.ts#L18-L20
+  52| source/packages/skill/tool-skill/src/index.ts#L128
+  55| source/packages/context/agent-instructions/src/render.ts#L18-L20
+  60| source/packages/core/system-prompt/src/index.ts#L476-L478
+  60| source/packages/core/system-prompt/src/index.ts#L413-L415
+  70| VN-工作流改造施工文档.md#L369
+  72| VN-工作流改造施工文档.md#L257
+  72| VN-工作流改造施工文档.md#L748
+  72| VN-工作流改造施工文档.md#L365
+  93| Plugins/dsh-user-presets/cordis.patch.yml#L4445
+  95| Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L42
+  98| VN-工作流改造施工文档.md#L365
+  98| Plugins/dsh-user-presets/cordis.patch.yml#L4443
+ 101| Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L42
+ 102| Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L56
+ 102| Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L122-L125
+ 103| VN-工作流改造施工文档.md#L663
+ 107| Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L28
+ 107| Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L36
+ 107| Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L113
+ 108| Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L29
+ 108| Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L34
+ 108| Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L41
+ 109| VN-工作流改造施工文档.md#L605
+ 114| Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L111
+ 114| Plugins/dsh-user-presets/skills/vn-shared/vn-spec/SKILL.md#L95
+ 115| Plugins/dsh-user-presets/skills/vn-shared/vn-continuity/SKILL.md#L29-L33
+ 116| Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L32
+ 116| Plugins/dsh-user-presets/skills/vn-shared/vn-continuity/SKILL.md#L39
+ 119| Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L17
+ 119| Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L16
+ 126| Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L12
+ 126| VN-工作流改造施工文档.md#L2362
+ 126| VN-工作流改造施工文档.md#L707
+ 127| Plugins/dsh-user-presets/cordis.patch.yml#L5934
+ 128| Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L97-L105
+ 128| VN-工作流改造说明.md#L204
+ 174| VN-工作流改造施工文档.md#L48
+ 174| README.md#L60
+ 179| VN-工作流改造说明.md#L25
+ 201| source/packages/core/system-prompt/src/index.ts#L253-L256
+ 201| source/packages/core/system-prompt/src/index.ts#L296-L300
+ 202| source/packages/core/system-prompt/src/index.ts#L136-L172
+ 202| source/packages/core/system-prompt/src/index.ts#L196-L199
+ 203| source/packages/context/agent-instructions/src/index.ts#L351-L354
+ 203| source/packages/context/agent-instructions/src/render.ts#L18-L20
+ 204| source/packages/skill/tool-skill/src/index.ts#L128
+ 204| source/packages/skill/tool-skill/tests/tool-skill.spec.ts#L343
+ 205| source/packages/bundle/web-app/presets/standard.patch.yml#L14
+ 206| VN-工作流改造施工文档.md#L48
+ 207| VN-工作流改造施工文档.md#L203
+ 207| Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L8
+ 208| VN-工作流改造施工文档.md#L369
+ 209| Plugins/dsh-user-presets/cordis.patch.yml#L4445
+ 209| Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L42
+ 210| Plugins/dsh-user-presets/cordis.patch.yml#L1031
+ 210| Plugins/dsh-user-presets/cordis.patch.yml#L1075
+ 211| VN-工作流改造说明.md#L4
+ 211| VN-工作流改造说明.md#L176-L178
+--- section 6/7/status lines ---
+  17| 改造的应对是：把所有措辞升级成「一律 / 必须 / 不得 / 禁止」、把门禁复制到 77 处、并禁止出现「建议 / 尽量」等软词。但它只解决了「模型不听话」，没有解决「模型听谁的话」——反而把后者变成每轮必须重新推理的开销。
+  27| | 冲突裁决 | 「两者冲突时请用户裁决」「发现新产出与已确认内容冲突时，主动指出并请用户裁决」 | 只保留「信息缺口由用户拍板」，**没有「用户指令与预设硬约束冲突时听谁」** |
+  28| | 措辞 | 软硬混合，有协商余地 | 绝对化，且元规则明令「禁止出现『建议』『尽量』等软词」（[施工文档:203](VN-工作流改造施工文档.md#L203)、[vn-gate/SKILL.md:8](Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L8)） |
+  30| **关键变化**：从「不要逐步微指令」翻转为「必须逐步微指令」，且**删除了唯一的向上优先级通道**。旧预设里用户一句话就能松绑；新预设里用户说「一次做完七个」仍然要被拒（[VN-工作流改造说明.md:176](VN-工作流改造说明.md#L176)、[:178](VN-工作流改造说明.md#L178) 明确把「用子代理/工作流一轮做完」列为必须拒绝的运行时校验项）——而 [说明:4](VN-工作流改造说明.md#L4) 记录的真实用户指令恰恰就是「建议叫几个子智能体来一次做完七个再核查」。**这是真实发生过的三方碰撞，不是假想。**
+ 132| ## 6. 治理方案（按性价比排序）
+ 134| ### 方案 A · 最小改动、立刻见效：补一部「运行时宪法」（强烈建议先做）
+ 140| 1. 本预设的约束分两类：【硬红线】只限以下三条：① 不跨阶段写入 ② 不创建计划外文件
+ 144| 3. 用户指令与【硬红线】冲突时，不擅自执行也不反复自辩：一句话说明冲突点，
+ 145|    用 ask_user_question 给「按我说的做（明确知悉风险）/ 保持红线」二选一，由用户拍板。
+ 153| - 把 400+ 条同权重绝对句降为「3 条硬红线 + 其余默认节奏」，模型终于有降权能力；
+ 157| > 这段宪法必须放在 **prefix（system, order=0）**，不能只写进施工文档或 skill——否则运行时模型看不到（见 §3）。同时建议把旧预设里的「以用户指令为准 / 视为已确认」两句话恢复进 VN 段。
+ 168| | B6 | 修 `vn-gate/SKILL.md:97-105` 的失效行号；把 3 条 `disabled: true` 旧预设里的 Agentic work 句子加注释标注「历史文本，已停用」，或直接删除（保留 config 供回退即可） | 同上 |
+ 172| 1. **单一真源，真正只留一份**：`vn-gate §0` 的 5 条 T 块全文只保留在 `vn-gate/SKILL.md`；7 个 persona 的「新七步循环 / 单轮单条目硬约束 / README 状态机校验 / 求证与拍板规则 / 技能使用 / 输出约定 / 红线」这些**逐字复制块**全部删掉，改成一行「按 `vn-gate` 执行，冲突按本文【指令裁决】段」。当前 7 个 persona 共 509 行 prefix，可压到约 7×15 行。
+ 173| 2. **绝对句降权**：把「一律 / 严禁」批量降级为「默认 / 除非用户明确要求」，只保留方案 A 里那 3 条硬红线用「不得」。删除「禁止出现软词」这条元规则——软词正是给模型降权的工具，不是漏洞。
+ 179| 改完必须**开新会话**（Cordis 已运行会话保留启动时的插件修订，[VN-工作流改造说明.md:25](VN-工作流改造说明.md#L25)）。建议用同一组 5 条测试 prompt 对比改造前后：
+ 189| ## 7. 需要用户拍板的取舍
+ 191| - **要不要恢复 Agentic work 的自由度？** 方案 A 把「一轮只做 1 个」降为默认节奏，等于部分回退 11-07 改造的初衷（防「一轮写满六字段」）。若用户仍要严格逐条目，可把「单轮单条目」列入第 4 条硬红线，但**必须同时保留「用户可显式授权一次做完」的出口**，否则互博源仍在。
+ 193| - **是否要动 Host 插件（方案 C3）？** 收益最大但影响所有会话，需单独排期与回归。

@@ -1,0 +1,27 @@
+--- Plugins/dsh-user-presets/skills/vn-script/continuity/SKILL.md:49 ---
+1. 本轮唯一产物与 `00-Bible/anchors.md`、`01-Plan/chapter-structure.md`、`01-Plan/endings-and-flags.md` 或 `02-Script/剧情精述.md` 不一致时，一律停下并用 `ask_user_question` 报告冲突原文位置，由用户裁决（Check 不是授权写入步，不自行修正本轮产物）；产物已经用户确认的冲突同样按第 2 条处理。
+
+--- Plugins/dsh-user-presets/skills/vn-screenplay/staging-continuity/SKILL.md:15 ---
+本阶段以 `<作品名>/02-Script/` 纯剧本正文为唯一底本，叠加演出指示写成逐场融合稿，产出只落在 `<作品名>/04-ScreenPlay/`。本 skill 沿用 vn-staging `staging-continuity` 的「五维核查」内核，改为只核查本阶段融合稿；Check 按 `vn-continuity` 只核查本轮产物及其直接上游已确认文件，不承担全链基准。
+
+=== 原预设完整保留 contexts (3 lines each) ===
+   24|           #
+   25|           # 派生自 `vn-design`（原预设完整保留、一律不动）：完整继承其工具行与
+   26|           # 骨架，skills 全部替换为 11 个游戏设计 skills——项目搭建/头脑风暴/
+---
+  687|           #
+  688|           # 派生自 `science-learning`（原预设完整保留、一律不动）：完整继承其工具行、
+  689|           # realm 结构与教学闭环骨架（README 入口/学习计划三件套/练习穿插/阶段综合
+---
+ 1346|           #
+ 1347|           # 派生自 `novel-writing`（原预设完整保留、一律不动）：完整继承其工具行与
+ 1348|           # 共性基线 persona 骨架，skills 全部替换为 8 个公文 skills（含 spec-common 共用底座）——项目搭建/
+---
+ 1705|           #
+ 1706|           # 派生自 `novel-writing`（原预设完整保留、一律不动）：完整继承其工具行与
+ 1707|           # 共性基线 persona 骨架，skills 全部替换为 11 个论文 skills（含 spec-common 共用底座）——项目搭建/
+---
+ 2954|           #
+ 2955|           # 派生自 `novel-writing`（原预设完整保留、一律不动）：完整继承其工具行与
+ 2956|           # 共性基线 persona，skills 全部替换为 10 个议题 skills（含 spec-common 共用底座）——项目搭建/论证方法/
+---

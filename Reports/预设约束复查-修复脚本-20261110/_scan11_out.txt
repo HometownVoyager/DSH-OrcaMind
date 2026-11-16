@@ -1,0 +1,19 @@
+Plugins/dsh-user-presets/README.md:53| - **想加/改预设**：直接编辑 `cordis.patch.yml`（遵循 `skills/prompt-writing/dsh-preset-craft` 规范）。不要再去写已经废弃的 `~/.dsh/.agent-presets/<id>/` 目录。
+Reports/预设约束互博治理后复查-20261110.md:73| **新增：孤儿 tree** —— `prompt-writing/` 整树 9 个 SKILL.md **没有任何 preset 的 `customSkillDirs` 指向**（yml 20 个 preset 中只有 11 棵非 VN tree 被挂载；yml 里 4 处提到 prompt-writing 只是注释列举「共用母本」）。其中 `prompt-writing/spec-common`、`search-query-craft` 是永不被加载的死副本；`dsh-preset-craf
+Reports/预设约束互博治理后复查-20261110.md:144| 16. `prompt-writing` 孤儿 tree：补 preset 挂载或移出 `skills/` 定位为文档库。
+
+=== yml §2.x / §3.0.7 / §4.3 refs ===
+ 4271| 在用户确认后创建根级 Specifications.md（写入 §2.4 四节骨架）与 Direction.md（只建静态导航骨架：总体说明 + 七预设导航 + 源指针表 + 02/04 分工，指针目标留空待填），并按双区结构更新 README.md 状态并追加进度行。
+
+=== §3.0.7 in skills (all) ===
+Plugins\dsh-user-presets\skills\vn-asset-list\asset-index-gap-bootstrap\SKILL.md:61
+Plugins\dsh-user-presets\skills\vn-asset-list\vn-asset-list\SKILL.md:63
+Plugins\dsh-user-presets\skills\vn-asset-make\asset-make-generate\SKILL.md:62
+Plugins\dsh-user-presets\skills\vn-asset-make\asset-make-spec-read\SKILL.md:59
+Plugins\dsh-user-presets\skills\vn-asset-make\asset-make-status-sync\SKILL.md:59
+Plugins\dsh-user-presets\skills\vn-asset-make\asset-make-verify\SKILL.md:56
+Plugins\dsh-user-presets\skills\vn-screenplay\staging-acceptance\SKILL.md:18
+Plugins\dsh-user-presets\skills\vn-screenplay\staging-asset-audit\SKILL.md:36
+Plugins\dsh-user-presets\skills\vn-screenplay\staging-continuity\SKILL.md:50
+Plugins\dsh-user-presets\skills\vn-screenplay\staging-direction\SKILL.md:20
+Plugins\dsh-user-presets\skills\vn-screenplay\staging-gap-triage\SKILL.md:32

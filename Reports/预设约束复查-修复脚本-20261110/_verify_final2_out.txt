@@ -1,0 +1,42 @@
+=== historical docs: hard-command counts (should be fenced, not removed) ===
+  VN-工作流改造施工文档.md:
+    全文失效围栏=3  最后一个工具调用必须是=18  一律=616  禁止=719
+    fence at line: [3]
+  VN-工作流改造说明.md:
+    全文失效围栏=2  最后一个工具调用必须是=2  一律=6  禁止=6
+    fence at line: [3]
+
+=== P0 residuals final ===
+  以 `ask_user_question` 收尾           0 OK
+  不跨组套用                              0 OK
+  无用户明确确认不进入下一轮                      0 OK
+  按目录链逐项过                            0 OK
+  应写死                                0 OK
+  禁止开始                               0 OK
+  §3.0.7                             0 OK
+  §2.2                               0 OK
+  §2.3                               0 OK
+  §2.4                               0 OK
+  ① 基准事实与创意核心                        0 OK
+
+=== yml forbidden absolutes ===
+  三道门禁                               0
+  必须先向用户确认                           8
+  每轮调用前必须用                           0
+  未确认禁止调用                            0
+  原预设完整保留、一律不动                       0
+  写入 §2.4                            0
+  (new) 历史文本 · 已停用=3 ; _SYNC-POLICY=6
+
+=== link audit ===
+  total=89 missing=0
+
+=== sync notes ===
+  SKILL.md with 【同源副本】 note: 29
+  _SYNC-POLICY.md: True
+
+=== doc status ===
+  现行规范 2757/224 残留: 0 ; 转录定位: 1
+  bundle README 13 个预设/12 个: 1 ; 20 个: 2
+  root README 仍在役: 0 ; _SYNC-POLICY 索引: 1
+  复查报告 §9: 1 ; 正确复验说明: 1

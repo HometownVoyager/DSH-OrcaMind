@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "STEP FPGA 实验",
+    "description": "面向小脚丫 STEP-MAX10 + BaseBoard V4.0 的课程作业与竞赛预设，附带仅本预设拉起的 MCP：板卡知识、Quartus 18.1 编译调试闭环与 ModelSim 仿真。"
+  }
+}

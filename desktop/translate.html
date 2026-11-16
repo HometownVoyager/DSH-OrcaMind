@@ -1,0 +1,2021 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>划词翻译</title>
+  <style>
+    /* DSH 风格设计变量 */
+    :root,
+    html[data-theme="dark"] {
+      --bg-app: #181a1f;
+      --bg-header: #14161a;
+      --bg-dropdown: #1e222a;
+      --border-outer: rgba(255, 255, 255, 0.1);
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-dropdown: rgba(255, 255, 255, 0.12);
+      --bg-card-source: rgba(255, 255, 255, 0.035);
+      --border-card-source: rgba(255, 255, 255, 0.06);
+      --bg-card-target: rgba(255, 255, 255, 0.055);
+      --border-card-target: rgba(59, 130, 246, 0.22);
+      --text-main: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --accent-text: #60a5fa;
+      --accent-bg-subtle: rgba(59, 130, 246, 0.15);
+      --pill-bg: rgba(255, 255, 255, 0.06);
+      --pill-hover: rgba(255, 255, 255, 0.12);
+      --btn-secondary-bg: rgba(255, 255, 255, 0.06);
+      --btn-secondary-hover: rgba(255, 255, 255, 0.1);
+      --btn-secondary-text: #cbd5e1;
+      --btn-primary-bg: #2563eb;
+      --btn-primary-hover: #1d4ed8;
+      --btn-primary-text: #ffffff;
+      --scrollbar-thumb: rgba(255, 255, 255, 0.14);
+      --dropdown-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    html[data-theme="light"] {
+      --bg-app: #ffffff;
+      --bg-header: #f8fafc;
+      --bg-dropdown: #ffffff;
+      --border-outer: rgba(0, 0, 0, 0.1);
+      --border-subtle: rgba(0, 0, 0, 0.06);
+      --border-dropdown: rgba(0, 0, 0, 0.12);
+      --bg-card-source: #f8fafc;
+      --border-card-source: rgba(0, 0, 0, 0.06);
+      --bg-card-target: #f0f7ff;
+      --border-card-target: rgba(59, 130, 246, 0.25);
+      --text-main: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-text: #2563eb;
+      --accent-bg-subtle: rgba(37, 99, 235, 0.12);
+      --pill-bg: rgba(0, 0, 0, 0.05);
+      --pill-hover: rgba(0, 0, 0, 0.09);
+      --btn-secondary-bg: rgba(0, 0, 0, 0.04);
+      --btn-secondary-hover: rgba(0, 0, 0, 0.08);
+      --btn-secondary-text: #334155;
+      --btn-primary-bg: #2563eb;
+      --btn-primary-hover: #1d4ed8;
+      --btn-primary-text: #ffffff;
+      --scrollbar-thumb: rgba(0, 0, 0, 0.14);
+      --dropdown-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: transparent !important;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+
+    .app-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-app);
+      color: var(--text-main);
+      border: 1px solid var(--border-outer);
+      border-radius: 12px;
+      overflow: hidden;
+      box-sizing: border-box;
+      position: relative;
+      transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+
+    /* 滚动条 */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb);
+      border-radius: 3px;
+    }
+
+    /* 视图切换动画 */
+    @keyframes fadeInView {
+      from { opacity: 0; transform: translateY(3px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 1. 翻译主视图 */
+    .main-view {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* 顶部标题栏 */
+    .titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 12px;
+      background: var(--bg-header);
+      border-bottom: 1px solid var(--border-subtle);
+      -webkit-app-region: drag;
+      position: relative;
+      z-index: 50;
+      flex-shrink: 0;
+    }
+
+    .title-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      flex-shrink: 0;
+    }
+
+    .title-icon {
+      width: 15px;
+      height: 15px;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* 语言选择区域 */
+    .lang-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      -webkit-app-region: no-drag;
+    }
+
+    .source-badge {
+      font-size: 11px;
+      color: var(--text-muted);
+      background: var(--pill-bg);
+      padding: 2px 7px;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .arrow-icon {
+      width: 12px;
+      height: 12px;
+      color: var(--text-muted);
+    }
+
+    .target-select-wrapper {
+      position: relative;
+    }
+
+    .target-select-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--pill-bg);
+      border: 1px solid var(--border-subtle);
+      padding: 3px 9px;
+      border-radius: 14px;
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--text-main);
+      cursor: pointer;
+      outline: none;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .target-select-btn:hover,
+    .target-select-btn.active {
+      background: var(--pill-hover);
+      border-color: var(--accent);
+      color: var(--accent-text);
+    }
+
+    .dropdown-chevron {
+      width: 11px;
+      height: 11px;
+      color: var(--text-muted);
+      transition: transform 0.2s ease;
+    }
+
+    .target-select-btn.active .dropdown-chevron {
+      transform: rotate(180deg);
+      color: var(--accent-text);
+    }
+
+    /* 顶部右侧操作栏（设置 + 关闭） */
+    .title-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      -webkit-app-region: no-drag;
+    }
+
+    .icon-btn,
+    .close-btn {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 6px;
+      cursor: pointer;
+      outline: none;
+      transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+    }
+
+    .icon-btn:hover,
+    .icon-btn.active {
+      background: var(--pill-hover);
+      color: var(--text-main);
+    }
+
+    .icon-btn svg,
+    .close-btn svg {
+      width: 13.5px;
+      height: 13.5px;
+    }
+
+    .close-btn:hover {
+      background: rgba(239, 68, 68, 0.18);
+      color: #ef4444;
+    }
+
+    /* 语种下拉悬浮弹层 */
+    .dropdown-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      background: var(--bg-dropdown);
+      border: 1px solid var(--border-dropdown);
+      border-radius: 8px;
+      box-shadow: var(--dropdown-shadow);
+      z-index: 100;
+      padding: 4px;
+      min-width: 130px;
+      max-height: 220px;
+      overflow-y: auto;
+      backdrop-filter: blur(12px);
+      -webkit-app-region: no-drag;
+      animation: fadeInView 0.15s ease;
+    }
+
+    .target-dropdown-menu {
+      left: 0;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 6px 9px;
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      border-radius: 5px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      outline: none;
+      box-sizing: border-box;
+      transition: background 0.12s ease, color 0.12s ease;
+    }
+
+    .menu-item:hover {
+      background: var(--pill-hover);
+      color: var(--text-main);
+    }
+
+    .menu-item.selected {
+      color: var(--accent-text);
+      font-weight: 600;
+      background: var(--accent-bg-subtle);
+    }
+
+    .menu-item-check {
+      font-size: 11px;
+      color: var(--accent-text);
+      margin-left: 8px;
+      flex-shrink: 0;
+    }
+
+    /* 内容区域 */
+    .content-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 9px 12px;
+      gap: 8px;
+      overflow-y: auto;
+      min-height: 0;
+    }
+
+    /* 小标题栏与朗读按钮组合 */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .speech-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 4px;
+      cursor: pointer;
+      outline: none;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .speech-btn:hover {
+      background: var(--pill-hover);
+      color: var(--text-main);
+    }
+
+    .speech-btn svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .speech-btn.playing {
+      color: var(--accent);
+      animation: pulsePlay 1s infinite alternate;
+    }
+
+    @keyframes pulsePlay {
+      from { transform: scale(1); opacity: 0.8; }
+      to { transform: scale(1.15); opacity: 1; }
+    }
+
+    /* 朗读按钮组与设置按钮容器 */
+    .speech-actions-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .speech-config-wrapper {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .speech-config-btn {
+      opacity: 0.65;
+    }
+
+    .speech-config-btn:hover,
+    .speech-config-btn.active {
+      opacity: 1;
+      background: var(--pill-hover);
+      color: var(--accent);
+    }
+
+    .tts-sub-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      width: 220px;
+      background: var(--bg-dropdown);
+      border: 1px solid var(--border-dropdown);
+      border-radius: 8px;
+      box-shadow: var(--dropdown-shadow);
+      z-index: 200;
+      padding: 8px 10px;
+      backdrop-filter: blur(12px);
+      -webkit-app-region: no-drag;
+      animation: fadeInView 0.15s ease;
+      display: none;
+      box-sizing: border-box;
+      text-align: left;
+    }
+
+    .tts-menu-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .tts-menu-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .tts-menu-badge {
+      font-size: 9.5px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: var(--accent-bg-subtle);
+      color: var(--accent-text);
+      font-weight: 500;
+    }
+
+    .tts-menu-section {
+      margin-top: 6px;
+    }
+
+    .tts-section-title {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+
+    .tts-speed-pills {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .tts-speed-pill {
+      flex: 1;
+      padding: 3px 0;
+      font-size: 10px;
+      background: var(--pill-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
+    }
+
+    .tts-speed-pill:hover {
+      background: var(--pill-hover);
+      color: var(--text-main);
+    }
+
+    .tts-speed-pill.active {
+      background: var(--btn-primary-bg);
+      color: #ffffff;
+      border-color: var(--btn-primary-bg);
+      font-weight: 600;
+    }
+
+    .tts-voice-select {
+      width: 100%;
+      padding: 4px 6px;
+      font-size: 11px;
+      background: var(--pill-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 5px;
+      color: var(--text-main);
+      outline: none;
+      cursor: pointer;
+      box-sizing: border-box;
+      transition: border-color 0.15s;
+    }
+
+    .tts-voice-select:hover,
+    .tts-voice-select:focus {
+      border-color: var(--accent);
+    }
+
+    .tts-voice-select optgroup {
+      background: var(--bg-dropdown);
+      color: var(--text-muted);
+      font-size: 10px;
+    }
+
+    .tts-voice-select option {
+      background: var(--bg-dropdown);
+      color: var(--text-main);
+      font-size: 11px;
+    }
+
+    /* 原文卡片 */
+    .source-wrapper {
+      flex-shrink: 0;
+    }
+
+    .source-card {
+      padding: 8px 10px;
+      background: var(--bg-card-source);
+      border: 1px solid var(--border-card-source);
+      border-radius: 8px;
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--text-secondary);
+      max-height: 80px;
+      overflow-y: auto;
+      word-break: break-word;
+      user-select: text;
+    }
+
+    /* 译文卡片 */
+    .target-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .target-card {
+      flex: 1;
+      padding: 10px 12px;
+      background: var(--bg-card-target);
+      border: 1px solid var(--border-card-target);
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--text-main);
+      overflow-y: auto;
+      word-break: break-word;
+      user-select: text;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 状态元素 */
+    .loading-state {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: 12px;
+      margin: auto;
+    }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--border-outer);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* 明确错误状态提示与极速切换按钮 */
+    .error-state-box {
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.22);
+      margin: auto 0;
+      animation: fadeInView 0.15s ease;
+    }
+
+    .error-msg {
+      color: #ef4444;
+      font-size: 11.5px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .fallback-fast-btn {
+      margin-top: 8px;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: opacity 0.15s ease;
+    }
+
+    .fallback-fast-btn:hover {
+      opacity: 0.9;
+    }
+
+    .model-badge {
+      align-self: flex-end;
+      margin-top: auto;
+      padding-top: 6px;
+      font-size: 10px;
+      color: var(--text-muted);
+      opacity: 0.75;
+    }
+
+    /* 底部操作栏 */
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 12px;
+      background: var(--bg-header);
+      border-top: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+      -webkit-app-region: no-drag;
+    }
+
+    .btn-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 500;
+      cursor: pointer;
+      outline: none;
+      border: none;
+      transition: background 0.15s ease, opacity 0.15s ease;
+    }
+
+    .action-btn svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .action-btn.primary {
+      background: var(--btn-primary-bg);
+      color: var(--btn-primary-text);
+    }
+
+    .action-btn.primary:hover {
+      background: var(--btn-primary-hover);
+    }
+
+    .action-btn.primary.copied {
+      background: #10b981;
+    }
+
+    .action-btn.secondary {
+      background: var(--btn-secondary-bg);
+      color: var(--btn-secondary-text);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .action-btn.secondary:hover {
+      background: var(--btn-secondary-hover);
+      color: var(--text-main);
+    }
+
+    .tip {
+      font-size: 10.5px;
+      color: var(--text-muted);
+    }
+
+    /* 2. 全卡片设置视图 (完全撑满浮窗，100% 匹配尺寸，彻底消除穿透与溢出截断) */
+    .settings-view {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-app);
+      overflow: hidden;
+      animation: fadeInView 0.15s ease;
+    }
+
+    .settings-titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 12px;
+      background: var(--bg-header);
+      border-bottom: 1px solid var(--border-subtle);
+      -webkit-app-region: drag;
+      flex-shrink: 0;
+    }
+
+    .settings-title-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      -webkit-app-region: no-drag;
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px 3px 6px;
+      border: 1px solid var(--border-subtle);
+      background: var(--pill-bg);
+      color: var(--text-main);
+      font-size: 11.5px;
+      font-weight: 500;
+      border-radius: 6px;
+      cursor: pointer;
+      outline: none;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .back-btn svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    .back-btn:hover {
+      background: var(--pill-hover);
+      border-color: var(--border-outer);
+    }
+
+    .settings-title {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .model-search-bar {
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(125, 125, 125, 0.04);
+      flex-shrink: 0;
+      -webkit-app-region: no-drag;
+      gap: 6px;
+    }
+
+    .model-search-bar svg {
+      width: 13px;
+      height: 13px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .model-search-input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--text-main);
+      font-size: 12px;
+      padding: 3px 6px;
+      outline: none;
+      box-sizing: border-box;
+    }
+
+    .model-search-clear {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .model-search-clear:hover {
+      color: var(--text-main);
+      background: var(--pill-hover);
+    }
+
+    .settings-model-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 8px;
+      -webkit-app-region: no-drag;
+    }
+
+    .provider-group-title {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      padding: 8px 8px 3px 8px;
+      letter-spacing: 0.4px;
+    }
+
+    .model-row-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 7px 10px;
+      border: none;
+      background: transparent;
+      color: var(--text-main);
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: left;
+      outline: none;
+      box-sizing: border-box;
+      transition: background 0.12s ease;
+      margin-bottom: 2px;
+    }
+
+    .model-row-item:hover {
+      background: var(--pill-hover);
+    }
+
+    .model-row-item.selected {
+      background: var(--accent-bg-subtle);
+      color: var(--accent-text);
+    }
+
+    .model-row-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      flex: 1;
+      padding-right: 8px;
+    }
+
+    .model-row-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .model-row-item.selected .model-row-name {
+      color: var(--accent-text);
+      font-weight: 600;
+    }
+
+    .model-row-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+    }
+
+    .model-row-check {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-text);
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- 1. 翻译主视图 -->
+    <div class="main-view" id="mainView">
+      <!-- 顶部标题栏 -->
+      <div class="titlebar">
+        <div class="title-left">
+          <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 8l6 6"></path>
+            <path d="M4 14l6-6 2-3"></path>
+            <path d="M2 5h12"></path>
+            <path d="M7 2h1"></path>
+            <path d="M22 22l-5-10-5 10"></path>
+            <path d="M14 18h6"></path>
+          </svg>
+          <span id="appTitle">划词翻译</span>
+
+          <!-- 语言选择指示 -->
+          <div class="lang-bar">
+            <span class="source-badge" id="sourceBadge">自动检测</span>
+            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+            <div class="target-select-wrapper" id="targetSelectWrapper">
+              <button class="target-select-btn" id="targetSelectBtn" type="button" title="选择目标语种">
+                <span id="targetSelectLabel">英语</span>
+                <svg class="dropdown-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div class="dropdown-menu target-dropdown-menu" id="targetDropdownMenu" style="display: none;">
+                <!-- 动态生成语种菜单 -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 顶部右侧操作栏（设置 + 关闭） -->
+        <div class="title-actions">
+          <button class="icon-btn" id="modelSettingsBtn" type="button" title="翻译模型设置">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+          <button class="close-btn" id="closeBtn" title="关闭 (Esc)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- 内容区域 -->
+      <div class="content-box">
+        <!-- 原文模块 -->
+        <div class="source-wrapper">
+          <div class="section-header">
+            <span class="section-label" id="sourceLabel">原文</span>
+            <div class="speech-actions-group">
+              <button class="speech-btn" id="speechSourceBtn" title="朗读原文">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                </svg>
+              </button>
+              <div class="speech-config-wrapper" id="sourceSpeechConfigWrapper">
+                <button class="speech-btn speech-config-btn" id="speechSourceConfigBtn" title="朗读设置（语速/音色）">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="4" y1="21" x2="4" y2="14"></line>
+                    <line x1="4" y1="10" x2="4" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12" y2="3"></line>
+                    <line x1="20" y1="21" x2="20" y2="16"></line>
+                    <line x1="20" y1="12" x2="20" y2="3"></line>
+                    <line x1="1" y1="14" x2="7" y2="14"></line>
+                    <line x1="9" y1="8" x2="15" y2="8"></line>
+                    <line x1="17" y1="16" x2="23" y2="16"></line>
+                  </svg>
+                </button>
+                <div class="tts-sub-menu" id="sourceTtsSubMenu"></div>
+              </div>
+            </div>
+          </div>
+          <div class="source-card" id="sourceText">等待输入...</div>
+        </div>
+
+        <!-- 译文模块 -->
+        <div class="target-wrapper">
+          <div class="section-header">
+            <span class="section-label" id="targetLabel">译文</span>
+            <div class="speech-actions-group">
+              <button class="speech-btn" id="speechTargetBtn" title="朗读译文">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                </svg>
+              </button>
+              <div class="speech-config-wrapper" id="targetSpeechConfigWrapper">
+                <button class="speech-btn speech-config-btn" id="speechTargetConfigBtn" title="朗读设置（语速/音色）">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="4" y1="21" x2="4" y2="14"></line>
+                    <line x1="4" y1="10" x2="4" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12" y2="3"></line>
+                    <line x1="20" y1="21" x2="20" y2="16"></line>
+                    <line x1="20" y1="12" x2="20" y2="3"></line>
+                    <line x1="1" y1="14" x2="7" y2="14"></line>
+                    <line x1="9" y1="8" x2="15" y2="8"></line>
+                    <line x1="17" y1="16" x2="23" y2="16"></line>
+                  </svg>
+                </button>
+                <div class="tts-sub-menu" id="targetTtsSubMenu"></div>
+              </div>
+            </div>
+          </div>
+          <div class="target-card" id="targetCard">
+            <div class="loading-state" id="loadingState">
+              <div class="spinner"></div>
+              <span id="loadingText">正在翻译中...</span>
+            </div>
+            <div id="resultText" style="display: none;"></div>
+            <div class="error-state-box" id="errorStateBox" style="display: none;">
+              <div class="error-msg" id="errorMsgText"></div>
+              <button class="fallback-fast-btn" id="fallbackFastBtn" type="button">
+                ⚡ 切换为极速直译 (免Key)
+              </button>
+            </div>
+            <div class="model-badge" id="modelBadge" style="display: none;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部操作栏 -->
+      <div class="footer">
+        <div class="btn-group">
+          <button class="action-btn primary" id="copyBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span id="copyLabel">复制译文</span>
+          </button>
+
+          <button class="action-btn secondary" id="bingBtn" title="在系统浏览器中打开完整必应翻译">
+            <span id="bingLabel">必应翻译</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="tip" id="footerTip">按 Esc 或失焦关闭</div>
+      </div>
+    </div>
+
+    <!-- 2. 全卡片设置视图 (完全撑满浮窗，100% 匹配尺寸，彻底消除穿透与溢出截断) -->
+    <div class="settings-view" id="settingsView" style="display: none;">
+      <div class="titlebar settings-titlebar">
+        <div class="settings-title-left">
+          <button class="back-btn" id="settingsBackBtn" type="button" title="返回翻译">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span id="settingsBackLabel">返回</span>
+          </button>
+          <span class="settings-title" id="settingsTitle">翻译模型设置</span>
+        </div>
+        <div class="title-actions">
+          <button class="close-btn" id="settingsCloseBtn" title="关闭 (Esc)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="model-search-bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="modelSearchInput" class="model-search-input" placeholder="搜索模型 (名称或 ID)..." />
+        <button type="button" id="modelSearchClearBtn" class="model-search-clear" style="display: none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="settings-model-list" id="settingsModelList">
+        <!-- 动态生成全量模型选择菜单 -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 语种定义表
+    const SUPPORTED_LANGS = [
+      { code: 'zh-Hans', nameZh: '简体中文', nameEn: 'Chinese (Simplified)' },
+      { code: 'en', nameZh: '英语', nameEn: 'English' },
+      { code: 'ja', nameZh: '日语', nameEn: 'Japanese' },
+      { code: 'ko', nameZh: '韩语', nameEn: 'Korean' },
+      { code: 'zh-Hant', nameZh: '繁体中文', nameEn: 'Chinese (Traditional)' },
+      { code: 'fr', nameZh: '法语', nameEn: 'French' },
+      { code: 'de', nameZh: '德语', nameEn: 'German' },
+      { code: 'es', nameZh: '西班牙语', nameEn: 'Spanish' },
+      { code: 'ru', nameZh: '俄语', nameEn: 'Russian' },
+    ];
+
+    // 模型定义表（由主进程动态全量提供，同对话可选模型同款）
+    let AVAILABLE_MODELS = [
+      { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash', provider: 'antigravity', providerLabel: 'Antigravity' },
+      { id: 'deepseek-v4-flash', name: 'DeepSeek V4 Flash', provider: 'deepseek', providerLabel: 'DeepSeek' },
+      { id: 'deepseek-v4-pro', name: 'DeepSeek V4 Pro', provider: 'deepseek', providerLabel: 'DeepSeek' },
+      { id: 'qwen3.8-flash', name: 'Qwen 3.8 Flash', provider: 'opencode-go', providerLabel: 'OpenCode-Go' },
+      { id: 'glm-5.3-flash', name: 'GLM 5.3 Flash', provider: 'opencode-go', providerLabel: 'OpenCode-Go' },
+      { id: 'mimo-v2.6-flash', name: 'MiMo V2.6 Flash', provider: 'opencode-go', providerLabel: 'OpenCode-Go' },
+    ];
+
+    // 双语界面字典（无主观推荐/高耗标签，纯净同款列表）
+    const I18N = {
+      zh: {
+        appTitle: '划词翻译',
+        autoDetect: '自动检测',
+        source: '原文',
+        target: '译文',
+        waiting: '等待输入...',
+        translating: '正在翻译中...',
+        copyBtn: '复制译文',
+        copied: '已复制 ✓',
+        bingBtn: '必应翻译',
+        tip: '按 Esc 或失焦关闭',
+        speechSource: '朗读原文',
+        speechTarget: '朗读译文',
+        speechConfig: '朗读设置（语速/音色）',
+        ttsSettings: '朗读设置',
+        ttsSpeed: '语速',
+        ttsVoice: '音色',
+        ttsBadge: 'Edge Neural',
+        ttsSmartGroup: '智能推荐',
+        ttsZhFGroup: '中文女声',
+        ttsZhMGroup: '中文男声',
+        ttsEnGroup: '英语人声',
+        ttsLocalGroup: '系统离线',
+        modelSettings: '翻译模型设置',
+        back: '返回',
+        searchPlaceholder: '搜索模型 (名称或 ID)...',
+        groupSystem: '基础选项',
+        sameAsChat: '和对话相同 (自动)',
+        sameAsChatSub: (m) => `当前主会话模型: ${m || '未检测到'}`,
+        fastTranslator: '极速直译 (免Key/公共)',
+        fastTranslatorSub: '公共翻译接口 · 毫秒级响应',
+        noModelFound: '未找到匹配的模型',
+        close: '关闭 (Esc)',
+        failPrefix: '翻译失败：',
+        translatedBy: (m) => `由 ${m} 翻译`,
+        switchFastBtn: '⚡ 切换为极速直译 (免Key)',
+      },
+      en: {
+        appTitle: 'Quick Translate',
+        autoDetect: 'Auto Detect',
+        source: 'Source',
+        target: 'Translation',
+        waiting: 'Waiting for input...',
+        translating: 'Translating...',
+        copyBtn: 'Copy',
+        copied: 'Copied ✓',
+        bingBtn: 'Bing Translator',
+        tip: 'Press Esc or click outside to close',
+        speechSource: 'Read source text',
+        speechTarget: 'Read translation',
+        speechConfig: 'Speech settings (speed/voice)',
+        ttsSettings: 'TTS Settings',
+        ttsSpeed: 'Speed',
+        ttsVoice: 'Voice',
+        ttsBadge: 'Edge Neural',
+        ttsSmartGroup: 'Smart Option',
+        ttsZhFGroup: 'Chinese Female',
+        ttsZhMGroup: 'Chinese Male',
+        ttsEnGroup: 'English Voice',
+        ttsLocalGroup: 'System Offline',
+        modelSettings: 'Translation Models',
+        back: 'Back',
+        searchPlaceholder: 'Search models (name or ID)...',
+        groupSystem: 'Basic Options',
+        sameAsChat: 'Same as Chat (Auto)',
+        sameAsChatSub: (m) => `Active chat model: ${m || 'None'}`,
+        fastTranslator: 'Fast Translator (Free/No Key)',
+        fastTranslatorSub: 'Free Web API · Millisecond response',
+        noModelFound: 'No matching models found',
+        close: 'Close (Esc)',
+        failPrefix: 'Translation failed: ',
+        translatedBy: (m) => `Translated by ${m}`,
+        switchFastBtn: '⚡ Switch to Fast Translator (No Key)',
+      },
+    };
+
+    let currentLocale = 'zh';
+    let currentSourceText = '';
+    let currentTargetLang = 'zh-Hans';
+    let currentTranslation = '';
+    let currentSpeakingTarget = null;
+    let currentModel = localStorage.getItem('dsh_translate_model') || 'auto';
+    let currentProvider = localStorage.getItem('dsh_translate_provider') || '';
+    let activeChatModel = 'gemini-3.8-flash';
+    let modelSearchQuery = '';
+
+    // DOM 元素引用
+    const mainView = document.getElementById('mainView');
+    const settingsView = document.getElementById('settingsView');
+
+    const appTitleEl = document.getElementById('appTitle');
+    const sourceBadgeEl = document.getElementById('sourceBadge');
+    const sourceLabelEl = document.getElementById('sourceLabel');
+    const targetLabelEl = document.getElementById('targetLabel');
+    const sourceTextEl = document.getElementById('sourceText');
+    const targetCardEl = document.getElementById('targetCard');
+    const loadingStateEl = document.getElementById('loadingState');
+    const loadingTextEl = document.getElementById('loadingText');
+    const resultTextEl = document.getElementById('resultText');
+    const errorStateBoxEl = document.getElementById('errorStateBox');
+    const errorMsgTextEl = document.getElementById('errorMsgText');
+    const fallbackFastBtn = document.getElementById('fallbackFastBtn');
+    const modelBadgeEl = document.getElementById('modelBadge');
+    const copyBtn = document.getElementById('copyBtn');
+    const copyLabel = document.getElementById('copyLabel');
+    const bingBtn = document.getElementById('bingBtn');
+    const bingLabel = document.getElementById('bingLabel');
+    const footerTipEl = document.getElementById('footerTip');
+    const closeBtn = document.getElementById('closeBtn');
+
+    const targetSelectBtn = document.getElementById('targetSelectBtn');
+    const targetSelectLabel = document.getElementById('targetSelectLabel');
+    const targetDropdownMenu = document.getElementById('targetDropdownMenu');
+
+    const modelSettingsBtn = document.getElementById('modelSettingsBtn');
+    const settingsBackBtn = document.getElementById('settingsBackBtn');
+    const settingsBackLabel = document.getElementById('settingsBackLabel');
+    const settingsTitle = document.getElementById('settingsTitle');
+    const settingsCloseBtn = document.getElementById('settingsCloseBtn');
+    const modelSearchInput = document.getElementById('modelSearchInput');
+    const modelSearchClearBtn = document.getElementById('modelSearchClearBtn');
+    const settingsModelList = document.getElementById('settingsModelList');
+
+    const speechSourceBtn = document.getElementById('speechSourceBtn');
+    const speechTargetBtn = document.getElementById('speechTargetBtn');
+    const speechSourceConfigBtn = document.getElementById('speechSourceConfigBtn');
+    const speechTargetConfigBtn = document.getElementById('speechTargetConfigBtn');
+    const sourceSpeechConfigWrapper = document.getElementById('sourceSpeechConfigWrapper');
+    const targetSpeechConfigWrapper = document.getElementById('targetSpeechConfigWrapper');
+    const sourceTtsSubMenu = document.getElementById('sourceTtsSubMenu');
+    const targetTtsSubMenu = document.getElementById('targetTtsSubMenu');
+
+    function applyTheme(theme) {
+      if (theme === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    }
+
+    // 初始化即刻同步主窗口当前深浅色主题，避免初次展示闪烁
+    if (window.desktopTranslate && window.desktopTranslate.getInitialTheme) {
+      try {
+        const initTheme = window.desktopTranslate.getInitialTheme();
+        if (initTheme) {
+          applyTheme(initTheme);
+        }
+      } catch (_) {}
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function applyLocale(locale) {
+      currentLocale = (locale === 'en') ? 'en' : 'zh';
+      const d = I18N[currentLocale];
+      appTitleEl.textContent = d.appTitle;
+      sourceBadgeEl.textContent = d.autoDetect;
+      sourceLabelEl.textContent = d.source;
+      targetLabelEl.textContent = d.target;
+      loadingTextEl.textContent = d.translating;
+      copyLabel.textContent = d.copyBtn;
+      bingLabel.textContent = d.bingBtn;
+      footerTipEl.textContent = d.tip;
+      settingsTitle.textContent = d.modelSettings;
+      settingsBackLabel.textContent = d.back;
+      modelSearchInput.placeholder = d.searchPlaceholder;
+      speechSourceBtn.title = d.speechSource;
+      speechTargetBtn.title = d.speechTarget;
+      if (speechSourceConfigBtn) speechSourceConfigBtn.title = d.speechConfig;
+      if (speechTargetConfigBtn) speechTargetConfigBtn.title = d.speechConfig;
+      modelSettingsBtn.title = d.modelSettings;
+      closeBtn.title = d.close;
+      settingsCloseBtn.title = d.close;
+      fallbackFastBtn.textContent = d.switchFastBtn;
+
+      updateTargetLangButtonText();
+      renderTargetDropdown();
+      if (typeof renderTtsSubMenus === 'function') {
+        renderTtsSubMenus();
+      }
+      if (settingsView.style.display === 'flex') {
+        renderSettingsModelList();
+      }
+    }
+
+    function updateTargetLangButtonText() {
+      const found = SUPPORTED_LANGS.find((l) => l.code === currentTargetLang);
+      if (found) {
+        targetSelectLabel.textContent = currentLocale === 'en' ? found.nameEn : found.nameZh;
+      }
+    }
+
+    function renderTargetDropdown() {
+      targetDropdownMenu.innerHTML = '';
+      SUPPORTED_LANGS.forEach((l) => {
+        const item = document.createElement('button');
+        item.className = 'menu-item' + (l.code === currentTargetLang ? ' selected' : '');
+        item.type = 'button';
+        const name = currentLocale === 'en' ? l.nameEn : l.nameZh;
+        item.innerHTML = `<span>${escapeHtml(name)}</span>` + (l.code === currentTargetLang ? '<span class="menu-item-check">✓</span>' : '');
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          currentTargetLang = l.code;
+          updateTargetLangButtonText();
+          closeTargetDropdown();
+          runTranslation();
+        });
+        targetDropdownMenu.appendChild(item);
+      });
+    }
+
+    function closeTargetDropdown() {
+      targetDropdownMenu.style.display = 'none';
+      targetSelectBtn.classList.remove('active');
+    }
+
+    // 视图切换：打开/关闭设置子页面（全卡片自适应，从根源杜绝穿透与溢出）
+    function openSettingsView() {
+      closeTargetDropdown();
+      mainView.style.display = 'none';
+      settingsView.style.display = 'flex';
+      renderSettingsModelList();
+      modelSearchInput.value = modelSearchQuery;
+      modelSearchClearBtn.style.display = modelSearchQuery ? 'flex' : 'none';
+      setTimeout(() => modelSearchInput.focus(), 50);
+    }
+
+    function closeSettingsView() {
+      settingsView.style.display = 'none';
+      mainView.style.display = 'flex';
+    }
+
+    // 渲染全量模型设置列表（按 Provider 纯净分组，与对话可选模型同款）
+    function renderSettingsModelList() {
+      const d = I18N[currentLocale];
+      settingsModelList.innerHTML = '';
+      const query = (modelSearchQuery || '').trim().toLowerCase();
+
+      const matchesQuery = (str) => !query || (str && str.toLowerCase().includes(query));
+
+      // 1. 基础系统选项
+      const baseOptions = [
+        {
+          id: 'auto',
+          name: d.sameAsChat,
+          sub: d.sameAsChatSub(activeChatModel),
+          provider: '',
+        },
+        {
+          id: 'fast',
+          name: d.fastTranslator,
+          sub: d.fastTranslatorSub,
+          provider: '',
+        },
+      ];
+
+      const matchedBase = baseOptions.filter(item => matchesQuery(item.name) || matchesQuery(item.id) || matchesQuery(item.sub));
+
+      // 2. 按 provider 分组过滤已配置的模型
+      const providerGroups = {};
+      AVAILABLE_MODELS.forEach((m) => {
+        const prov = m.providerLabel || m.provider || 'Other';
+        if (!providerGroups[prov]) {
+          providerGroups[prov] = [];
+        }
+        if (matchesQuery(m.name) || matchesQuery(m.id) || matchesQuery(prov)) {
+          providerGroups[prov].push(m);
+        }
+      });
+
+      let totalMatches = matchedBase.length;
+      Object.keys(providerGroups).forEach((prov) => {
+        totalMatches += providerGroups[prov].length;
+      });
+
+      if (totalMatches === 0) {
+        const emptyEl = document.createElement('div');
+        emptyEl.style.padding = '24px 12px';
+        emptyEl.style.textAlign = 'center';
+        emptyEl.style.color = 'var(--text-muted)';
+        emptyEl.style.fontSize = '12px';
+        emptyEl.textContent = d.noModelFound;
+        settingsModelList.appendChild(emptyEl);
+        return;
+      }
+
+      // 渲染基础选项组
+      if (matchedBase.length > 0) {
+        const titleEl = document.createElement('div');
+        titleEl.className = 'provider-group-title';
+        titleEl.textContent = d.groupSystem;
+        settingsModelList.appendChild(titleEl);
+
+        matchedBase.forEach((item) => {
+          const row = createModelRow(item.id, item.name, item.sub, item.provider);
+          settingsModelList.appendChild(row);
+        });
+      }
+
+      // 渲染提供商分组（Google, OpenCode-Go, DeepSeek 等）
+      Object.keys(providerGroups).forEach((prov) => {
+        const list = providerGroups[prov];
+        if (list.length === 0) return;
+
+        const titleEl = document.createElement('div');
+        titleEl.className = 'provider-group-title';
+        titleEl.textContent = prov;
+        settingsModelList.appendChild(titleEl);
+
+        list.forEach((m) => {
+          const row = createModelRow(m.id, m.name, m.id, m.provider);
+          settingsModelList.appendChild(row);
+        });
+      });
+    }
+
+    function createModelRow(id, name, sub, provider) {
+      const row = document.createElement('button');
+      row.type = 'button';
+      const isSelected = (currentModel === id);
+      row.className = 'model-row-item' + (isSelected ? ' selected' : '');
+
+      row.innerHTML = `
+        <div class="model-row-info">
+          <div class="model-row-name">${escapeHtml(name)}</div>
+          <div class="model-row-sub">${escapeHtml(sub)}</div>
+        </div>
+        ${isSelected ? '<div class="model-row-check">✓</div>' : ''}
+      `;
+
+      row.addEventListener('click', () => {
+        currentModel = id;
+        currentProvider = provider || '';
+        localStorage.setItem('dsh_translate_model', currentModel);
+        localStorage.setItem('dsh_translate_provider', currentProvider);
+        closeSettingsView();
+        runTranslation();
+      });
+
+      return row;
+    }
+
+    // 事件监听绑定
+    targetSelectBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = targetDropdownMenu.style.display === 'block';
+      if (isOpen) {
+        closeTargetDropdown();
+      } else {
+        renderTargetDropdown();
+        targetDropdownMenu.style.display = 'block';
+        targetSelectBtn.classList.add('active');
+      }
+    });
+
+    document.addEventListener('click', () => {
+      closeTargetDropdown();
+    });
+
+    modelSettingsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openSettingsView();
+    });
+
+    settingsBackBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeSettingsView();
+    });
+
+    settingsCloseBtn.addEventListener('click', () => {
+      stopSpeaking();
+      window.desktopTranslate.close();
+    });
+
+    modelSearchInput.addEventListener('input', (e) => {
+      modelSearchQuery = e.target.value;
+      modelSearchClearBtn.style.display = modelSearchQuery ? 'flex' : 'none';
+      renderSettingsModelList();
+    });
+
+    modelSearchClearBtn.addEventListener('click', () => {
+      modelSearchQuery = '';
+      modelSearchInput.value = '';
+      modelSearchClearBtn.style.display = 'none';
+      renderSettingsModelList();
+      modelSearchInput.focus();
+    });
+
+    fallbackFastBtn.addEventListener('click', () => {
+      currentModel = 'fast';
+      currentProvider = '';
+      localStorage.setItem('dsh_translate_model', 'fast');
+      localStorage.setItem('dsh_translate_provider', '');
+      runTranslation();
+    });
+
+    // 语音朗读管理（微软 Edge 在线神经网络语音合成 + 本地 Web Speech 离线秒级兜底）
+    const TTS_VOICES = [
+      { id: 'auto', nameZh: '✨ 智能推荐 (中文晓晓 / 英文Jenny)', nameEn: '✨ Auto (Xiaoxiao / Jenny)', group: 'smart' },
+      { id: 'zh-CN-XiaoxiaoNeural', nameZh: '晓晓 (温柔自然·推荐)', nameEn: 'Xiaoxiao (Gentle Female)', group: 'zh-f' },
+      { id: 'zh-CN-XiaoyiNeural', nameZh: '晓伊 (清新明快·女声)', nameEn: 'Xiaoyi (Fresh Female)', group: 'zh-f' },
+      { id: 'zh-CN-liaoning-XiaobeiNeural', nameZh: '晓北 (东北口音·女声)', nameEn: 'Xiaobei (Northeast Female)', group: 'zh-f' },
+      { id: 'zh-HK-HiuMaanNeural', nameZh: '晓曼 (粤语·女声)', nameEn: 'HiuMaan (Cantonese Female)', group: 'zh-f' },
+      { id: 'zh-TW-HsiaoChenNeural', nameZh: '晓臻 (台湾国语·女声)', nameEn: 'HsiaoChen (Taiwan Female)', group: 'zh-f' },
+      { id: 'zh-CN-YunxiNeural', nameZh: '云希 (阳光活泼·推荐)', nameEn: 'Yunxi (Lively Male)', group: 'zh-m' },
+      { id: 'zh-CN-YunjianNeural', nameZh: '云健 (沉稳影视·男声)', nameEn: 'Yunjian (Calm Male)', group: 'zh-m' },
+      { id: 'zh-CN-YunyangNeural', nameZh: '云扬 (专业新闻·男声)', nameEn: 'Yunyang (News Male)', group: 'zh-m' },
+      { id: 'en-US-JennyNeural', nameZh: 'Jenny (英语美音·女声)', nameEn: 'Jenny (US English Female)', group: 'en' },
+      { id: 'en-US-GuyNeural', nameZh: 'Guy (英语美音·男声)', nameEn: 'Guy (US English Male)', group: 'en' },
+      { id: 'local', nameZh: '系统原生 (离线SAPI/OneCore)', nameEn: 'Local System Voice (Offline)', group: 'local' },
+    ];
+    const TTS_SPEEDS = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+
+    let currentTtsRate = parseFloat(localStorage.getItem('dsh_tts_rate')) || 1.0;
+    let currentTtsVoice = localStorage.getItem('dsh_tts_voice') || 'auto';
+    let currentSpeakingAudio = null;
+
+    // 同步主进程保存的 TTS 设置（跨窗口/右键菜单记忆留存）
+    if (window.desktopTranslate && window.desktopTranslate.getTtsSettings) {
+      window.desktopTranslate.getTtsSettings().then((s) => {
+        if (s) {
+          if (s.rate && !localStorage.getItem('dsh_tts_rate')) currentTtsRate = s.rate;
+          if (s.voice && !localStorage.getItem('dsh_tts_voice')) currentTtsVoice = s.voice;
+          renderTtsSubMenus();
+        }
+      }).catch(() => {});
+    }
+
+    function renderTtsSubMenus() {
+      const d = I18N[currentLocale];
+      const menus = [sourceTtsSubMenu, targetTtsSubMenu];
+
+      menus.forEach((menu) => {
+        if (!menu) return;
+        menu.innerHTML = `
+          <div class="tts-menu-header">
+            <span class="tts-menu-title">${d.ttsSettings}</span>
+            <span class="tts-menu-badge">${d.ttsBadge}</span>
+          </div>
+          <div class="tts-menu-section">
+            <div class="tts-section-title">${d.ttsSpeed}</div>
+            <div class="tts-speed-pills">
+              ${TTS_SPEEDS.map((s) => `
+                <button type="button" class="tts-speed-pill ${Math.abs(currentTtsRate - s) < 0.01 ? 'active' : ''}" data-speed="${s}">${s}x</button>
+              `).join('')}
+            </div>
+          </div>
+          <div class="tts-menu-section">
+            <div class="tts-section-title">${d.ttsVoice}</div>
+            <select class="tts-voice-select">
+              <option value="auto" ${currentTtsVoice === 'auto' ? 'selected' : ''}>${currentLocale === 'zh' ? '✨ 智能推荐 (中文晓晓 / 英文Jenny)' : '✨ Auto (Xiaoxiao / Jenny)'}</option>
+              <optgroup label="${d.ttsZhFGroup}">
+                <option value="zh-CN-XiaoxiaoNeural" ${currentTtsVoice === 'zh-CN-XiaoxiaoNeural' ? 'selected' : ''}>${currentLocale === 'zh' ? '晓晓 (温柔自然·推荐)' : 'Xiaoxiao (Gentle Female)'}</option>
+                <option value="zh-CN-XiaoyiNeural" ${currentTtsVoice === 'zh-CN-XiaoyiNeural' ? 'selected' : ''}>${currentLocale === 'zh' ? '晓伊 (清新明快·女声)' : 'Xiaoyi (Fresh Female)'}</option>
+                <option value="zh-CN-liaoning-XiaobeiNeural" ${currentTtsVoice === 'zh-CN-liaoning-XiaobeiNeural' ? 'selected' : ''}>${currentLocale === 'zh' ? '晓北 (东北口音·女声)' : 'Xiaobei (Northeast Female)'}</option>
+                <option value="zh-HK-HiuMaanNeural" ${currentTtsVoice === 'zh-HK-HiuMaanNeural' ? 'selected' : ''}>${currentLocale === 'zh' ? '晓曼 (粤语·女声)' : 'HiuMaan (Cantonese Female)'}</option>
+                <option value="zh-TW-HsiaoChenNeural" ${currentTtsVoice === 'zh-TW-HsiaoChenNeural' ? 'selected' : ''}>${currentLocale === 'zh' ? '晓臻 (台湾国语·女声)' : 'HsiaoChen (Taiwan Female)'}</option>
+              </optgroup>
+              <optgroup label="${d.ttsZhMGroup}">
+                <option value="zh-CN-YunxiNeural" ${currentTtsVoice === 'zh-CN-YunxiNeural' ? 'selected' : ''}>${currentLocale === 'zh' ? '云希 (阳光活泼·推荐)' : 'Yunxi (Lively Male)'}</option>
+                <option value="zh-CN-YunjianNeural" ${currentTtsVoice === 'zh-CN-YunjianNeural' ? 'selected' : ''}>${currentLocale === 'zh' ? '云健 (沉稳影视·男声)' : 'Yunjian (Calm Male)'}</option>
+                <option value="zh-CN-YunyangNeural" ${currentTtsVoice === 'zh-CN-YunyangNeural' ? 'selected' : ''}>${currentLocale === 'zh' ? '云扬 (专业新闻·男声)' : 'Yunyang (News Male)'}</option>
+              </optgroup>
+              <optgroup label="${d.ttsEnGroup}">
+                <option value="en-US-JennyNeural" ${currentTtsVoice === 'en-US-JennyNeural' ? 'selected' : ''}>${currentLocale === 'zh' ? 'Jenny (英语美音·女声)' : 'Jenny (US English Female)'}</option>
+                <option value="en-US-GuyNeural" ${currentTtsVoice === 'en-US-GuyNeural' ? 'selected' : ''}>${currentLocale === 'zh' ? 'Guy (英语美音·男声)' : 'Guy (US English Male)'}</option>
+              </optgroup>
+              <optgroup label="${d.ttsLocalGroup}">
+                <option value="local" ${currentTtsVoice === 'local' ? 'selected' : ''}>${currentLocale === 'zh' ? '系统原生 (离线SAPI/OneCore)' : 'System Voice (Offline)'}</option>
+              </optgroup>
+            </select>
+          </div>
+        `;
+
+        // 语速选择事件
+        const pills = menu.querySelectorAll('.tts-speed-pill');
+        pills.forEach((p) => {
+          p.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const val = parseFloat(p.getAttribute('data-speed'));
+            if (!Number.isNaN(val)) {
+              currentTtsRate = val;
+              localStorage.setItem('dsh_tts_rate', String(val));
+              if (window.desktopTranslate && window.desktopTranslate.saveTtsSettings) {
+                window.desktopTranslate.saveTtsSettings({ rate: val });
+              }
+              // 同步更新所有二级菜单的 active 状态
+              document.querySelectorAll('.tts-speed-pill').forEach((btn) => {
+                btn.classList.toggle('active', Math.abs(parseFloat(btn.getAttribute('data-speed')) - val) < 0.01);
+              });
+            }
+          });
+        });
+
+        // 音色选择事件
+        const select = menu.querySelector('.tts-voice-select');
+        if (select) {
+          select.addEventListener('click', (e) => e.stopPropagation());
+          select.addEventListener('change', (e) => {
+            e.stopPropagation();
+            const val = e.target.value;
+            currentTtsVoice = val;
+            localStorage.setItem('dsh_tts_voice', val);
+            if (window.desktopTranslate && window.desktopTranslate.saveTtsSettings) {
+              window.desktopTranslate.saveTtsSettings({ voice: val });
+            }
+            // 同步更新所有二级菜单的 select 值
+            document.querySelectorAll('.tts-voice-select').forEach((s) => {
+              s.value = val;
+            });
+          });
+        }
+      });
+    }
+
+    // 朗读配置二级子菜单管理（独立设置按钮，悬停+点击双触发，平滑过渡防误触）
+    function setupTtsHover(wrapper, subMenu, configBtn) {
+      if (!wrapper || !subMenu) return;
+      let enterTimer = null;
+      let leaveTimer = null;
+
+      const openMenu = () => {
+        clearTimeout(leaveTimer);
+        enterTimer = setTimeout(() => {
+          if (subMenu === sourceTtsSubMenu && targetTtsSubMenu) {
+            targetTtsSubMenu.style.display = 'none';
+            if (speechTargetConfigBtn) speechTargetConfigBtn.classList.remove('active');
+          }
+          if (subMenu === targetTtsSubMenu && sourceTtsSubMenu) {
+            sourceTtsSubMenu.style.display = 'none';
+            if (speechSourceConfigBtn) speechSourceConfigBtn.classList.remove('active');
+          }
+          subMenu.style.display = 'block';
+          if (configBtn) configBtn.classList.add('active');
+        }, 120);
+      };
+
+      const closeMenu = () => {
+        clearTimeout(enterTimer);
+        leaveTimer = setTimeout(() => {
+          subMenu.style.display = 'none';
+          if (configBtn) configBtn.classList.remove('active');
+        }, 200);
+      };
+
+      wrapper.addEventListener('mouseenter', openMenu);
+      wrapper.addEventListener('mouseleave', closeMenu);
+
+      if (configBtn) {
+        configBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          clearTimeout(leaveTimer);
+          clearTimeout(enterTimer);
+          const isShown = subMenu.style.display === 'block';
+          if (isShown) {
+            subMenu.style.display = 'none';
+            configBtn.classList.remove('active');
+          } else {
+            if (subMenu === sourceTtsSubMenu && targetTtsSubMenu) {
+              targetTtsSubMenu.style.display = 'none';
+              if (speechTargetConfigBtn) speechTargetConfigBtn.classList.remove('active');
+            }
+            if (subMenu === targetTtsSubMenu && sourceTtsSubMenu) {
+              sourceTtsSubMenu.style.display = 'none';
+              if (speechSourceConfigBtn) speechSourceConfigBtn.classList.remove('active');
+            }
+            subMenu.style.display = 'block';
+            configBtn.classList.add('active');
+          }
+        });
+      }
+
+      subMenu.addEventListener('mouseenter', () => {
+        clearTimeout(leaveTimer);
+      });
+      subMenu.addEventListener('mouseleave', closeMenu);
+    }
+
+    setupTtsHover(sourceSpeechConfigWrapper, sourceTtsSubMenu, speechSourceConfigBtn);
+    setupTtsHover(targetSpeechConfigWrapper, targetTtsSubMenu, speechTargetConfigBtn);
+    renderTtsSubMenus();
+
+    // 点击空白处关闭设置子菜单
+    document.addEventListener('click', (e) => {
+      if (sourceSpeechConfigWrapper && !sourceSpeechConfigWrapper.contains(e.target) && sourceTtsSubMenu) {
+        sourceTtsSubMenu.style.display = 'none';
+        if (speechSourceConfigBtn) speechSourceConfigBtn.classList.remove('active');
+      }
+      if (targetSpeechConfigWrapper && !targetSpeechConfigWrapper.contains(e.target) && targetTtsSubMenu) {
+        targetTtsSubMenu.style.display = 'none';
+        if (speechTargetConfigBtn) speechTargetConfigBtn.classList.remove('active');
+      }
+    });
+
+    function stopSpeaking() {
+      if (currentSpeakingAudio) {
+        try {
+          currentSpeakingAudio.pause();
+          currentSpeakingAudio.src = '';
+        } catch (_) {}
+        currentSpeakingAudio = null;
+      }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      currentSpeakingTarget = null;
+      if (speechSourceBtn) speechSourceBtn.classList.remove('playing');
+      if (speechTargetBtn) speechTargetBtn.classList.remove('playing');
+    }
+
+    function fallbackLocalSpeech(text, lang, targetType) {
+      if (!('speechSynthesis' in window) || !text || !text.trim()) {
+        stopSpeaking();
+        return;
+      }
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = lang;
+      utterance.rate = currentTtsRate || 1.0;
+
+      const voices = window.speechSynthesis.getVoices();
+      if (voices && voices.length > 0) {
+        const isZh = lang.startsWith('zh');
+        const matched = voices.find((v) => (isZh ? v.lang.startsWith('zh') : v.lang.startsWith(lang.slice(0, 2))));
+        if (matched) utterance.voice = matched;
+      }
+
+      utterance.onend = () => {
+        if (currentSpeakingTarget === targetType) stopSpeaking();
+      };
+      utterance.onerror = () => {
+        if (currentSpeakingTarget === targetType) stopSpeaking();
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    async function speakText(text, lang, targetType) {
+      if (!text || !text.trim()) return;
+
+      if (currentSpeakingTarget === targetType) {
+        stopSpeaking();
+        return;
+      }
+
+      stopSpeaking();
+      currentSpeakingTarget = targetType;
+
+      const btn = targetType === 'source' ? speechSourceBtn : speechTargetBtn;
+      if (btn) btn.classList.add('playing');
+
+      // ① 若配置指定使用系统原生离线音色，直接走本地合成
+      if (currentTtsVoice === 'local') {
+        fallbackLocalSpeech(text, lang, targetType);
+        return;
+      }
+
+      // ② 尝试使用微软 Edge TTS 神经网络高质量在线语音
+      if (window.desktopTranslate && window.desktopTranslate.ttsSynthesize) {
+        try {
+          const res = await window.desktopTranslate.ttsSynthesize({
+            text,
+            voice: currentTtsVoice,
+            rate: currentTtsRate,
+          });
+
+          if (res && res.success && res.audioBase64) {
+            if (currentSpeakingTarget !== targetType) return;
+            const audio = new Audio('data:audio/mp3;base64,' + res.audioBase64);
+            currentSpeakingAudio = audio;
+
+            audio.onended = () => {
+              if (currentSpeakingTarget === targetType) stopSpeaking();
+            };
+
+            audio.onerror = () => {
+              if (currentSpeakingTarget === targetType) {
+                fallbackLocalSpeech(text, lang, targetType);
+              }
+            };
+
+            await audio.play();
+            return;
+          }
+        } catch (err) {
+          console.warn('Edge TTS synthesis failed, falling back to local speech:', err);
+        }
+      }
+
+      // ③ 在线失败秒级兜底：使用本地系统语音
+      if (currentSpeakingTarget === targetType) {
+        fallbackLocalSpeech(text, lang, targetType);
+      }
+    }
+
+    speechSourceBtn.addEventListener('click', () => {
+      const isChinese = /[\u4e00-\u9fa5]/u.test(currentSourceText);
+      const sourceLang = isChinese ? 'zh-CN' : 'en-US';
+      speakText(currentSourceText, sourceLang, 'source');
+    });
+
+    speechTargetBtn.addEventListener('click', () => {
+      const langMap = {
+        'zh-Hans': 'zh-CN',
+        'zh-Hant': 'zh-TW',
+        'en': 'en-US',
+        'ja': 'ja-JP',
+        'ko': 'ko-KR',
+        'fr': 'fr-FR',
+        'de': 'de-DE',
+        'es': 'es-ES',
+        'ru': 'ru-RU',
+      };
+      const lang = langMap[currentTargetLang] || 'zh-CN';
+      speakText(currentTranslation, lang, 'target');
+    });
+
+    // 核心翻译逻辑（严格报错，不静默偷换；支持一键切换极速免Key）
+    async function runTranslation() {
+      if (!currentSourceText.trim()) return;
+      stopSpeaking();
+      closeTargetDropdown();
+      loadingStateEl.style.display = 'flex';
+      resultTextEl.style.display = 'none';
+      errorStateBoxEl.style.display = 'none';
+      modelBadgeEl.style.display = 'none';
+
+      try {
+        const res = await window.desktopTranslate.doTranslate({
+          text: currentSourceText,
+          targetLang: currentTargetLang,
+          model: currentModel,
+          provider: currentProvider,
+        });
+
+        loadingStateEl.style.display = 'none';
+
+        if (res && res.text) {
+          currentTranslation = res.text;
+          resultTextEl.textContent = res.text;
+          resultTextEl.style.display = 'block';
+
+          if (res.usedModel) {
+            modelBadgeEl.textContent = I18N[currentLocale].translatedBy(res.usedModel);
+            modelBadgeEl.style.display = 'block';
+          }
+        } else if (res && res.error) {
+          errorMsgTextEl.textContent = I18N[currentLocale].failPrefix + res.error;
+          errorStateBoxEl.style.display = 'block';
+          fallbackFastBtn.style.display = res.canFallbackToFast ? 'inline-flex' : 'none';
+        } else {
+          throw new Error('未能获取有效翻译结果');
+        }
+      } catch (err) {
+        loadingStateEl.style.display = 'none';
+        errorMsgTextEl.textContent = I18N[currentLocale].failPrefix + (err.message || String(err));
+        errorStateBoxEl.style.display = 'block';
+        fallbackFastBtn.style.display = 'inline-flex';
+      }
+    }
+
+    // 接收主进程推送的翻译请求
+    window.desktopTranslate.onTranslateRequest((data) => {
+      stopSpeaking();
+      closeTargetDropdown();
+      closeSettingsView();
+
+      if (data.theme) {
+        applyTheme(data.theme);
+      }
+      if (data.locale) {
+        applyLocale(data.locale);
+      } else {
+        applyLocale(currentLocale);
+      }
+      if (data.activeChatModel) {
+        activeChatModel = data.activeChatModel;
+      }
+
+      currentSourceText = data.text || '';
+      sourceTextEl.textContent = currentSourceText || I18N[currentLocale].waiting;
+
+      // 智能默认目标语言：如果包含中文，默认目标为英文；若不含中文，默认目标为简体中文
+      const isChinese = /[\u4e00-\u9fa5]/u.test(currentSourceText);
+      currentTargetLang = isChinese ? 'en' : 'zh-Hans';
+      updateTargetLangButtonText();
+
+      currentTranslation = '';
+
+      // 发起翻译前确保可用模型列表与 DSH 保持最新
+      if (window.desktopTranslate.getModels) {
+        window.desktopTranslate.getModels().then((m) => {
+          if (m) {
+            if (m.activeChatModel) activeChatModel = m.activeChatModel;
+            if (Array.isArray(m.allModels) && m.allModels.length > 0) AVAILABLE_MODELS = m.allModels;
+          }
+        }).catch(() => {});
+      }
+
+      runTranslation();
+    });
+
+    // 接收主题更新
+    window.desktopTranslate.onThemeUpdated((data) => {
+      if (data && data.theme) {
+        applyTheme(data.theme);
+      }
+    });
+
+    // 接收语言更新
+    window.desktopTranslate.onLocaleUpdated((data) => {
+      if (data && data.locale) {
+        applyLocale(data.locale);
+      }
+    });
+
+    // 接收停止朗读
+    window.desktopTranslate.onStopSpeaking(() => {
+      stopSpeaking();
+    });
+
+    // 异步拉取主进程配置的可用模型列表（全量动态读取）
+    if (window.desktopTranslate.getModels) {
+      window.desktopTranslate.getModels().then((data) => {
+        if (data) {
+          if (data.activeChatModel) {
+            activeChatModel = data.activeChatModel;
+          }
+          if (Array.isArray(data.allModels) && data.allModels.length > 0) {
+            AVAILABLE_MODELS = data.allModels;
+          }
+          if (settingsView.style.display === 'flex') {
+            renderSettingsModelList();
+          }
+        }
+      }).catch(() => {});
+    }
+
+    // 复制译文
+    copyBtn.addEventListener('click', () => {
+      if (!currentTranslation) return;
+      window.desktopTranslate.copyText(currentTranslation);
+      copyBtn.classList.add('copied');
+      copyLabel.textContent = I18N[currentLocale].copied;
+      setTimeout(() => {
+        copyBtn.classList.remove('copied');
+        copyLabel.textContent = I18N[currentLocale].copyBtn;
+      }, 1500);
+    });
+
+    // 必应翻译
+    bingBtn.addEventListener('click', () => {
+      window.desktopTranslate.openBing({
+        text: currentSourceText,
+        targetLang: currentTargetLang,
+      });
+    });
+
+    // 关闭按钮
+    closeBtn.addEventListener('click', () => {
+      stopSpeaking();
+      window.desktopTranslate.close();
+    });
+
+    // 键盘 Esc 处理
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (settingsView.style.display === 'flex') {
+          closeSettingsView();
+          return;
+        }
+        if (targetDropdownMenu.style.display === 'block') {
+          closeTargetDropdown();
+          return;
+        }
+        stopSpeaking();
+        window.desktopTranslate.close();
+      }
+    });
+
+    // 失去焦点时停止播放
+    window.addEventListener('blur', () => {
+      stopSpeaking();
+    });
+
+    // 初始化
+    applyLocale(currentLocale);
+  </script>
+</body>
+</html>

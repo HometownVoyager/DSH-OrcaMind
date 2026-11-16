@@ -1,0 +1,90 @@
+===== ANCHORS FOUR-SECTION NAMING =====
+vn-asset-list\asset-index-gap-bootstrap\SKILL.md                 A_资产,四节
+vn-asset-list\vn-asset-list\SKILL.md                             A_资产,四节
+vn-bible\vn-bible-anchors\SKILL.md                               A_年龄,A_空间,A_称谓,A_资产,四节
+vn-bible\vn-bible-bootstrap\SKILL.md                             四节
+vn-bible\vn-bible-characters\SKILL.md                            B_角色
+vn-bible\vn-bible-docx\SKILL.md                                  B_基准,B_角色,B_世界,B_历史
+vn-outline\vn-outline-chapter\SKILL.md                           四节
+vn-outline\vn-outline-endings-flags\SKILL.md                     四节
+vn-outline\vn-outline-structure\SKILL.md                         四节
+vn-script\character-voice\SKILL.md                               A_称谓
+vn-script\continuity\SKILL.md                                    A_年龄,A_空间,A_称谓,A_资产,四节
+vn-script\story-bible\SKILL.md                                   A_年龄,A_空间,A_称谓,A_资产
+vn-script\vn-script-format\SKILL.md                              A_资产,四节
+vn-shared\vn-continuity\SKILL.md                                 B_基准,B_角色,B_世界,B_历史,四节
+vn-shared\vn-spec\SKILL.md                                       B_角色,B_世界,B_历史,四节
+
+===== EXACT LINES CONTAINING KEY PHRASES (all files) =====
+vn-asset-list\asset-index-gap-bootstrap\SKILL.md:40| - 状态词表固定 8 词，不自造词汇；不把「待确认」当作「已确认」推进；无用户明确确认不进入下一轮、不进入下一阶段。
+vn-asset-list\asset-index-gap-bootstrap\SKILL.md:61| - README.md 按双区结构（§3.0.7）：A 区「当前状态」5 字段就地更新、B 区「进度记录」只追加一行且不改写既有行；AI 不自行把状态置为「已确认」。
+vn-asset-list\vn-asset-list\SKILL.md:41| - 不产出任何二进制文件；不把「待确认」当作「已确认」推进；无用户明确确认不进入下一轮、不进入下一阶段。
+vn-asset-list\vn-asset-list\SKILL.md:63| - README.md 按双区结构（§3.0.7）：A 区「当前状态」5 字段仅在用户确认后就地更新，B 区「进度记录」只追加一行且不改写或删除既有行；AI 不自行把状态置为「已确认」。
+vn-asset-make\asset-make-generate\SKILL.md:62| `<作品名>/README.md` 是唯一进度载体，双区结构（§3.0.7）：A 区「当前状态」块 5 字段（当前预设 / 当前阶段 / 本轮子条目 / 状态(进行中|待确认|已确认) / 下一候选）仅在用户确认后就地更新；B 区「进度记录」区只追加一行、永不改写或删除既有行。本 skill **不写 README.md**；A 区字段就地更新与 B 区追加一行由 `asset-make-verify` 承担，AI 不自行把状态置为「已确认」。
+vn-asset-make\asset-make-spec-read\SKILL.md:59| `<作品名>/README.md` 是唯一进度载体，双区结构（§3.0.7）：A 区「当前状态」块 5 字段（当前预设 / 当前阶段 / 本轮子条目 / 状态(进行中|待确认|已确认) / 下一候选）仅在用户确认后就地更新；B 区「进度记录」区只追加一行、永不改写或删除既有行。本 skill 只读校验 A 区「当前预设」为 vn-asset-make，**不写 README.md**；A 区字段就地更新与 B 区追加一行由 `asset-make-verify` 承担，AI 不自行把状态置为「已确认」。
+vn-asset-make\asset-make-status-sync\SKILL.md:59| `<作品名>/README.md` 是唯一进度载体，双区结构（§3.0.7）：A 区「当前状态」块 5 字段（当前预设 / 当前阶段 / 本轮子条目 / 状态(进行中|待确认|已确认) / 下一候选）仅在用户确认后就地更新；B 区「进度记录」区只追加一行、永不改写或删除既有行。本 skill **不写 README.md**（A 区字段就地更新与 B 区追加一行由 `asset-make-verify` 承担），AI 不自行把状态置为「已确认」。
+vn-asset-make\asset-make-verify\SKILL.md:56| `<作品名>/README.md` 是唯一进度载体，双区结构（§3.0.7）：
+vn-bible\vn-bible-bootstrap\SKILL.md:20| - `<作品名>/Specifications.md`：唯一规范事实源，按 §2.4 四节骨架落盘 —— ① 来源记录 ② 结构与目录约定（§2.2 全表「6 个编号目录 + 3 个根级文档」+ §2.3 十条目录纪律，含 `Direction.md` 静态导航定位、02/04 分工、`asset-index.md` / `asset-gap.md` 协作与硬门、越界收敛原则）③ 产出格式规范（三位编号 `ch001` / `sc001`、`-` 连接符防灾、禁裸 `~`、复合句要求、抽象层级边界）④ 红线与禁忌（不台词入大纲、不计划外文档、不越权写入、不跨阶段预写、不把 `Direction.md` 当事实源或状态机）。
+vn-bible\vn-bible-bootstrap\SKILL.md:23| - §2.2 六目录全表只写进 `Specifications.md`；不物理预建 `01-Plan/`、`02-Script/`、`03-Asset/`、`04-ScreenPlay/`、`05-Game/` 等任何下游目录，不跨阶段预写下游文件。
+vn-game\game-acceptance\SKILL.md:15| - 只有用户在 Stop 步 `ask_user_question` 明确确认后才可置「已确认」并推进；AI 不自行置位。
+vn-game\game-implementation-spec\SKILL.md:27| - `README.md` 按双区结构：A 区「当前状态」5 字段仅在用户确认后就地更新，B 区「进度记录」只追加一行且不改写既有行；状态置「待确认」，AI 不自行置「已确认」。
+vn-outline\vn-outline-chapter\SKILL.md:40| **Check**：按 `vn-continuity` 核查这**一个**产物（先过 `00-Bible/anchors.md` 四节锚点矩阵，再按目录链逐项过），按 `vn-spec` 校验统一目录与格式，按 `vn-gate` 校验单轮单条目；不全量核查、不顺手改非本轮文件、不预写下游。发现任何冲突立即停下，用 `ask_user_question` 请用户裁决，不自行改写已确认内容。
+vn-outline\vn-outline-endings-flags\SKILL.md:42| **Check**：按 `vn-continuity` 核查这**一个**产物（先过 `00-Bible/anchors.md` 四节锚点矩阵，再按目录链逐项过），按 `vn-spec` 校验统一目录与格式，按 `vn-gate` 校验单轮单条目；`Check` 时只验证本轮产物是否与唯一事实源一致，不据此新建 `endings.md` / `systems.md` 或任何同义文件，不把结局条件散落进其它文件；不全量核查、不顺手改非本轮文件、不预写下游。发现任何冲突立即停下，用 `ask_user_question` 请用户裁决，不自行改写已确认内容。
+vn-outline\vn-outline-structure\SKILL.md:41| **Check**：按 `vn-continuity` 核查这**一个**产物（先过 `00-Bible/anchors.md` 四节锚点矩阵，再按目录链逐项过），按 `vn-spec` 校验统一目录与格式，按 `vn-gate` 校验单轮单条目；不全量核查、不顺手改非本轮文件、不预写下游。发现任何冲突立即停下，用 `ask_user_question` 请用户裁决，不自行改写已确认内容。
+vn-screenplay\staging-acceptance\SKILL.md:18| - 本 skill 为只读校验型：不产出新文档；仅在「合法交接」时按 §3.0.7 双区结构对 `<作品名>/README.md` 就地登记 A 区「当前预设」为 `vn-screenplay` 并在 B 区追加一行交接登记。
+vn-screenplay\staging-acceptance\SKILL.md:35| | 4 | 硬门前置存在 | 只读 `<作品名>/03-Asset/asset-index.md` 与 `asset-gap.md` | 缺失或未经用户确认则禁止开始逐场演出剧本 |
+vn-screenplay\staging-acceptance\SKILL.md:62| - Read → Report → Confirm → Do → Check → Write → Stop。Read 显式读 `<作品名>/README.md`、`<作品名>/Specifications.md` 与根级 `Direction.md`；Confirm / Stop 两组 `ask_user_question` 选项不跨组套用（Confirm：就做这一个 / 换一个子条目 / 先不做，停下询问；Stop：认可本轮成果 / 换一个子条目重做 / 本阶段已确认，进入下一预设）。
+vn-screenplay\staging-asset-audit\SKILL.md:36| - `README.md` 采用双区结构（§3.0.7）：A 区「当前状态」块 5 字段（当前预设 / 当前阶段 / 本轮子条目 / 状态 / 下一候选）就地更新，B 区「进度记录」只追加一行、永不改写或删除既有行；状态默认「待确认」，不自行置「已确认」。
+vn-screenplay\staging-asset-audit\SKILL.md:48| - Read → Report → Confirm → Do → Check → Write → Stop。Read 显式读 `<作品名>/README.md`、`<作品名>/Specifications.md` 与根级 `Direction.md`，只读 asset-index.md 与 generated/ 磁盘实际文件；Confirm / Stop 两组 `ask_user_question` 选项不跨组套用。
+vn-screenplay\staging-continuity\SKILL.md:15| 本阶段以 `<作品名>/02-Script/` 纯剧本正文为唯一底本，叠加演出指示写成逐场融合稿，产出只落在 `<作品名>/04-ScreenPlay/`。本 skill 沿用 vn-staging `staging-continuity` 的「五维核查」内核，改为只核查本阶段融合稿，并承担全链 Check 步基准（Check 按 vn-continuity）。
+vn-screenplay\staging-continuity\SKILL.md:50| - `README.md` 采用双区结构（§3.0.7）：A 区「当前状态」块 5 字段（当前预设 / 当前阶段 / 本轮子条目 / 状态 / 下一候选）就地更新，B 区「进度记录」只追加一行、永不改写或删除既有行；状态默认「待确认」，不自行置「已确认」。
+vn-screenplay\staging-continuity\SKILL.md:62| - Read → Report → Confirm → Do → Check → Write → Stop。Read 显式读 `<作品名>/README.md`、`<作品名>/Specifications.md` 与根级 `Direction.md`，以及 `02-Script/` 底本、只读 asset-index.md / asset-gap.md、generated/ 磁盘实际资产、`04-ScreenPlay/` 已有产物；Confirm / Stop 两组 `ask_user_question` 选项不跨组套用。
+vn-screenplay\staging-cues\SKILL.md:48| - Read → Report → Confirm → Do → Check → Write → Stop。Read 显式读 `<作品名>/README.md`、`<作品名>/Specifications.md` 与根级 `Direction.md`，读 `02-Script/` 底本、只读 asset-index.md / asset-gap.md、generated/ 磁盘实际资产、`04-ScreenPlay/` 已有产物；Confirm / Stop 两组 `ask_user_question` 选项不跨组套用（Confirm：就做这一个 / 换一个子条目 / 先不做，停下询问；Stop：认可本轮成果 / 换一个子条目重做 / 本阶段已确认，进入下一预设）。
+vn-screenplay\staging-direction\SKILL.md:20| - **制作计划与逐轮进度只归 `README.md`**：README.md 采用双区结构（§3.0.7），A 区「当前状态」块 5 字段（当前预设 / 当前阶段 / 本轮子条目 / 状态 / 下一候选）就地更新，B 区「进度记录」只追加一行、永不改写或删除既有行；本 skill 只读引用 `Direction.md`，不另写这两份。
+vn-screenplay\staging-direction\SKILL.md:50| - Read → Report → Confirm → Do → Check → Write → Stop。Read 显式读 `<作品名>/README.md`、`<作品名>/Specifications.md` 与根级 `Direction.md`（只读静态导航），以及 `02-Script/` 底本、只读 asset-index.md / asset-gap.md、`04-ScreenPlay/` 已有产物；Confirm / Stop 两组 `ask_user_question` 选项不跨组套用。
+vn-screenplay\staging-draft-format\SKILL.md:32| ## 硬门（应写死）
+vn-screenplay\staging-draft-format\SKILL.md:36| 长流程落盘：进度应落磁盘，不只存在对话里；每轮只增不改地写入 `04-ScreenPlay/` 并在 README.md 追加一行。README.md 采用双区结构：A 区「当前状态」块 5 字段（当前预设 / 当前阶段 / 本轮子条目 / 状态 / 下一候选）就地更新，B 区「进度记录」只追加一行、永不改写或删除既有行；状态默认「待确认」，不自行置「已确认」。
+vn-screenplay\staging-draft-format\SKILL.md:64| - Read → Report → Confirm → Do → Check → Write → Stop。Read 显式读 `<作品名>/README.md`、`<作品名>/Specifications.md` 与根级 `Direction.md`，以及 `02-Script/` 底本、只读 asset-index.md / asset-gap.md、`04-ScreenPlay/` 已有产物；Confirm / Stop 两组 `ask_user_question` 选项不跨组套用。
+vn-screenplay\staging-gap-triage\SKILL.md:32| - `README.md` 采用双区结构（§3.0.7）：A 区「当前状态」块 5 字段（当前预设 / 当前阶段 / 本轮子条目 / 状态 / 下一候选）就地更新，B 区「进度记录」只追加一行、永不改写或删除既有行；状态默认「待确认」，不自行置「已确认」。
+vn-screenplay\staging-gap-triage\SKILL.md:44| - Read → Report → Confirm → Do → Check → Write → Stop。Read 显式读 `<作品名>/README.md`、`<作品名>/Specifications.md` 与根级 `Direction.md`，只读 `03-Asset/asset-gap.md` 与 `03-Asset/asset-index.md`；Confirm / Stop 两组 `ask_user_question` 选项不跨组套用。
+vn-screenplay\staging-project-bootstrap\SKILL.md:14| 本阶段以 `<作品名>/02-Script/` 纯剧本正文（台词/叙述/场景表）为**唯一底本**，叠加演出指示写成逐场演出剧本融合稿，产出只落在 `<作品名>/04-ScreenPlay/`。8 个 skill 的内核与 8 条核心原则沿用 vn-staging 全链，但职责统一改为「底本 + 演出指示融合稿」。
+vn-screenplay\staging-project-bootstrap\SKILL.md:19| - `README.md` 采用双区结构：A 区「当前状态」块 5 字段就地更新（当前预设 / 当前阶段 / 本轮子条目 / 状态 / 下一候选），B 区「进度记录」只追加一行、永不改写或删除既有行；状态默认置「待确认」，不自行置「已确认」。
+vn-screenplay\staging-project-bootstrap\SKILL.md:45| - Read → Report → Confirm → Do → Check → Write → Stop。Read 显式读 `<作品名>/README.md`、`<作品名>/Specifications.md` 与根级 `Direction.md`，并核对上游交接；Confirm / Stop 两组 `ask_user_question` 选项不跨组套用。
+vn-script\character-voice\SKILL.md:27| - 无用户明确确认不进入下一轮、不进入下一阶段；按用户逐轮指令推进。
+vn-script\character-voice\SKILL.md:29| ## 对白核对要点（沿用 screenplay-writing 全链并改造）
+vn-script\character-voice\SKILL.md:68| 本 skill 由 `screenplay-writing` 全链复制并改造，旧目录保留原样不删。下列旧值**只允许出现在旧值 / 迁移对照 / 不语境**，**不作为产出落点**、不创建、不写入、不引用为事实源；本阶段唯一产出落点默认 `02-Script/`，表中 `00-Bible/` 与 `01-Plan/` 新值默认为只读事实源，不构成本阶段产出落点。
+vn-script\continuity\SKILL.md:11| - 修改设定后（只读复核影响面），以及每阶段产出落盘前的全量核查。
+vn-script\continuity\SKILL.md:27| - 无用户明确确认不进入下一轮、不进入下一阶段；按用户逐轮指令推进。
+vn-script\continuity\SKILL.md:49| 1. 本轮唯一产物与 `00-Bible/anchors.md`、`01-Plan/chapter-structure.md`、`01-Plan/endings-and-flags.md` 或 `02-Script/剧情精述.md` 不一致、且该产物尚未经用户确认时，以上游事实源为基准，在 `02-Script/` 内修正本轮产物并在核查结论中说明；产物已经用户确认的冲突按第 2 条请用户裁决。
+vn-script\continuity\SKILL.md:85| 本 skill 由 `screenplay-writing` 全链复制并改造，旧目录保留原样不删。下列旧值**只允许出现在旧值 / 迁移对照 / 不语境**，**不作为产出落点**、不创建、不写入、不引用为事实源；本阶段唯一产出落点默认 `02-Script/`，表中 `00-Bible/` 与 `01-Plan/` 新值默认为只读事实源，不构成本阶段产出落点。
+vn-script\research-materials\SKILL.md:27| - 无用户明确确认不进入下一轮、不进入下一阶段；按用户逐轮指令推进。
+vn-script\research-materials\SKILL.md:29| ## 登记规范（沿用 screenplay-writing 全链并改造）
+vn-script\research-materials\SKILL.md:68| 本 skill 由 `screenplay-writing` 全链复制并改造，旧目录保留原样不删。下列旧值**只允许出现在旧值 / 迁移对照 / 不语境**，**不作为产出落点**、不创建、不写入、不引用为事实源；本阶段唯一产出落点默认 `02-Script/`，表中 `00-Bible/` 与 `01-Plan/` 新值默认为只读事实源，不构成本阶段产出落点。
+vn-script\story-bible\SKILL.md:26| - 无用户明确确认不进入下一轮、不进入下一阶段；按用户逐轮指令推进。
+vn-script\story-bible\SKILL.md:28| ## 检索与回指要点（沿用 screenplay-writing 全链并改造）
+vn-script\story-bible\SKILL.md:68| 本 skill 由 `screenplay-writing` 全链复制并改造，旧目录保留原样不删。下列旧值**只允许出现在旧值 / 迁移对照 / 不语境**，**不作为产出落点**、不创建、不写入、不引用为事实源；本阶段唯一产出落点默认 `02-Script/`，表中 `00-Bible/` 与 `01-Plan/` 新值默认为只读事实源，不构成本阶段产出落点。
+vn-script\vn-script-format\SKILL.md:26| - 无用户明确确认不进入下一轮、不进入下一阶段；按用户逐轮指令推进。
+vn-script\vn-script-format\SKILL.md:115| 本 skill 由 `screenplay-writing` 全链复制并改造，旧目录保留原样不删。下列旧值**只允许出现在旧值 / 迁移对照 / 不语境**，**不作为产出落点**、不创建、不写入、不引用为事实源；本阶段唯一产出落点默认 `02-Script/`，表中 `00-Bible/` 与 `01-Plan/` 新值默认为只读事实源，不构成本阶段产出落点。
+vn-script\vn-script-outline\SKILL.md:27| - 本轮子条目由用户从候选清单中选定；无用户明确确认不进入下一轮、不进入下一阶段；按用户逐轮指令推进。
+vn-script\vn-script-outline\SKILL.md:29| ## 剧情精述.md 内容规范（沿用 screenplay-writing 全链并改造）
+vn-script\vn-script-outline\SKILL.md:72| 本 skill 由 `screenplay-writing` 全链复制并改造，旧目录保留原样不删。下列旧值**只允许出现在旧值 / 迁移对照 / 不语境**，**不作为产出落点**、不创建、不写入、不引用为事实源；本阶段唯一产出落点默认 `02-Script/`，表中 `00-Bible/` 与 `01-Plan/` 新值默认为只读事实源，不构成本阶段产出落点。
+vn-script\vn-script-project-bootstrap\SKILL.md:24| - 原 `screenplay-writing` 全链中的**「接手 vn-design 项目的衔接契约」不再适用**，不保留任何接手场景、接手分支与接手判定。
+vn-script\vn-script-project-bootstrap\SKILL.md:33| - 无用户明确确认不进入下一轮、不进入下一阶段；按用户逐轮指令推进。
+vn-script\vn-script-project-bootstrap\SKILL.md:73| 本 skill 由 `screenplay-writing` 全链复制并改造，旧目录保留原样不删。下列旧值**只允许出现在旧值 / 迁移对照 / 不语境**，**不作为产出落点**、不创建、不写入、不引用为事实源；本阶段唯一产出落点默认 `02-Script/`，表中 `00-Bible/` 与 `01-Plan/` 新值默认为只读事实源，不构成本阶段产出落点。
+vn-script\vn-script-revision\SKILL.md:26| - 本轮子条目由用户从候选清单中选定；大改（改路线、改结局、动人物线、删支线）应先给用户方案并获得确认；无用户明确确认不进入下一轮、不进入下一阶段；按用户逐轮指令推进。
+vn-script\vn-script-revision\SKILL.md:28| ## 修改轮次（每轮只做一件事，沿用 screenplay-writing 全链并改造）
+vn-script\vn-script-revision\SKILL.md:75| 本 skill 由 `screenplay-writing` 全链复制并改造，旧目录保留原样不删。下列旧值**只允许出现在旧值 / 迁移对照 / 不语境**，**不作为产出落点**、不创建、不写入、不引用为事实源；本阶段唯一产出落点默认 `02-Script/`，表中 `00-Bible/` 与 `01-Plan/` 新值默认为只读事实源，不构成本阶段产出落点。
+vn-script\vn-script-structure\SKILL.md:27| - 无用户明确确认不进入下一轮、不进入下一阶段；按用户逐轮指令推进。
+vn-script\vn-script-structure\SKILL.md:29| ## 只读引用要点（沿用 screenplay-writing 全链并改造）
+vn-script\vn-script-structure\SKILL.md:68| 本 skill 由 `screenplay-writing` 全链复制并改造，旧目录保留原样不删。下列旧值**只允许出现在旧值 / 迁移对照 / 不语境**，**不作为产出落点**、不创建、不写入、不引用为事实源；本阶段唯一产出落点默认 `02-Script/`，表中 `00-Bible/` 与 `01-Plan/` 新值默认为只读事实源，不构成本阶段产出落点。
+vn-script\writing-craft\SKILL.md:25| - 无用户明确确认不进入下一轮、不进入下一阶段；按用户逐轮指令推进。
+vn-script\writing-craft\SKILL.md:27| ## 内容质量硬规则（沿用 screenplay-writing 全链并改造）
+vn-script\writing-craft\SKILL.md:88| 本 skill 由 `screenplay-writing` 全链复制并改造，旧目录保留原样不删。下列旧值**只允许出现在旧值 / 迁移对照 / 不语境**，**不作为产出落点**、不创建、不写入、不引用为事实源；本阶段唯一产出落点默认 `02-Script/`，表中 `00-Bible/` 与 `01-Plan/` 新值默认为只读事实源，不构成本阶段产出落点。
+vn-shared\vn-continuity\SKILL.md:8| 本 skill 只做一件事：在 `vn-gate` 的 **Check** 步，针对**本轮那 1 个子条目**做一致性核查。不探测下游、不做全链全量体检，也不是「顺手改文件」的授权。与 persona【指令裁决】冲突时以 persona 为准。
+vn-shared\vn-continuity\SKILL.md:23| ## 2. 核查范围（消除「全链逐项过」与「不得读下游」的冲突）
+vn-shared\vn-continuity\SKILL.md:32| - **不读下游**：此处的核查范围与 `vn-gate` §5 一致，不存在「链路逐项过整条链」与「下游不读取」的张力。
+vn-shared\vn-continuity\SKILL.md:53| - 用户裁决后，在 `README.md` B 区「进度记录」追加一行记入「冲突位置 / 裁决结论 / 裁决人 / 轮次」，并由 AI 代为把 A 区状态置「已确认」（默认不自行置位，用户显式授权时按授权）；B 区既有行不改写。
+vn-shared\vn-gate\SKILL.md:12| - 硬红线只有三条，写在每个预设 persona 的【指令裁决】第 1 条：① 不跨阶段写入 ② 不创建白名单外文件 ③ 不自行把 README 状态置「已确认」。
+vn-shared\vn-gate\SKILL.md:39| - 两组常用选项（可按需选用，不必互斥套用）：
+vn-shared\vn-gate\SKILL.md:77| - `vn-continuity` 的核查范围以本轮唯一产物及其**直接上游已确认文件**为限，不探测下游、不做全链全量体检（见该文件 §2）。
+vn-shared\vn-gate\SKILL.md:83| 发现自己越界（跨阶段写入、创建计划外文件、自行置「已确认」、把上游改了等）：

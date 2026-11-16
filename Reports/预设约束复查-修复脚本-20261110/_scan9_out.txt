@@ -1,0 +1,87 @@
+=== screenplay-writing (2607-2900) Agentic/自主规划/末位 hits ===
+ 2673| - 随后以 Agentic work 的方式自主规划该阶段内的子任务，调用所需技能或工具，产出一份可供用户审阅的草稿，而不是等待用户逐步发出每一个微指令。符合已确认规则的子任务可以自行完成；影响全局一致性的关键决策必须先经用户拍板，缺口处理按「求证与拍板规则」执行。
+ 2676| 每轮按 Read → Report → Plan → Do → Check → Write → Ask 七步循环推进：
+ 2679| - Plan 划：自主规划该阶段内的子任务（Agentic work）；写新章节或关键场景前，先输出场景起飞检查卡（`<!-- SCENE_PREFLIGHT_START -->` … `<!-- SCENE_PREFLIGHT_END -->`）并对照 `00-设定/anchors.md` 与 `规范-剧本.md` 逐项核对；
+ 2683| - Ask 问：列出需要用户确认或补充的问题清单。
+=== vn-design (3300-3560) Agentic/自主规划/末位 hits ===
+ 3357| - 随后以 Agentic work 的方式自主规划该阶段内的子任务，调用所需技能或工具，产出一份可供用户审阅的草稿，而不是等待用户逐步发出每一个微指令。符合已确认规则的子任务可以自行完成；影响全局一致性的关键决策必须先向用户确认。
+ 3360| 每轮按 Read → Report → Plan → Do → Check → Write → Ask 七步循环推进：
+ 3363| - Plan 划：自主规划该阶段内的子任务（Agentic work）；
+ 3367| - Ask 问：列出需要用户确认或补充的问题清单。
+=== vn-staging (3608-3990) Agentic/自主规划/末位 hits ===
+ 3738| - 随后以 Agentic work 的方式自主规划本轮子任务，调用所需技能或工具，产出一份可供用户审阅的草稿，而不是等待用户逐步发出每一个微指令。符合已确认规则的子任务可以自行完成；影响全局一致性的关键决策与缺口裁决必须先向用户确认。
+ 3741| 每轮按 Read → Report → Plan → Do → Check → Write → Ask 七步循环推进：
+ 3744| - Plan 划：自主规划本轮子任务（Agentic work）；
+ 3748| - Ask 问：列出需要用户确认或裁决的问题清单。
+
+=== yml prefix persona markers (VN7) ===
+ 4279| - id: persona
+ 4489| - id: persona
+ 4692| - id: persona
+ 4895| - id: persona
+ 5103| - id: persona
+ 5319| - id: persona
+ 5513| - id: persona
+
+=== yml first VN preset boundary 4255-4275 ===
+ 4255|                 UV_CACHE_DIR: 'D:/Tools/GoDot/UV/cache'
+ 4256|                 UV_PYTHON_INSTALL_DIR: 'D:/Tools/GoDot/UV/pythons'
+ 4257|               failOnStartupError: false
+ 4258| 
+ 4259|     - id: preset-vn-bible
+ 4260|       name: '@deepseek-ai/dsh-agent-preset'
+ 4261|       config:
+ 4262|         id: vn-bible
+ 4263|         name: 'VN-设定完善'                                 # 中文名，一律加 VN- 前缀（§2.1）
+ 4264|         description: >-
+ 4265|           VN 工作流第 1 阶段专用预设（order 30）。主产出目录一律为 <作品名>/00-Bible/。
+ 4266|           职责：把 Brainstorm 作为首个严格子阶段，六字段逐个确认且只写 00-Bible/brainstorm.md；
+ 4267|           建立 00-Bible/characters/<角色名>.md 角色档案、00-Bible/relationships.md 关系、
+ 4268|           00-Bible/world.md / factions.md / geography.md / timeline.md / glossary.md / style.md 世界观与文风；
+ 4269|           撰写 00-Bible/anchors.md 四节基准事实层并在剧情大纲前锁定；
+ 4270|           把已确认设定同步为 00-Bible/00-Bible-四份版/ 下四个固定名 .docx；
+ 4271|           在用户确认后创建根级 Specifications.md（写入 §2.4 四节骨架）与 Direction.md（只建静态导航骨架：总体说明 + 七预设导航 + 源指针表 + 02/04 分工，指针目标留空待填），并按双区结构更新 README.md 状态并追加进度行。
+ 4272|           本预设独占 Specifications.md / Direction.md 创建权与 office-reader / office-editor 挂载权；
+ 4273|           只读上游根级 README.md、Specifications.md 与 Direction.md；
+ 4274|           一律不得写入或预写 01-Plan/、02-Script/、03-Asset/、04-ScreenPlay/、05-Game/ 等下游目录与文件。
+ 4275|         order: 30                                           # §2.1
+
+=== VN-工作流改造施工文档.md lines 2348-2360 / 2475-2486 ===
+ 2348| - **禁止**自行把状态写成「已确认」：状态从「待确认」变为「已确认」的**唯一**途径是用户在 `ask_user_question` 中明确确认（见 `vn-gate` 状态机）。
+ 2349| - 有冲突时（§5），本轮**不写**「一致 / 待确认」行，先停下询问；裁决后再按裁决结论追加确认记录行。
+ 2350| ```
+ 2351| 
+ 2352| ### 4.3 `vn-gate/SKILL.md`（name: vn-gate）
+ 2353| 
+ 2354| ```markdown
+ 2355| ---
+ 2356| name: vn-gate
+ 2357| description: VN 工作流单轮单条目硬门禁。锁 2 的七步循环、ask_user_question 收尾硬门禁、README 状态机与越界自我纠正；每轮最后一个工具调用必须是 ask_user_question。
+ 2358| ---
+ 2359| 
+ 2360| # vn-gate · 单轮单条目硬门禁
+ 2475| 1. **立即停下**：终止当前一切动作，不再发起任何写操作。
+ 2476| 2. **公开报告**：用 `ask_user_question` 向用户报告「越界的具体动作 / 涉及的文件或目录 / 已产生的影响 / 当前 README 状态」，逐条列明，不省略、不淡化。
+ 2477| 3. **禁止悄悄回滚**：不得自行删除、覆盖、改写已越界写出的文件来「恢复原状」；不得自行把 README 状态改回去。
+ 2478| 4. **禁止继续**：不得以「既然已经写了就顺手做完」「下轮补上确认」为理由继续推进；在用户裁决前，本轮冻结。
+ 2479| 5. **等用户裁决**：由用户决定「保留并补确认 / 撤销（在用户明确指令下才执行）/ 换子条目重来」；裁决结论按 `vn-continuity` §5 记入 `README.md` 阶段确认记录（只追加一行），之后才允许开始新的一轮七步循环。
+ 2480| ```
+ 2481| 
+ 2482| ## 5. 四份 Docx 同步细则
+ 2483| 
+ 2484| ### 5.1 唯一位置与固定 4 个文件名
+ 2485| 
+ 2486| 四份 Docx 的**唯一合法位置**是 `00-Bible/00-Bible-四份版/`（`vn-spec` §2.2 目录树中唯一允许 `.docx` 的子目录）。目录名固定，文件名**固定且仅 4 个**，一一对应收录的 Markdown 源：
+--- all ``` fence lines between 2340 and 2500 ---
+ 2350| ```
+ 2354| ```markdown
+ 2480| ```
+
+=== .bak under Plugins/dsh-user-presets ===
+Plugins\dsh-user-presets\cordis.patch.yml.bak
+Plugins\dsh-user-presets\cordis.patch.yml.bak-20261107-VN-order
+Plugins\dsh-user-presets\cordis.patch.yml.bak-before-scope-guard
+
+=== doubled Plugins/dsh-user-presets paths ===
+Plugins\dsh-user-presets\skills\comfyui-work\moss-image-guide\SKILL.md count=2
+Plugins\dsh-user-presets\skills\prompt-writing\dsh-preset-craft\SKILL.md count=2

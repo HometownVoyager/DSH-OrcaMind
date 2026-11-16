@@ -1,0 +1,44 @@
+Plugins/dsh-user-presets/cordis.patch.yml -> LF
+Plugins/dsh-user-presets/README.md -> LF
+Plugins/dsh-user-presets/VN-工作流现行规范.md -> LF
+Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md -> LF
+Plugins/dsh-user-presets/skills/vn-script/continuity/SKILL.md -> LF
+README.md -> LF
+Reports/预设约束互博成因与治理方案-20261110.md -> LF
+VN-工作流改造施工文档.md -> LF
+VN-工作流改造说明.md -> LF
+
+---- 数字/定位出现处（限定 8 个文件）----
+Plugins/dsh-user-presets/VN-工作流现行规范.md:3| > 本文件是 VN 七预设的**唯一现行规范入口**，取代 `VN-工作流改造施工文档.md`（2753 行）与 `VN-工作流改造说明.md`（220 行）——那两份是 2026-11-07 施工期的历史记录，仅作留档。
+Plugins/dsh-user-presets/VN-工作流现行规范.md:4| > 运行时真正生效的是：`cordis.patch.yml` 里 7 个 `preset-vn-*` 的 persona `prefix`（system 通道，order=0）与 `skills/vn-shared/` 三份 SKILL.md。本文件只是它们的**人类可读索引**，不新增任何规则。
+Plugins/dsh-user-presets/VN-工作流现行规范.md:65| | 「T 块 5 条唯一真源 / 7 persona 逐字引用」 | 已废止；共享规则只在 `vn-shared` 三份 SKILL.md 里各写一次 |
+Reports/预设约束互博成因与治理方案-20261110.md:3| > 调查日期：2026-11-10。范围：`Plugins/dsh-user-presets/`（20 条 `preset-*`，其中 7 条 `preset-vn-*` 为 2026-11-07 新增）、`skills/vn-shared/` 与 7 个阶段目录共 39 份 `SKILL.md`、`VN-工作流改造施工文档.md`（2753 行）、`VN-工作流改造说明.md`，以及 `sour
+Reports/预设约束互博成因与治理方案-20261110.md:123| ## 5. 根因四：同一条约束被复制 77 次，且「唯一真源」本身被声明了多次
+Reports/预设约束互博成因与治理方案-20261110.md:125| - 「**最后一个工具调用必须是 ask_user_question**」在 `Plugins/dsh-user-presets/` 内共 **77 处**：`cordis.patch.yml` 的 VN 区 **13 行**、36 份阶段 `SKILL.md` 各 1 次、`vn-gate/SKILL.md` 3 次；施工文档另有 20 次。
+Reports/预设约束互博成因与治理方案-20261110.md:126| - 「T 块唯一真源」这个**元声明**本身出现在 3 处（[vn-gate/SKILL.md:12](Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L12)、[施工文档:2362](VN-工作流改造施工文档.md#L2362)、[:707](VN-工作流改造施工文档.md#L707)），7 个 persona 又各写一行逐字
+Reports/预设约束互博成因与治理方案-20261110.md:212| | 「最后一个工具调用」重复 77 处 | `Plugins/dsh-user-presets/` 全目录统计（YAML VN 区 13 + 36 份 SKILL + vn-gate 3 + 施工文档 20 + 说明 2 + 其余） |
+VN-工作流改造施工文档.md:4| > 2026-11-10 完成「预设瘦身与矛盾清理」（见 `Reports/预设约束互博成因与治理方案-20261110.md`）：7 个 VN persona 已重写为「宪法 + 独有职责 + 共用规范引用 + 默认节奏」，删除全部 plan-mode 段，移除 77 处「最后一个工具调用必须是 ask_user_question」硬门禁，重写 `vn-shared` 三份 SKILL.md 并
+VN-工作流改造施工文档.md:5| > 本文的「三道锁 / 硬门禁 / 禁止软词 / T 块唯一真源 / 旧行号引用 / 逐字硬约束」等设计已废止；现行规范以 `Plugins/dsh-user-presets/cordis.patch.yml` 的 7 个 VN persona【指令裁决】段 + `skills/vn-shared/` 三份 SKILL.md 为准。本文仅作施工过程与决策留档，不要据此判断现行行为或要求模型遵守。
+VN-工作流改造施工文档.md:697| #### 3.0.9.2 「每轮工作协议与 Read 步硬约束」统一块（T 块，唯一真源在 `vn-gate/SKILL.md`）
+VN-工作流改造施工文档.md:2364| ## 0. 每轮工作协议与 Read 步硬约束（5 条 T 块，全工作流唯一真源）
+VN-工作流改造说明.md:5| > 本文件内的「三道锁 / 单轮单条目硬门禁 / 每轮最后一个工具调用必须是 ask_user_question / T 块唯一真源 / 旧行号引用 / §7.2 运行时校验清单」等表述**均已废止**，仅作施工过程留档；不要据此判断现行行为或要求模型遵守。
+VN-工作流改造说明.md:7| > 施工依据：`VN-工作流改造施工文档.md`（2753 行，修订 `6a7b79c1…`）。
+VN-工作流改造说明.md:22| | 阶段技能 | 新建 7 个阶段目录共 36 份 `SKILL.md`（见 §3） |
+VN-工作流改造说明.md:100| ## 4. 落盘的 39 份 `SKILL.md`
+VN-工作流改造说明.md:222| - 新建：`Plugins/dsh-user-presets/skills/` 下 8 个目录共 39 份 `SKILL.md`
+README.md:55| | `dsh-user-presets` | 13 个自建 agent 预设 bundle（论文撰写、小说创作等）+ 7 个 `VN-*` 工作流预设（2026-11-07 施工，共 20 条 `preset-*`）；注册在 `~/.dsh/profiles/web/package.json` 的 `link:` 依赖 + `dsh.profile.bundles`；**skills 路径是绝对路
+
+---- prompt-writing tree files ----
+Plugins\dsh-user-presets\skills\prompt-writing\dsh-preset-craft\SKILL.md
+Plugins\dsh-user-presets\skills\prompt-writing\prompt-patterns\SKILL.md
+Plugins\dsh-user-presets\skills\prompt-writing\prompt-project-bootstrap\SKILL.md
+Plugins\dsh-user-presets\skills\prompt-writing\prompt-revision\SKILL.md
+Plugins\dsh-user-presets\skills\prompt-writing\prompt-testing\SKILL.md
+Plugins\dsh-user-presets\skills\prompt-writing\search-query-craft\SKILL.md
+Plugins\dsh-user-presets\skills\prompt-writing\spec-common\SKILL.md
+Plugins\dsh-user-presets\skills\prompt-writing\spec-prompt-lite\SKILL.md
+Plugins\dsh-user-presets\skills\prompt-writing\spec-prompt-system\SKILL.md
+
+---- compile_prompt.py locations ----
+Plugins\dsh-user-presets\skills\comfyui-work\moss-image-prompt-enhancer\scripts\compile_prompt.py
+Plugins\dsh-user-presets\skills\comfyui-work\moss-image-prompt-enhancer\scripts\test_compile_prompt.py

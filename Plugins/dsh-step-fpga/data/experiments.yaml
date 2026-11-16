@@ -1,0 +1,175 @@
+# 《STEP BaseBoard v4.0 实验指导书（STEP-MAX10-08A）》实验索引
+# 事实源：工作区 PDF（288 页）目录 + 逐页文本抽取；page 为 PDF 物理页码（1-based）。
+# 用 list_experiments 取清单，read_manual_page 按页读正文/渲染图。
+
+manual:
+  title: "STEP BaseBoard v4.0 实验指导书（STEP-MAX10-08A）"
+  file: "STEP FPGA/V4.0/STEP BaseBoard v4.0 实验指导书（STEP-MAX10-08A）.pdf"
+  pages: 288
+  board_chapter:
+    title: "1. 板卡介绍"
+    pages: "6-12"
+    pinout_page: 12
+
+experiments:
+  - id: matrix_keyboard
+    n: 2
+    title: "矩阵键盘键入系统设计"
+    pages: "13-24"
+    task: "按动 4x4 矩阵键盘，核心板数码管显示键值"
+    modules: [debounce, keyscan, seg_decoder]
+    peripherals: [matrix_keyboard, seven_segment]
+    key_points: ["行扫描 200Hz", "20ms 消抖 + 下降沿检测", "键值转 BCD/段码"]
+  - id: electronic_organ
+    n: 3
+    title: "简易电子琴设计"
+    pages: "25-32"
+    task: "矩阵键盘驱动底板无源蜂鸣器发出不同音调"
+    modules: [keyboard, tone, pwm]
+    peripherals: [matrix_keyboard, buzzer]
+    key_points: ["音调→PWM 周期查表", "12MHz 分频到音阶频率"]
+  - id: rotary_adjust
+    n: 4
+    title: "旋转调节系统设计"
+    pages: "33-40"
+    task: "旋转编码器调整核心板数码管数值"
+    modules: [encoder_filter, direction_detect, counter, seg_display]
+    peripherals: [rotary_encoder, seven_segment]
+    key_points: ["A/B 相鉴相", "2kHz 采样 + 三级锁存消亚稳态"]
+  - id: game_score
+    n: 5
+    title: "比赛计分系统设计"
+    pages: "41-55"
+    task: "独立按键控制底板 8 位数码管，0~999 计分"
+    modules: [debounce, counter, hc595_driver, segment_scan]
+    peripherals: [push_buttons, eight_digit_7seg]
+    key_points: ["74HC595 串转并 16 位数据", "动态扫描刷新率", "BCD 转段码"]
+  - id: uart_monitor
+    n: 6
+    title: "串口监视系统设计"
+    pages: "56-73"
+    task: "UART 接收 PC 数据并在数码管显示"
+    modules: [baud_gen, uart_rx, uart_tx, decoder]
+    peripherals: [uart, eight_digit_7seg]
+    key_points: ["波特率分频", "起始位检测 + 中点采样", "HEX/ASCII 格式预编译开关"]
+  - id: voltmeter
+    n: 7
+    title: "简易电压表设计"
+    pages: "74-88"
+    task: "ADC081S101 测电位器电压并显示"
+    modules: [spi_adc_driver, pll, bin_to_bcd, seg_display]
+    peripherals: [adc, eight_digit_7seg]
+    key_points: ["ALTPLL 生成 24MHz", "SPI 模式时序", "采样值×129 与左移加三 BCD"]
+  - id: waveform_generator
+    n: 8
+    title: "波形信号发生器设计"
+    pages: "89-100"
+    task: "旋转编码器控制 DAC 输出正弦/锯齿/三角波"
+    modules: [dds, wave_rom, spi_dac_driver, encoder]
+    peripherals: [dac, rotary_encoder]
+    key_points: ["DDS 相位累加器", "256 点波表 ROM 初始化(mif)", "FPGA 配置模式需支持 ROM 初始化数据"]
+  - id: proximity
+    n: 9
+    title: "智能接近系统设计"
+    pages: "101-112"
+    task: "RPR-0521RS 接近传感，I2C 读取并指示"
+    modules: [i2c_master, rpr0521rs_driver, indicator]
+    peripherals: [i2c_sensors]
+    key_points: ["I2C 双向端口 inout 设计", "起始/停止/应答时序"]
+  - id: hygrometer
+    n: 10
+    title: "数字温湿度计设计"
+    pages: "113-124"
+    task: "SHT-30 温湿度测量并显示"
+    modules: [i2c_master, sht30_driver, data_convert, seg_display]
+    peripherals: [i2c_sensors, eight_digit_7seg]
+    key_points: ["SHT-30 单次测量命令", "CRC 校验", "温湿度换算公式"]
+  - id: barometer
+    n: 11
+    title: "数字气压计设计"
+    pages: "125-136"
+    task: "BMP280 气压/海拔测量"
+    modules: [i2c_master, bmp280_driver, compensation]
+    peripherals: [i2c_sensors]
+    key_points: ["BMP280 校准寄存器读取", "补偿计算"]
+  - id: eeprom
+    n: 12
+    title: "EEPROM 功能测试设计"
+    pages: "137-148"
+    task: "AT24C02 读写测试"
+    modules: [i2c_master, at24c02_driver, test_controller]
+    peripherals: [i2c_sensors]
+    key_points: ["页写/随机读", "ACK 轮询"]
+  - id: accelerometer
+    n: 13
+    title: "加速度计设计"
+    pages: "149-160"
+    task: "ADXL345 三轴加速度读取"
+    modules: [i2c_master, adxl345_driver, display]
+    peripherals: [i2c_sensors]
+    key_points: ["ADXL345 初始化与数据格式", "倾角换算"]
+  - id: lcd_display
+    n: 14
+    title: "液晶屏显示系统设计"
+    pages: "161-176"
+    task: "2.4 寸 RGB LCD 显示文字/图片"
+    modules: [spi_lcd_driver, char_rom, display_ctrl]
+    peripherals: [display]
+    key_points: ["SPI 时序与初始化命令", "取模软件生成字模", "与 HDMI 管脚复用冲突"]
+  - id: hdmi
+    n: 15
+    title: "HDMI 显示驱动设计"
+    pages: "177-192"
+    task: "HDMI 接口输出彩条"
+    modules: [tmds_encoder, vga_timing, pll]
+    peripherals: [display]
+    key_points: ["TMDS 8b/10b 编码", "像素时钟 PLL", "与 LCD 复用同一组管脚"]
+  - id: wifi_esp8266
+    n: 16
+    title: "WIFI_ESP8266 通信系统设计"
+    pages: "193-208"
+    task: "ESP8266 AT 指令联网通信"
+    modules: [uart, at_parser, wifi_ctrl]
+    peripherals: [wifi, uart]
+    key_points: ["AT 指令配置流程", "CH340 跳线烧写固件"]
+  - id: adc_oscilloscope
+    n: 17
+    title: "ADC 示波器系统设计"
+    pages: "209-224"
+    task: "ADC 采样 + RAM 缓存 + LCD 波形显示"
+    modules: [adc_driver, dual_port_ram, freq_measure, wave_render]
+    peripherals: [adc, display]
+    key_points: ["跨时钟域单比特同步", "频率测算", "图像叠加"]
+  - id: fft
+    n: 18
+    title: "FFT 频谱分析设计"
+    pages: "225-240"
+    task: "FFT IP 核做频谱分析并显示"
+    modules: [fft_ip, complex_abs, wave_render]
+    peripherals: [adc, display]
+    key_points: ["FFT  megafunction 配置", "复数取模"]
+  - id: riscv
+    n: 19
+    title: "riscv 软核移植"
+    pages: "241-270"
+    task: "PicoRV32 软核移植到 STEP-MAX10"
+    modules: [picorv32, memory_bus, peripherals]
+    peripherals: [uart, gpio]
+    key_points: ["RV32I 指令集", "PicoRV32 原生内存接口", "固件 hex 初始化"]
+
+reference_docs:
+  - { name: "底板原理图", file: "STEP FPGA/V4.0/原理图STEP-Baseboard-V4.0.pdf" }
+  - { name: "FPGA 引脚定义 pptx", file: "STEP FPGA/V4.0/FPGA引脚定义(配合底板）_MAX10.pptx" }
+  - { name: "STEP-MAX10 实验指导书（核心板）", file: "STEP FPGA/STEP-MAX10/STEP MAX10-实验指导书.pdf" }
+  - { name: "74HC595 数据手册", file: "STEP FPGA/V4.0/相关资料/相关资料/4.74HC595/74HC595.pdf" }
+  - { name: "ADC081S101", file: "STEP FPGA/V4.0/相关资料/相关资料/6.ADC081S101/ADC081S101.pdf" }
+  - { name: "DAC081S101", file: "STEP FPGA/V4.0/相关资料/相关资料/7.DAC081S101/DAC081S101.pdf" }
+  - { name: "SHT-30", file: "STEP FPGA/V4.0/相关资料/相关资料/9.SHT-30/Datasheet_SHT3x_DIS.pdf" }
+  - { name: "BMP280", file: "STEP FPGA/V4.0/相关资料/相关资料/12.BMP280/bst-bmp280-ds001.pdf" }
+  - { name: "ADXL345", file: "STEP FPGA/V4.0/相关资料/相关资料/10.ADXL345/adxl345.pdf" }
+  - { name: "RPR-0521RS", file: "STEP FPGA/V4.0/相关资料/相关资料/8.RPR-0521RS/rpr-0521rs-e.pdf" }
+  - { name: "AT24C02", file: "STEP FPGA/V4.0/相关资料/相关资料/14.AT24C02/-AT24C02.pdf" }
+  - { name: "ESP8266 AT 指令集", file: "STEP FPGA/V4.0/相关资料/相关资料/13.ESP8266/ESP8266-AT指令集.pdf" }
+  - { name: "CH340 数据手册", file: "STEP FPGA/V4.0/相关资料/相关资料/5.CH340/CH340DS1.PDF" }
+  - { name: "视频 quartusII 软件操作", file: "STEP FPGA/STEP-MAX10/视频/quartusII软件操作.mp4" }
+  - { name: "视频 仿真工具使用", file: "STEP FPGA/STEP-MAX10/视频/仿真工具使用.mp4" }

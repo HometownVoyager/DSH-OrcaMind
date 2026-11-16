@@ -1,0 +1,7 @@
+==== D_counts ====
+total replacements: 8 across 5 files
+    1  Plugins/dsh-user-presets/VN-工作流现行规范.md
+    1  README.md
+    1  Reports/预设约束互博成因与治理方案-20261110.md
+    4  Reports/预设约束互博治理后复查-20261110.md
+    1  VN-工作流改造说明.md

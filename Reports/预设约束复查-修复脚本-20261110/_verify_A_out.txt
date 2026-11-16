@@ -1,0 +1,22 @@
+R3 末位收尾 (应为0)                                  0 OK
+R7 不跨组套用 (应为0)                                 0 OK
+R4 无确认不进入 (应为0)                                0 OK
+R2 按目录链逐项过 (应为0)                               0 OK
+R2 全量核查 (允许 0 或否定语境)                           3 vn-outline\vn-outline-chapter\SKILL.md:40 vn-outline\vn-outline-endings-flags\SKILL.md:42 vn-outline\vn-outline-structure\SKILL.md:41
+R2 修正本轮产物 (应为0)                                1 vn-script\continuity\SKILL.md:49
+R2 承担全链 (应为0)                                  1 vn-screenplay\staging-continuity\SKILL.md:15
+R5 硬门应写死 (应为0)                                 0 OK
+R5 禁止开始 (应为0)                                  0 OK
+R8 悬空 §3.0.7 (应为0)                             0 OK
+R8 悬空 §2.2/2.3/2.4 (应为0)                       0 OK
+R1 B-scheme 四节 (应为0，除 docx 收录名)                0 OK
+
+--- R1 A-scheme in vn-continuity ---
+① 年龄与生理时间轴矩阵 -> YES
+② 空间拓扑与动线模型 -> YES
+③ 称谓三层解耦网格 -> YES
+④ 核心资产与体态状态机 -> YES
+
+--- R6 已确认 rule ---
+ 53| - 用户裁决后，在 `README.md` B 区「进度记录」追加一行记入「冲突位置 / 裁决结论 / 裁决人 / 轮次」；A 区状态仍保持「待确认」，不因裁决自行置「已确认」。状态置「已确认」的统一判据是用户在确认中明确认可本轮成果后由 AI 代为登记（见 `vn-gate` §4），用户显式授权
+ 60| - 状态从「待确认」变「已确认」的默认途径是用户在确认中明确认可；有冲突时本轮不写「一致 / 待确认」行，先停下询问，裁决后再追加确认记录行。

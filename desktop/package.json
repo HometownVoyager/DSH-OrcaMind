@@ -1,0 +1,59 @@
+{
+  "name": "orca-mind-desktop",
+  "productName": "OrcaMind",
+  "version": "1.0.0",
+  "description": "OrcaMind —— DeepSeek Harness 的固定薄壳桌面窗口；服务入口固定为仓库根 serve-harness.mjs，更新内核无需重编本壳。",
+  "author": "OrcaMind",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "icon": "node scripts/make-icon.js",
+    "dist": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.orcamind.desktop",
+    "productName": "OrcaMind",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "preload-translate.js",
+      "loading.html",
+      "error.html",
+      "translate.html",
+      "tts-service.js",
+      "desktop.config.json",
+      "oauth-client.local.json"
+    ],
+    "extraResources": [
+      {
+        "from": "build",
+        "to": "build"
+      }
+    ],
+    "asar": true,
+    "npmRebuild": false,
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "OrcaMind.exe"
+    },
+    "electronDownload": {
+      "mirror": "https://npmmirror.com/mirrors/electron/"
+    }
+  }
+}

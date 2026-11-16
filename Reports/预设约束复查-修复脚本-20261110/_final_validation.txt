@@ -1,0 +1,22 @@
+YAML: parsed OK, 20 preset rows, 3 disabled
+  以 `ask_user_question` 收尾         0
+  不跨组套用                            0
+  无用户明确确认不进入下一轮                    0
+  按目录链逐项过                          0
+  应写死                              0
+  禁止开始                             0
+  §3.0.7                           0
+  §2.2                             0
+  §2.3                             0
+  §2.4                             0
+  ① 基准事实与创意核心                      0
+  三道门禁                             0
+P0 residual patterns: 0 non-zero
+LINKS: 89 total, 0 missing
+SYNC-POLICY exists: True
+notes on 29 duplicate SKILL.md: 29
+backup: True
+historical fences: 施工=3 说明=2
+embedded draft gone: True
+review report §9: 1
+root README archive index: 1

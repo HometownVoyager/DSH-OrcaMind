@@ -1,0 +1,196 @@
+
+#### comfyui guide 55-70 (81 lines) ####
+   55| `SKILL.md`、`references/layout.md`、`scripts/compile_prompt.py`、`scripts/test_compile_prompt.py`、
+   56| `agents/openai.yaml`）。
+   57| 
+   58| 适用时机：把用户的粗略构思扩写成详细 caption，或需要精确控制文字/元素摆放位置的 **Layout** 草稿。
+   59| 
+   60| **Layout 模式务必使用官方编译器，不要手算坐标**：模型实际接收的是 `abs_centralized` / `yxyx`
+   61| 格式的居中坐标（每个盒子先按像素边缘取整，再分别减去 height/2 与 width/2，顺序为 y1,x1,y2,x2），
+   62| 手算必错。`compile_prompt.py` 负责这步换算并校验越界盒子：
+   63| 
+   64| ```bash
+   65| python Plugins/dsh-user-presets/skills/comfyui-work/moss-image-prompt-enhancer/scripts/compile_prompt.py \
+   66|   draft.json --output prompt.txt
+   67| ```
+   68| 
+   69| 草稿约定要点：宽高必须是 16 的正整数倍且与生图分辨率一致；`bbox_coord_space="abs"`、
+   70| `bbox_format="xyxy"`；盒子为画布左上角起算的实际像素 `[x_min,y_min,x_max,y_max]`；
+
+#### staging-draft-format (77 lines) ####
+    1| ---
+    2| name: staging-draft-format
+    3| description: VN-演出剧本阶段融合稿格式规范：定义 04-ScreenPlay/draft-vN/sc001.md 与 scene-map.md 的三位编号与 SC-001 场次号体系，写死硬门，进度必须落磁盘，禁止一次性交付多份文档。
+    4| ---
+    5| 
+   30| - **不把 `02-Script/` 正文复制进 `04-ScreenPlay/`**：`04-ScreenPlay/` 只写「底本 + 演出指示」融合稿，不复制纯正文另建同义文件。
+   31| 
+   32| ## 硬门（应写死）
+   33| **没有 `<作品名>/03-Asset/asset-index.md` 与 `<作品名>/03-Asset/asset-gap.md` 且未经用户确认之前，不开始逐场演出剧本**。未满足硬门应停下询问，不预写逐场稿。这两份由 vn-asset-list（建骨架）与 vn-asset-make（补磁盘实际状态）协作生成，本预设只读、不改写、不另建副本。
+   34| 
+   35| ## 进度应落磁盘
+   36| 长流程落盘：进度应落磁盘，不只存在对话里；每轮只增不改地写入 `04-ScreenPlay/` 并在 README.md 追加一行。README.md 采用双区结构：A 区「当前状态」块 5 字段（当前预设 / 当前阶段 / 本轮子条目 / 状态 / 下一候选）就地更新，B 区「进度记录」只追加一行、永不改写或删除既有行；状态默认「待确认」，不自行置「已确认」。
+
+#### asset-index-gap-bootstrap (73 lines) ####
+    1| ---
+    2| name: asset-index-gap-bootstrap
+    3| description: VN-资产列表阶段索引/缺口骨架技能：逐轮单条目建 03-Asset/asset-index.md 与 03-Asset/asset-gap.md 的计划态骨架，磁盘实际状态留待 vn-asset-make 补齐，不填实际状态、不建副本。
+    4| ---
+    5| 
+    6| # 资产索引 / 缺口计划态骨架（asset-index-gap-bootstrap）
+    7| 
+    8| 本 skill 是 VN-资产列表（vn-asset-list）阶段的专属协作技能。默认使用中文与用户交流。职责：建 `03-Asset/asset-index.md`（资产索引）与 `03-Asset/asset-gap.md`（资产缺口）的**计划态骨架**，逐轮单条目、1 条资产对应 1 条索引/缺口骨架。磁盘实际状态默认留待 VN-资产制造（vn-asset-make）补齐，本 skill 不填实际状态。这两份是 `vn-screenplay` 逐场演出剧本的硬门前置，本预设不代替用户确认。
+    9| 
+   10| ## 一、唯一落点 / 写死路径
+   26| 
+   27| - 1 条资产对应 1 条索引骨架 + 1 条缺口骨架，作为一个不可拆分的最小产物单元；每轮只处理 1 个子条目（1 条资产），不在本轮预写其它资产条目，不一次写出整份索引或整份缺口表。
+   28| - 每轮只处理 1 个子条目，由用户从候选清单中选定，不自主规划本阶段子任务；本轮的索引条目与缺口条目应在同一轮 Do → Check → Write 内完成，不拆到下一轮。
+   29| - 这两份是 `vn-screenplay` 逐场演出剧本硬门前置：未完成并经用户确认前，不开始逐场稿；本预设不代替用户确认，硬门未满足应停下询问。
+   30| 
+   31| ## 三、硬约束
+   32| 
+
+#### staging-acceptance (75 lines) ####
+   30| | # | 检查项 | 判定依据 | 不通过怎么办 |
+   31| |---|--------|----------|--------------|
+   32| | 1 | Specifications.md 存在 | 显式读 `<作品名>/Specifications.md` | 缺失则停下询问，不补建 |
+   33| | 2 | 当前预设匹配 | 显式读 `<作品名>/README.md`，按三分支判定 | 仅「其余不匹配」停下询问且不动任何文件 |
+   34| | 3 | 上游交接合法 | README.md A 区「状态」字段 | 合法交接就地登记 + B 区追加一行；其余停下 |
+   35| | 4 | 硬门前置存在 | 只读 `<作品名>/03-Asset/asset-index.md` 与 `asset-gap.md` | 缺失或未经用户确认则禁止开始逐场演出剧本 |
+   36| | 5 | 场次号连续 | 按 `vn-continuity`，SC-001 三位递增不复用 | 停下询问，不自行改号 |
+   37| | 6 | 状态词合法 | 只用 8 词状态词表 | 停下询问，不自行改词 |
+   38| | 7 | 路径一致 | 唯一产出目录为 04-ScreenPlay/，无旧路径落点 | 停下询问 |
+   43| | 12 | 无计划外文档 | 04 只含三类固定产出 | 停下询问 |
+   44| 
+   45| ## 硬门
+   46| 没有 `<作品名>/03-Asset/asset-index.md` 与 `<作品名>/03-Asset/asset-gap.md` 且未经用户确认之前，**不开始逐场演出剧本**；未满足硬门应停下询问，不预写逐场稿。这两份由 vn-asset-list / vn-asset-make 协作生成，本预设只读、不改写、不另建副本。
+   47| 
+   48| ## 只读与禁写
+
+#### shigong 2348-2362/2476-2484 (2758 lines) ####
+ 2348| - **禁止**自行把状态写成「已确认」：状态从「待确认」变为「已确认」的**唯一**途径是用户在 `ask_user_question` 中明确确认（见 `vn-gate` 状态机）。
+ 2349| - 有冲突时（§5），本轮**不写**「一致 / 待确认」行，先停下询问；裁决后再按裁决结论追加确认记录行。
+ 2350| ```
+ 2351| 
+ 2352| ### 4.3 `vn-gate/SKILL.md`（name: vn-gate）
+ 2353| 
+ 2354| ```markdown
+ 2355| ---
+ 2356| name: vn-gate
+ 2357| description: VN 工作流单轮单条目硬门禁。锁 2 的七步循环、ask_user_question 收尾硬门禁、README 状态机与越界自我纠正；每轮最后一个工具调用必须是 ask_user_question。
+ 2358| ---
+ 2359| 
+ 2360| # vn-gate · 单轮单条目硬门禁
+ 2361| 
+ 2362| 本 skill 实现 §2.6 三道锁中的**锁 2（单轮单条目协议）**与**锁 3（README 阶段状态机 + 提问确认）**。措辞一律为硬约束，**禁止**出现「建议」「尽量」「可以视情况」等软词。
+ 2476| 2. **公开报告**：用 `ask_user_question` 向用户报告「越界的具体动作 / 涉及的文件或目录 / 已产生的影响 / 当前 README 状态」，逐条列明，不省略、不淡化。
+ 2477| 3. **禁止悄悄回滚**：不得自行删除、覆盖、改写已越界写出的文件来「恢复原状」；不得自行把 README 状态改回去。
+ 2478| 4. **禁止继续**：不得以「既然已经写了就顺手做完」「下轮补上确认」为理由继续推进；在用户裁决前，本轮冻结。
+ 2479| 5. **等用户裁决**：由用户决定「保留并补确认 / 撤销（在用户明确指令下才执行）/ 换子条目重来」；裁决结论按 `vn-continuity` §5 记入 `README.md` 阶段确认记录（只追加一行），之后才允许开始新的一轮七步循环。
+ 2480| ```
+ 2481| 
+ 2482| ## 5. 四份 Docx 同步细则
+ 2483| 
+ 2484| ### 5.1 唯一位置与固定 4 个文件名
+
+#### yml 5089-5097 (5700 lines) ####
+ 5089|           计划类文档，禁止修改 03-Asset/asset-list.md 与 03-Asset/notes/，禁止改写
+ 5090|           00-Bible/ 01-Plan/ 02-Script/ 上游任何文件。生图工具暂不绑定（决策「再说吧」）：
+ 5091|           每轮调用前必须用 ask_user_question 询问用户选择工具（ComfyUI 本地 /
+ 5092|           Nano Banana 2 在线 / 其它）并确认参数，未确认禁止调用任何生图工具；后续
+ 5093|           可加 ComfyUI 或 Nano Banana 2，届时更新本预设工具行。每轮只产出 1 个资产
+ 5094|           文件，核对文件名与规格单一致、落点在 generated/ 对应分类子目录、无计划外
+ 5095|           文件后，仅在 README.md 追加一行进度（状态「待确认」）。上游 00-Bible/
+ 5096|           01-Plan/ 02-Script/ 03-Asset/asset-list.md 与 03-Asset/notes/ 一律只读；
+ 5097|           下游 04-ScreenPlay/ 05-Game/ 一律禁止写入。本预设只挂 vn-shared 与
+
+#### first report 120-135/160-213 (213 lines) ####
+  120| 
+  121| ---
+  122| 
+  123| ## 5. 根因四：同一条约束被复制 77 次，且「唯一真源」本身被声明了多次
+  124| 
+  125| - 「**最后一个工具调用必须是 ask_user_question**」在 `Plugins/dsh-user-presets/` 内共 **77 处**：`cordis.patch.yml` 的 VN 区 **13 行**、36 份阶段 `SKILL.md` 各 1 次、`vn-gate/SKILL.md` 3 次；施工文档另有 20 次。
+  126| - 「T 块唯一真源」这个**元声明**本身出现在 3 处（[vn-gate/SKILL.md:12](Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L12)、[施工文档:2362](VN-工作流改造施工文档.md#L2362)、[:707](VN-工作流改造施工文档.md#L707)），7 个 persona 又各写一行逐字相同的引用（:4320 :4604 :4855 :5125 :5399 :5684 :5970）。模型每轮要先判断「我看到的这段是全文、索引、还是引用？该执行哪一份？」
+  127| - 术语不统一：「三道锁」在设计文档是核心概念，YAML 的 7 个 persona **0 命中**，只有 `vn-game` [:5934](Plugins/dsh-user-presets/cordis.patch.yml#L5934) 改叫「三道门禁」；「末位」在 YAML 仅 1 次、施工文档 15 次、vn-gate 0 次。
+  128| - **旧文本效力三方矛盾**：[vn-gate/SKILL.md:97-105](Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L97-L105) 宣称旧 Agentic work 表述「已全部删除、不再生效」，但引用的行号（:3307 :3313 :2632 :3687）**在当前文件已失效**（实际为 :3357 :3363 :2673 :3738），3 条旧预设只是 `disabled: true`、**文本逐字仍在**；[说明:204](VN-工作流改造说明.md#L204) 又宣称「0 命中」。模型一旦检索到旧句，无法从提示词内部判定其效力。
+  129| 
+  130| ---
+  131| 
+  132| ## 6. 治理方案（按性价比排序）
+  133| 
+  134| ### 方案 A · 最小改动、立刻见效：补一部「运行时宪法」（强烈建议先做）
+  135| 
+  160| 
+  161| | # | 动作 | 位置 |
+  162| |---|---|---|
+  163| | B1 | 二选一：**从 7 个 VN 预设移除 `plan-mode` 行**（推荐；单轮单条目本就不需要 plan mode），或把 `:4445` 改成「若处于 plan mode，则本轮的 Stop 提问由 `exit_plan_mode` 承担，其余轮次末位为 `ask_user_question`」 | `cordis.patch.yml` 7 处 plan-mode 段 |
+  164| | B2 | 明确「README 状态登记」的时点：规定为**下一轮 Read 步之前**完成，不计入上一轮「提问后禁止工具调用」 | `vn-gate/SKILL.md:42` 与 :56/:122-125、施工文档:663 |
+  165| | B3 | 给「规划 / 预写 / 预告 / 列标题 / 候选清单」下一个一句话定义：「列 ≤3 个候选标题且**不展开内容**＝允许；写入任何字段/草案＝规划，禁止」 | `vn-gate/SKILL.md` §1 / §7 |
+  166| | B4 | 把 `vn-continuity` 的全链双向箭头改为「只核查本轮唯一产物 + 其直接上游已确认文件；下游一律不探测」 | `vn-continuity/SKILL.md:29-33` |
+  167| | B5 | 给 Read 步定序：`skill(vn-gate) → 首轮显式读 Specifications.md+Direction.md → 读 README.md → 读本阶段已有产物`，写死一次，删掉各处的「必须先」重复表述 | `vn-gate/SKILL.md` §0 第 4 条 |
+  168| | B6 | 修 `vn-gate/SKILL.md:97-105` 的失效行号；把 3 条 `disabled: true` 旧预设里的 Agentic work 句子加注释标注「历史文本，已停用」，或直接删除（保留 config 供回退即可） | 同上 |
+  169| 
+  170| ### 方案 C · 结构性减重（中期，收益最大但需要回归测试）
+  171| 
+  172| 1. **单一真源，真正只留一份**：`vn-gate §0` 的 5 条 T 块全文只保留在 `vn-gate/SKILL.md`；7 个 persona 的「新七步循环 / 单轮单条目硬约束 / README 状态机校验 / 求证与拍板规则 / 技能使用 / 输出约定 / 红线」这些**逐字复制块**全部删掉，改成一行「按 `vn-gate` 执行，冲突按本文【指令裁决】段」。当前 7 个 persona 共 509 行 prefix，可压到约 7×15 行。
+  173| 2. **绝对句降权**：把「一律 / 严禁」批量降级为「默认 / 除非用户明确要求」，只保留方案 A 里那 3 条硬红线用「不得」。删除「禁止出现软词」这条元规则——软词正是给模型降权的工具，不是漏洞。
+  174| 3. **把门禁从自然语言搬到物理层**（施工文档 [:48](VN-工作流改造施工文档.md#L48) 自己引用的 StateGate 结论）：锁 1 的 `customSkillDirs` 已经做对了，继续沿用；但「单轮单条目 / 末位提问 / 状态机」仍是纯 prompt 约束。可评估用现有 `dsh-tool-gate`（宿主侧 `tools.restrict` 白名单，[README.md:60](README.md#L60)）或新增一个轻量 Host 插件，在**工具调用层**做「一轮只允许 1 次 write + 末位必须是 ask_user」的校验，让模型不必在思考里自我执法。
+  175| 4. **skill 按需加载，不每轮全量注入**：`vn-gate` 已是「每轮强制加载」，可改为「首轮加载一次 + 后续轮只在状态机变更时重载」，配合 A 段宪法，减少每轮重复的 132 处绝对词。
+  176| 
+  177| ### 方案 D · 验证口径
+  178| 
+  179| 改完必须**开新会话**（Cordis 已运行会话保留启动时的插件修订，[VN-工作流改造说明.md:25](VN-工作流改造说明.md#L25)）。建议用同一组 5 条测试 prompt 对比改造前后：
+  180| 
+  181| 1. 「一次做完七个，别逐个问」→ 期望：要么按用户指令执行、要么一句话给出二选一提问，**不出现大段自我辩解**。
+  182| 2. 「顺便把大纲也写了」→ 期望：按红线处理，不反复自证。
+  183| 3. 首轮无指令 → 期望：Read 步定序执行、报 1 个子条目、末位提问。
+  184| 4. plan mode 开启时的收尾 → 期望：不再出现两个「最后工具调用」互搏。
+  185| 5. 用 `reasoning` 模型的思考长度 / 工具调用数做前后对比，量化「互博消耗」。
+  186| 
+  187| ---
+  188| 
+  189| ## 7. 需要用户拍板的取舍
+  190| 
+  191| - **要不要恢复 Agentic work 的自由度？** 方案 A 把「一轮只做 1 个」降为默认节奏，等于部分回退 11-07 改造的初衷（防「一轮写满六字段」）。若用户仍要严格逐条目，可把「单轮单条目」列入第 4 条硬红线，但**必须同时保留「用户可显式授权一次做完」的出口**，否则互博源仍在。
+  192| - **是否接受移除 plan-mode？** 移除后 VN 预设不再有规划模式；保留则需按 B1 写清折算规则。
+  193| - **是否要动 Host 插件（方案 C3）？** 收益最大但影响所有会话，需单独排期与回归。
+  194| 
+  195| ---
+  196| 
+  197| ## 附：关键证据索引
+  198| 
+  199| | 结论 | 位置 |
+  200| |---|---|
+  201| | 纯 order 排序 + join，无优先级字段 | [core/system-prompt/src/index.ts:253-256](source/packages/core/system-prompt/src/index.ts#L253-L256)、[:296-300](source/packages/core/system-prompt/src/index.ts#L296-L300) |
+  202| | persona prefix = system, order=0；suffix=10200 | [core/system-prompt/src/index.ts:136-172](source/packages/core/system-prompt/src/index.ts#L136-L172)、[:196-199](source/packages/core/system-prompt/src/index.ts#L196-L199) |
+  203| | agent-instructions 是 user-role `<system-reminder>`，插在用户 prompt 之后 | [agent-instructions/src/index.ts:351-354](source/packages/context/agent-instructions/src/index.ts#L351-L354)、[render.ts:18-20](source/packages/context/agent-instructions/src/render.ts#L18-L20) |
+  204| | skill 正文是 tool result，catalog 是 user 消息且不在 system prompt | [tool-skill/src/index.ts:128, 258-287](source/packages/skill/tool-skill/src/index.ts#L128)、[tests/tool-skill.spec.ts:343](source/packages/skill/tool-skill/tests/tool-skill.spec.ts#L343) |
+  205| | 官方预设 persona 仅 1 行（对比自建 80–200 行） | [web-app/presets/standard.patch.yml:14](source/packages/bundle/web-app/presets/standard.patch.yml#L14) |
+  206| | 施工文档自述「纯自然语言约束会退化成一句无效的话」 | [施工文档:48](VN-工作流改造施工文档.md#L48) |
+  207| | 禁止软词的元规则 | [施工文档:203](VN-工作流改造施工文档.md#L203)、[vn-gate/SKILL.md:8](Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L8) |
+  208| | 裁决规则被明确排除在运行时提示词外 | [施工文档:369](VN-工作流改造施工文档.md#L369) |
+  209| | 两个互斥的「最后工具调用」 | [cordis.patch.yml:4445](Plugins/dsh-user-presets/cordis.patch.yml#L4445)、[vn-gate/SKILL.md:42](Plugins/dsh-user-presets/skills/vn-shared/vn-gate/SKILL.md#L42) |
+  210| | 旧预设的「以用户指令为准 / 视为已确认」逃生阀 | [cordis.patch.yml:1031](Plugins/dsh-user-presets/cordis.patch.yml#L1031)、[:1075](Plugins/dsh-user-presets/cordis.patch.yml#L1075)（VN 段 0 命中） |
+  211| | 真实碰撞：用户「一次做完七个」vs 必须拒绝 | [说明:4](VN-工作流改造说明.md#L4)、[:176-178](VN-工作流改造说明.md#L176-L178) |
+  212| | 「最后一个工具调用」重复 77 处 | `Plugins/dsh-user-presets/` 全目录统计（YAML VN 区 13 + 36 份 SKILL + vn-gate 3 + 施工文档 20 + 说明 2 + 其余） |
+  213| 
+
+#### search-query-craft files ####
+game-design\search-query-craft\SKILL.md
+official-docs\search-query-craft\SKILL.md
+paper-writing\search-query-craft\SKILL.md
+prompt-writing\search-query-craft\SKILL.md
+social-issues\search-query-craft\SKILL.md
+
+#### Agentic work / 末位 in yml ####
+  723| ## 教学方法（Agentic work）
+  725| - 检阅完成后自主规划每节课的子任务（输入材料、输出任务、练习与检测），调用 language-teaching-flow skill 与工具产出可直接使用的教学内容，而非等待学习者逐步发出每一个微指令；影响学习路线的关键决策（换教材、改级别目标、调整四技能侧重）先经学习者拍板。
+  772| - Plan 划：自主规划本节课的输入、输出、练习与检测安排（Agentic work）；
+ 2383| - Plan 划：自主规划本节课的讲解、练习与检测安排（Agentic work）；
+ 2673| - 随后以 Agentic work 的方式自主规划该阶段内的子任务，调用所需技能或工具，产出一份可供用户审阅的草稿，而不是等待用户逐步发出每一个微指令。符合已确认规则的子任务可以自行完成；影响全局一致性的关键决策必须先经用户拍板，缺口处理按「求证与拍板规则」执行。
+ 2679| - Plan 划：自主规划该阶段内的子任务（Agentic work）；写新章节或关键场景前，先输出场景起飞检查卡（`<!-- SCENE_PREFLIGHT_START -->` … `<!-- SCENE_PREFLIGHT_END -->`）并对照 `00-设定/anchors.md` 与 `规范-剧本.md` 逐项核对；
+ 3357| - 随后以 Agentic work 的方式自主规划该阶段内的子任务，调用所需技能或工具，产出一份可供用户审阅的草稿，而不是等待用户逐步发出每一个微指令。符合已确认规则的子任务可以自行完成；影响全局一致性的关键决策必须先向用户确认。
+ 3363| - Plan 划：自主规划该阶段内的子任务（Agentic work）；
+ 3738| - 随后以 Agentic work 的方式自主规划本轮子任务，调用所需技能或工具，产出一份可供用户审阅的草稿，而不是等待用户逐步发出每一个微指令。符合已确认规则的子任务可以自行完成；影响全局一致性的关键决策与缺口裁决必须先向用户确认。
+ 3744| - Plan 划：自主规划本轮子任务（Agentic work）；

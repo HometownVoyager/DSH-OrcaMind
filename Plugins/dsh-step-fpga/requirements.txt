@@ -1,0 +1,5 @@
+# 本机系统 Python 3.12 所需依赖（MCP server 用）。安装：
+#   C:/Users/HometownVoyager/AppData/Local/Programs/Python/Python312/python.exe -m pip install -r requirements.txt
+mcp>=2.3.0,<3
+PyYAML>=6.0,<7
+pymupdf>=1.24,<2

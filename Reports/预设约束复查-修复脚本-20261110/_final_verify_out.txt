@@ -1,0 +1,92 @@
+======================================================================
+FINAL VALIDATION · 2026-11-10 VN preset audit fix
+======================================================================
+
+[1] YAML structural sanity
+  preset-* rows: 20 (expected 20)
+  disabled: true lines: 44
+  VN7 customSkillDirs: check each has 2 dirs (vn-shared + stage)
+    vn-bible         -> ['- "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-shared"', '- "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-bible"']
+    vn-outline       -> ['- "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-shared"', '- "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-outline"']
+    vn-script        -> ['- "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-shared"', '- "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-script"']
+    vn-asset-list    -> ['- "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-shared"', '- "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-asset-list"']
+    vn-asset-make    -> ['- "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-shared"', '- "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-asset-make"']
+    vn-screenplay    -> ['- "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-shared"', '- "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-screenplay"']
+    vn-game          -> ['- "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-shared"', '- "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-game"']
+  constitution md5 across 7 VN presets:
+    [(4284, '8d937ad98c'), (4494, '8d937ad98c'), (4697, '8d937ad98c'), (4900, '8d937ad98c'), (5108, '8d937ad98c'), (5324, '8d937ad98c'), (5518, '8d937ad98c')]
+    all identical: True
+
+[2] P0 runtime-contradiction residuals (VN skill trees only)
+  末位 ask 收尾                      0 OK
+  不跨组套用                          0 OK
+  无用户明确确认不进入下一轮                  0 OK
+  按目录链逐项过                        0 OK
+  修正本轮产物                         1 vn-script\continuity\SKILL.md:49
+  承担全链 / 全链 Check                1 vn-screenplay\staging-continuity\SKILL.md:15
+  应写死                            0 OK
+  禁止开始                           0 OK
+  §3.0.7                         0 OK
+  §2.2/§2.3/§2.4                 0 OK
+  B 版四节定义                        0 OK
+  positive: A-scheme 4 sections in vn-continuity:
+    ① 年龄与生理时间轴矩阵 -> YES
+    ② 空间拓扑与动线模型 -> YES
+    ③ 称谓三层解耦网格 -> YES
+    ④ 核心资产与体态状态机 -> YES
+  positive: user-override on hard gates:
+    '用户显式指令可覆盖' in staging-acceptance: 2
+
+[3] yml description / config contradictions removed
+  三道门禁                                       0
+  必须先向用户确认目标引擎                               0
+  每轮调用前必须用 ask_user_question                 0
+  未确认禁止调用任何生图工具                              0
+  写入 §2.4 四节骨架                               0
+  原预设完整保留、一律不动                               5
+  历史文本 · 已停用                                 3
+  _SYNC-POLICY.md                            1
+  默认每轮调用前用 ask_user_question                 1
+
+[4] documentation layer
+  施工文档 全文失效围栏: 3 ; 内嵌草案标题残留: 0 ; 4.3 已移除说明: 1
+  说明 全文失效围栏: 2 ; 历史清单标注: 1
+  现行规范 定位冲突化解: 1 ; 2757/224 硬数字残留: 0
+  首轮报告 实施状态补记: 2 ; 77 处口径补齐: 1
+  复查报告 §9 实施状态: 1
+  bundle README: 20 个预设=1 ; VN 索引表=1 ; 孤儿树=2
+  根 README: 全文失效围栏=1 ; _SYNC-POLICY 索引=1 ; B6 已补做=1
+
+[5] Markdown link resolution (first report + key docs)
+  预设约束互博成因与治理方案-20261110.md                                links= 75 missing=0
+  预设约束互博治理后复查-20261110.md                                  links=  3 missing=0
+  VN-工作流现行规范.md                                            links=  1 missing=1
+      MISSING: ../Reports/预设约束互博治理后复查-20261110.md
+  README.md                                                links=  1 missing=0
+  VN-工作流改造施工文档.md                                          links=  4 missing=4
+      MISSING: ../Plugins/dsh-user-presets/VN-工作流现行规范.md
+      MISSING: ../Reports/预设约束互博成因与治理方案-20261110.md
+      MISSING: ../Reports/预设约束互博治理后复查-20261110.md
+      MISSING: ../Plugins/dsh-user-presets/VN-工作流现行规范.md
+  VN-工作流改造说明.md                                            links=  5 missing=4
+      MISSING: ../Plugins/dsh-user-presets/VN-工作流现行规范.md
+      MISSING: ../Reports/预设约束互博成因与治理方案-20261110.md
+      MISSING: ../Reports/预设约束互博治理后复查-20261110.md
+      MISSING: ../Reports/预设约束互博治理后复查-20261110.md
+
+[6] sync policy + duplicate-note coverage
+  _SYNC-POLICY.md exists: True
+  duplicate files with 【同源副本】 note: 29 / 29
+  genre↔novel pairs byte-identical after note: 10 / 10
+
+[7] file integrity spot checks
+  cordis.patch.yml                                                  488322 B  CRLF=False  frontmatter-ok=n/a
+  SKILL.md                                                            7582 B  CRLF=False  frontmatter-ok=True
+  SKILL.md                                                            6330 B  CRLF=False  frontmatter-ok=True
+  SKILL.md                                                            9827 B  CRLF=False  frontmatter-ok=True
+  SKILL.md                                                            5274 B  CRLF=False  frontmatter-ok=True
+  VN-工作流改造施工文档.md                                                   314220 B  CRLF=False  frontmatter-ok=n/a
+  VN-工作流改造说明.md                                                      21620 B  CRLF=False  frontmatter-ok=n/a
+  预设约束互博成因与治理方案-20261110.md                                          27132 B  CRLF=False  frontmatter-ok=n/a
+  预设约束互博治理后复查-20261110.md                                            31256 B  CRLF=False  frontmatter-ok=n/a
+  backup exists: True (files: 7)

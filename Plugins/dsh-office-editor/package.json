@@ -1,0 +1,31 @@
+{
+  "name": "@dsh-external/dsh-office-editor",
+  "version": "0.0.1",
+  "description": "Office 文档编辑与制造工具集（.docx/.xlsx）：从结构化 JSON 造新文档、按坐标定向编辑与占位符替换，与 office-reader 坐标语言对齐",
+  "private": true,
+  "type": "module",
+  "main": "./lib/index.js",
+  "types": "./lib/types/index.d.ts",
+  "files": [
+    "lib"
+  ],
+  "license": "BSD-3-Clause",
+  "peerDependencies": {
+    "@deepseek-ai/dsh-llm": ">=0.0.1-rc <2",
+    "@deepseek-ai/dsh-tools": ">=0.0.1-rc <2",
+    "cordis": ">=4.0.0-rc <5",
+    "schemastery": "^3.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "typescript": "^5.9.0"
+  },
+  "scripts": {
+    "build": "bash scripts/build.sh",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "fflate": "^0.8.2",
+    "xlsx": "^0.18.5"
+  }
+}

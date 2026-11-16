@@ -1,0 +1,152 @@
+# STEP FPGA 板卡知识库 —— 由工作区资料核对而来
+# 事实源：
+#   - STEP BaseBoard v4.0 实验指导书（STEP-MAX10-08A）.pdf 第 12 页（底板插座 / 核心板引脚分配表）
+#   - STEP-MAX10 硬件手册 v1.2（wiki.stepfpga.com）引脚表
+#   - STEP BaseBoard V4.0 官方资料库 1.4 管脚分配
+# 约定：pin 一律为 Quartus 的 PIN_XXX 形式；active_low 表示低电平有效。
+# 注意：HDMI 与 TFT-LCD 复用核心板管脚，两者不能同时使用；I2C_SCL/SDA 为底板 I2C 总线共用。
+
+board:
+  name: "小脚丫 STEP-MAX10 + STEP BaseBoard V4.0"
+  core_board: "STEP-MAX10-08A"
+  fpga:
+    family: "MAX 10"
+    device: "10M08SAM153C8G"
+    quartus_device_name: "10M08SAM153C8G"
+    core_voltage: "3.3V"
+    io_standard: "3.3-V LVTTL"
+    package: "SAM153"
+  clock:
+    name: "clk"
+    pin: "PIN_J5"
+    frequency_hz: 12000000
+    note: "核心板板载 12MHz 有源晶振，PCLK 信号；所有时序约束以此频率为基准"
+  project_defaults:
+    top_level_entity: "top"
+    hdl: "Verilog HDL"
+    eda_simulation_tool: "ModelSim-Altera (Verilog)"
+    quartus_version: "18.1.0 Lite Edition"
+
+# ── 核心板板载资源（不依赖底板即可使用）──────────────────────────────
+onboard:
+  leds:
+    active_low: true
+    count: 8
+    pins: { LED1: PIN_N15, LED2: PIN_N14, LED3: PIN_M14, LED4: PIN_M12,
+            LED5: PIN_L15, LED6: PIN_K12, LED7: PIN_L11, LED8: PIN_K11 }
+    note: "FPGA 输出低电平时 LED 点亮，输出高电平熄灭"
+  rgb_leds:
+    active_low: true
+    RGB_LED1: { R: PIN_G15, G: PIN_E15, B: PIN_E14 }
+    RGB_LED2: { R: PIN_C15, G: PIN_C14, B: PIN_D12 }
+  seven_segment:
+    scan: true
+    digits: 2
+    seg1: { A: PIN_E1, B: PIN_D2, C: PIN_K2, D: PIN_J2, E: PIN_G2, F: PIN_F5, G: PIN_G5, DP: PIN_L1, DIG: PIN_L2 }
+    seg2: { A: PIN_A3, B: PIN_A2, C: PIN_P2, D: PIN_P1, E: PIN_N1, F: PIN_C1, G: PIN_C2, DP: PIN_R2, DIG: PIN_B1 }
+    note: "独立两位数码管，段码低电平点亮；位选 DIG 低电平选中"
+  dip_switches:
+    count: 4
+    pins: { SW1: PIN_J12, SW2: PIN_H11, SW3: PIN_H12, SW4: PIN_H13 }
+    note: "开关断开(OFF)输入低电平，合上(ON)输入高电平"
+  push_buttons:
+    active_low: true
+    count: 4
+    pins: { KEY1: PIN_J9, KEY2: PIN_K14, KEY3: PIN_J11, KEY4: PIN_J14 }
+    note: "按键断开输入高电平，按下输入低电平"
+  gpio:
+    count: 36
+    pins: { GPIO0: PIN_M4, GPIO1: PIN_P3, GPIO2: PIN_M5, GPIO3: PIN_R3,
+            GPIO4: PIN_L6, GPIO5: PIN_P4, GPIO6: PIN_L7, GPIO7: PIN_R5,
+            GPIO8: PIN_P6, GPIO9: PIN_R7, GPIO10: PIN_P7, GPIO11: PIN_P8,
+            GPIO12: PIN_P9, GPIO13: PIN_R9, GPIO14: PIN_R11, GPIO15: PIN_P12,
+            GPIO16: PIN_R14, GPIO17: PIN_P15, GPIO18: PIN_B15, GPIO19: PIN_B14,
+            GPIO20: PIN_B13, GPIO21: PIN_A14, GPIO22: PIN_B11, GPIO23: PIN_A13,
+            GPIO24: PIN_A11, GPIO25: PIN_A9, GPIO26: PIN_D10, GPIO27: PIN_B8,
+            GPIO28: PIN_C8, GPIO29: PIN_B7, GPIO30: PIN_D7, GPIO31: PIN_E7,
+            GPIO32: PIN_B6, GPIO33: PIN_A7, GPIO34: PIN_A5, GPIO35: PIN_B4 }
+
+# ── 底板 40 针扩展（信号名 → FPGA 管脚），按指导书第 12 页“底板插座引脚分配”──
+baseboard_header:
+  connector: "双排 40Pin 排母（内层插核心板，外层可外接）"
+  power: { "1": "3.3V", "20": "GND", "21": "GND", "40": "VDDBUS" }
+  signals:
+    I2C_SCL:     { pin: PIN_M4,  header: 2,  desc: "I2C 总线时钟（SHT-30/BMP280/ADXL345/RPR-0521RS/AT24C02 共用）" }
+    I2C_SDA:     { pin: PIN_P3,  header: 3,  desc: "I2C 总线数据（双向，需三态/上拉）" }
+    A_OUT:       { pin: PIN_M5,  header: 4,  desc: "旋转编码器 A 相" }
+    B_OUT:       { pin: PIN_R3,  header: 5,  desc: "旋转编码器 B 相" }
+    D_OUT:       { pin: PIN_L6,  header: 6,  desc: "旋转编码器按键（按下）" }
+    COL1:        { pin: PIN_P4,  header: 7,  desc: "4x4 矩阵键盘列 1（行输出、列输入，列需上拉）" }
+    COL2:        { pin: PIN_L7,  header: 8,  desc: "4x4 矩阵键盘列 2" }
+    COL3:        { pin: PIN_R5,  header: 9,  desc: "4x4 矩阵键盘列 3" }
+    COL4:        { pin: PIN_P6,  header: 10, desc: "4x4 矩阵键盘列 4" }
+    ROW4:        { pin: PIN_R7,  header: 11, desc: "4x4 矩阵键盘行 4" }
+    ROW3:        { pin: PIN_P7,  header: 12, desc: "4x4 矩阵键盘行 3" }
+    ROW2:        { pin: PIN_P8,  header: 13, desc: "4x4 矩阵键盘行 2" }
+    ROW1:        { pin: PIN_P9,  header: 14, desc: "4x4 矩阵键盘行 1" }
+    DISP6:       { pin: PIN_R9,  header: 15, desc: "TFT-LCD / HDMI 复用数据位 6" }
+    DISP5:       { pin: PIN_R11, header: 16, desc: "TFT-LCD / HDMI 复用数据位 5" }
+    DISP4:       { pin: PIN_P12, header: 17, desc: "TFT-LCD / HDMI 复用数据位 4" }
+    DISP3:       { pin: PIN_R14, header: 18, desc: "TFT-LCD / HDMI 复用数据位 3" }
+    DISP2:       { pin: PIN_P15, header: 19, desc: "TFT-LCD / HDMI 复用数据位 2" }
+    DISP1:       { pin: PIN_D7,  header: 34, desc: "TFT-LCD / HDMI 复用数据位 1" }
+    DISP7:       { pin: PIN_A13, header: 27, desc: "PMOD_IO2 / TFT-LCD / HDMI 复用数据位 7" }
+    DISP8:       { pin: PIN_B11, header: 26, desc: "PMOD_IO1 / TFT-LCD / HDMI 复用数据位 8" }
+    ADC_CS:      { pin: PIN_B7,  header: 33, desc: "ADC081S101 片选（低有效，SPI）" }
+    ADC_SDATA:   { pin: PIN_C8,  header: 32, desc: "ADC081S101 串行数据输出" }
+    ADC_SCLK:    { pin: PIN_B8,  header: 31, desc: "ADC081S101 串行时钟" }
+    DAC_SYNC:    { pin: PIN_D10, header: 30, desc: "DAC081S101 同步（低有效，SPI）" }
+    DAC_SCLK:    { pin: PIN_A9,  header: 29, desc: "DAC081S101 串行时钟" }
+    DAC_SDI:     { pin: PIN_A11, header: 28, desc: "DAC081S101 串行数据输入" }
+    "595_RCK":   { pin: PIN_A14, header: 25, desc: "74HC595 锁存时钟 ST_CP（驱动 8 位数码管）" }
+    "595_SCK":   { pin: PIN_B13, header: 24, desc: "74HC595 移位时钟 SH_CP" }
+    "595_DIN":   { pin: PIN_B15, header: 22, desc: "74HC595 串行数据 DS" }
+    BEEP:        { pin: PIN_B14, header: 23, desc: "无源蜂鸣器（NPN 三极管驱动，基极高电平通电，需 PWM 方波）" }
+    TXD_CH340:   { pin: PIN_B4,  header: 39, desc: "CH340 的 TXD（FPGA 的 RXD，PC→FPGA）" }
+    RXD_CH340:   { pin: PIN_A5,  header: 38, desc: "CH340 的 RXD（FPGA 的 TXD，FPGA→PC）" }
+    TXD0:        { pin: PIN_A7,  header: 37, desc: "ESP8266 WiFi 模块串口（FPGA 的 RXD）" }
+    RXD0:        { pin: PIN_B6,  header: 36, desc: "ESP8266 WiFi 模块串口（FPGA 的 TXD）" }
+    INT:         { pin: PIN_E7,  header: 35, desc: "传感器中断输出（RPR-0521RS 接近中断）" }
+
+# ── 板载外设 → 驱动要点（供 agent 选模块时参考）───────────────────────
+peripherals:
+  matrix_keyboard: { bus: "GPIO 扫描", signals: [COL1, COL2, COL3, COL4, ROW1, ROW2, ROW3, ROW4], note: "行分时拉低、列采样；建议 200Hz 扫描 + 20ms 消抖" }
+  rotary_encoder:  { bus: "GPIO", signals: [A_OUT, B_OUT, D_OUT], note: "A/B 相鉴相判方向，三级锁存消亚稳态" }
+  eight_digit_7seg: { bus: "74HC595 串转并", signals: ["595_DIN", "595_SCK", "595_RCK"], note: "两片 74HC595 级联，16 位串行数据 = 8 位段选 + 8 位位选；动态扫描" }
+  buzzer:          { bus: "GPIO PWM", signals: [BEEP], note: "无源蜂鸣器，需给不同频率方波产生音调" }
+  uart:            { bus: "UART (CH340)", signals: [TXD_CH340, RXD_CH340], note: "FPGA 侧 RXD=TXD_CH340、TXD=RXD_CH340；常用 9600/115200 8N1" }
+  adc:             { bus: "SPI", chip: "ADC081S101", signals: [ADC_CS, ADC_SCLK, ADC_SDATA], note: "8 位 1MSPS，Vin=VCC=Vref；采样值 *129 得 mV 量级" }
+  dac:             { bus: "SPI", chip: "DAC081S101", signals: [DAC_SYNC, DAC_SCLK, DAC_SDI], note: "8 位，Vout = N * Vref / 256，配合波表做 DDS" }
+  i2c_sensors:     { bus: "I2C", chips: ["SHT-30", "BMP280", "ADXL345", "RPR-0521RS", "AT24C02"], signals: [I2C_SCL, I2C_SDA], note: "共用总线；SDA 为双向口，需 inout + 上拉" }
+  wifi:            { bus: "UART AT 指令", chip: "ESP8266-12F", signals: [TXD0, RXD0], note: "可用跳线把 CH340 接到 ESP8266 做固件烧写与配置" }
+  display:         { bus: "SPI / HDMI TMDS", note: "TFT-LCD(320x240, ST7789 类) 与 HDMI 复用 DISP1..DISP8 等管脚，不可同时使用" }
+
+# ── 常见任务 → 建议引脚（供 set_assignments 模板）─────────────────────
+assignment_templates:
+  blink_led:
+    clk: PIN_J5
+    led: [PIN_N15, PIN_N14, PIN_M14, PIN_M12, PIN_L15, PIN_K12, PIN_L11, PIN_K11]
+  key_led:
+    clk: PIN_J5
+    key: [PIN_J9, PIN_K14, PIN_J11, PIN_J14]
+    led: [PIN_N15, PIN_N14, PIN_M14, PIN_M12]
+  uart_echo:
+    clk: PIN_J5
+    rxd: PIN_B4       # CH340 TXD
+    txd: PIN_A5       # CH340 RXD
+  voltmeter:
+    clk: PIN_J5
+    adc_cs_n: PIN_B7
+    adc_sclk: PIN_B8
+    adc_sdata: PIN_C8
+    seg_din: PIN_B15
+    seg_sck: PIN_B13
+    seg_rck: PIN_A14
+
+constraints:
+  - "HDMI 与 TFT-LCD 复用同一组 DISP 管脚，二者只能选其一"
+  - "I2C 器件共用 I2C_SCL/I2C_SDA；SDA 必须声明为 inout 并外接上拉"
+  - "工程目录与文件名不得含中文、空格（Quartus 18.1 限制）"
+  - "时钟必须约束 12MHz（create_clock -period 83.333 [get_ports clk]）"
+  - "所有用户 IO 默认 3.3-V LVTTL；LED/按键/数码管均为低电平有效"
+  - "生成 .sof 后用 quartus_pgm -c USB-Blaster -m JTAG -o \"p;<file>.sof\" 烧录"

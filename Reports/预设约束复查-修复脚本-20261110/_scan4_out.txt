@@ -1,0 +1,504 @@
+===== YML PRESET ROWS (5700 lines) =====
+   15| - id: preset-game-design
+  277| disabled: true
+  286| disabled: true
+  327| - id: preset-genre-fiction
+  626| disabled: true
+  635| disabled: true
+  676| - id: preset-language-learning
+  946| disabled: true
+  955| disabled: true
+  996| - id: preset-novel-writing
+ 1285| disabled: true
+ 1294| disabled: true
+ 1335| - id: preset-official-docs
+ 1644| disabled: true
+ 1653| disabled: true
+ 1694| - id: preset-paper-writing
+ 2011| disabled: true
+ 2020| disabled: true
+ 2061| - id: preset-comfyui-work
+ 2233| disabled: true
+ 2242| disabled: true
+ 2300| - id: preset-science-learning
+ 2557| disabled: true
+ 2566| disabled: true
+ 2607| - id: preset-screenplay-writing
+ 2609| disabled: true   # 弃用：由 vn-script 取代；完整保留 config，删掉本行即可恢复
+ 2893| disabled: true
+ 2902| disabled: true
+ 2943| - id: preset-social-issues
+ 3250| disabled: true
+ 3259| disabled: true
+ 3300| - id: preset-vn-design
+ 3302| disabled: true   # 弃用：由 vn-bible / vn-outline / vn-asset-list 取代；完整保留 config，删掉本行即可恢复
+ 3558| disabled: true
+ 3567| disabled: true
+ 3608| - id: preset-vn-staging
+ 3610| disabled: true   # 弃用：由 vn-screenplay 取代（8 条核心原则与 8 个 skill 内核已平移，路径改新六目录）；删掉本行即可恢复
+ 3980| disabled: true
+ 3989| disabled: true
+ 4031| - id: preset-godot-dev
+ 4259| - id: preset-vn-bible
+ 4422| disabled: true
+ 4431| disabled: true
+ 4470| - id: preset-vn-outline
+ 4624| disabled: true
+ 4633| disabled: true
+ 4672| - id: preset-vn-script
+ 4827| disabled: true
+ 4836| disabled: true
+ 4875| - id: preset-vn-asset-list
+ 5030| disabled: true
+ 5039| disabled: true
+ 5078| - id: preset-vn-asset-make
+ 5238| disabled: true
+ 5247| disabled: true
+ 5286| - id: preset-vn-screenplay
+ 5455| disabled: true
+ 5464| disabled: true
+ 5503| - id: preset-vn-game
+ 5653| disabled: true
+ 5662| disabled: true
+
+===== YML customSkillDirs / skills mounts =====
+    7| # 唯一改动是 skill-filesystem 的 customSkillDirs：原来的
+  183|               customSkillDirs:
+  529|               customSkillDirs:
+  849|               customSkillDirs:
+ 1188|               customSkillDirs:
+ 1547|               customSkillDirs:
+ 1914|               customSkillDirs:
+ 2150|               customSkillDirs:
+ 2460|               customSkillDirs:
+ 2799|               customSkillDirs:
+ 3153|               customSkillDirs:
+ 3464|               customSkillDirs:
+ 3885|               customSkillDirs:
+ 4116|               customSkillDirs:
+ 4305|                 本预设的目录树、读写权限、命名规范与产出格式按 `vn-spec`；一致性核查按 `vn-continuity`；每轮流程、README 双区状态机与确认节奏按 `vn-gate`。三份共享 skill 与本阶段专属 skill 均由 `customSkillDirs` 提供，正文按需显式加载；不加载其它阶段的 skill。与上述三份 skill 的措辞冲突时，以本文【指令裁决】段为准。
+ 4360|               customSkillDirs:
+ 4512|                 本预设的目录树、读写权限、命名规范与产出格式按 `vn-spec`；一致性核查按 `vn-continuity`；每轮流程、README 双区状态机与确认节奏按 `vn-gate`。三份共享 skill 与本阶段专属 skill 均由 `customSkillDirs` 提供，正文按需显式加载；不加载其它阶段的 skill。与上述三份 skill 的措辞冲突时，以本文【指令裁决】段为准。
+ 4562|               customSkillDirs:
+ 4715|                 本预设的目录树、读写权限、命名规范与产出格式按 `vn-spec`；一致性核查按 `vn-continuity`；每轮流程、README 双区状态机与确认节奏按 `vn-gate`。三份共享 skill 与本阶段专属 skill 均由 `customSkillDirs` 提供，正文按需显式加载；不加载其它阶段的 skill。与上述三份 skill 的措辞冲突时，以本文【指令裁决】段为准。
+ 4765|               customSkillDirs:
+ 4918|                 本预设的目录树、读写权限、命名规范与产出格式按 `vn-spec`；一致性核查按 `vn-continuity`；每轮流程、README 双区状态机与确认节奏按 `vn-gate`。三份共享 skill 与本阶段专属 skill 均由 `customSkillDirs` 提供，正文按需显式加载；不加载其它阶段的 skill。与上述三份 skill 的措辞冲突时，以本文【指令裁决】段为准。
+ 4968|               customSkillDirs:
+ 5098|           vn-asset-make 两个 customSkillDirs，不挂 office 工具。
+ 5126|                 本预设的目录树、读写权限、命名规范与产出格式按 `vn-spec`；一致性核查按 `vn-continuity`；每轮流程、README 双区状态机与确认节奏按 `vn-gate`。三份共享 skill 与本阶段专属 skill 均由 `customSkillDirs` 提供，正文按需显式加载；不加载其它阶段的 skill。与上述三份 skill 的措辞冲突时，以本文【指令裁决】段为准。
+ 5176|               customSkillDirs:
+ 5314|           customSkillDirs，不挂 office 工具。
+ 5343|                 本预设的目录树、读写权限、命名规范与产出格式按 `vn-spec`；一致性核查按 `vn-continuity`；每轮流程、README 双区状态机与确认节奏按 `vn-gate`。三份共享 skill 与本阶段专属 skill 均由 `customSkillDirs` 提供，正文按需显式加载；不加载其它阶段的 skill。与上述三份 skill 的措辞冲突时，以本文【指令裁决】段为准。
+ 5393|               customSkillDirs:
+ 5541|                 本预设的目录树、读写权限、命名规范与产出格式按 `vn-spec`；一致性核查按 `vn-continuity`；每轮流程、README 双区状态机与确认节奏按 `vn-gate`。三份共享 skill 与本阶段专属 skill 均由 `customSkillDirs` 提供，正文按需显式加载；不加载其它阶段的 skill。与上述三份 skill 的措辞冲突时，以本文【指令裁决】段为准。
+ 5591|               customSkillDirs:
+
+===== YML L330-345 / L5075-5092 / L5500-5535 =====
+  330|         id: genre-fiction
+  331|         name: "分类文学创作"
+  332|         description: "面向类型小说的全流程中文创作模式（派生自 novel-writing，原预设不变）：开题判定类型（玄幻/奇幻/恋爱/科幻/武侠/仙侠/悬疑推理/恐怖灵异/都市现实/历史架空/无限流/末世废土/游戏电竞或混合类型，通用文学走通用流程）并加载对应类型 skill，与通用创作方法论叠加使用；覆盖创意与选题、设定集、结构与梗概（logline/treatment）、三层大纲、视角与叙事、逐章正文、连续性检查与修改定稿；含角色声音、考据素材管理与 11 个通用写作 skills + 13 个类型 skills；全局基准事实层（00-设定/anchors.md 锚点矩阵，基准事实先行）与视点配置系统（章级视点声明、特权转移、多心声禁令）贯穿设定与正文阶段，每章动笔前过起飞检查卡（CHAPTER_PREFLIGHT）并执行排版防灾；开工先做规范检查并落盘 规范-创作.md（四节骨架）；目录统一为 00-设定/01-规划/02-正文/03-修订，根目录以 README.md（含类型判定字段）与剧情精述.md 为每轮入口，工具集与官方 standard 一致（含 web_search 检索、web_fetch 打开网页正文、present 文件卡片交付）。每轮先声明并确认本轮范围，禁止一轮干完整个阶段或整份草稿。"
+  333|         order: 11
+  334|         plugins:
+  335|           # The `genre-fiction` agent preset: 分类文学创作模式（通用文学 + 13 大类型）。
+  336|           #
+  337|           # 共享 `novel-writing` 的 11 个通用写作 skills（novel-project-bootstrap 另有
+  338|           # 「开题类型判定」增补，见该 skill 头部；原预设完整保留、一律不动），
+  339|           # 并沿用其工具行与共性基线 persona，增补 13 个类型 skills——
+  340|           # 玄幻/奇幻/恋爱/科幻/武侠/仙侠/悬疑推理/恐怖灵异/都市现实/历史架空/
+  341|           # 无限流/末世废土/游戏电竞，开题阶段判定类型后按需加载，与 writing-craft
+  342|           # 叠加使用。
+  343|           # 本文件是 AGENT-PLANE 组成：roster 在 standing scope 下挂载一次，
+  344|           # 每个以本预设命名的会话共享该层；会话自身状态仍按 Session/Agent 隔离。
+  345|           #
+ 5075|           - id: present
+ 5076|             name: '@deepseek-ai/dsh-tool-present'
+ 5077| 
+ 5078|     - id: preset-vn-asset-make
+ 5079|       name: '@deepseek-ai/dsh-agent-preset'
+ 5080|       config:
+ 5081|         id: vn-asset-make
+ 5082|         name: VN-资产制造
+ 5083|         description: >-
+ 5084|           VN 工作流第 5 个阶段（order 34），承接「VN-资产列表」。本阶段严格按
+ 5085|           03-Asset/asset-list.md 与 03-Asset/notes/ 中已确认的规格、数量、优先级与
+ 5086|           生成提示词，逐条实际调用生图工具产出资产文件；唯一允许落点为
+ 5087|           03-Asset/generated/（下分 bg/ sprite/ cg/ bgm/ sfx/ ui/ script/ 七类
+ 5088|           子目录），禁止在其它任何位置写文件，禁止创建任何清单、规范、记录、索引、
+ 5089|           计划类文档，禁止修改 03-Asset/asset-list.md 与 03-Asset/notes/，禁止改写
+ 5090|           00-Bible/ 01-Plan/ 02-Script/ 上游任何文件。生图工具暂不绑定（决策「再说吧」）：
+ 5091|           每轮调用前必须用 ask_user_question 询问用户选择工具（ComfyUI 本地 /
+ 5092|           Nano Banana 2 在线 / 其它）并确认参数，未确认禁止调用任何生图工具；后续
+ 5500|           - id: present
+ 5501|             name: '@deepseek-ai/dsh-tool-present'
+ 5502| 
+ 5503|     - id: preset-vn-game
+ 5504|       name: '@deepseek-ai/dsh-agent-preset'
+ 5505|       config:
+ 5506|         id: vn-game
+ 5507|         name: "VN-游戏制造"
+ 5508|         description: "VN 工作流第七阶段「VN-游戏制造」，order 36，主产出目录 <作品名>/05-Game/。本预设实行两道确认门：第一轮为规格门，必须先向用户确认目标引擎（LetsGaL / WebGaL / Ren'Py / Godot 四选一），只产出 05-Game/implementation-spec.md（引擎侧实现规格与目录映射：引擎选型、剧本/演出/资产到引擎结构的映射、文件命名约定、验收清单、尚未确认项清单），禁止创建 <engine>/ 目录与任何工程文件；第二轮为工程门，只有在 implementation-spec.md 经用户明确确认且 README.md 状态机 状态=已确认 之后，才允许按确认的引擎创建 05-Game/<engine>/ 骨架与工程文件。上游 00-Bible/ 01-Plan/ 02-Script/ 03-Asset/ 04-ScreenPlay/ 一律只读，禁止回写；禁止创建任何计划外文档。沿用 vn-design standard 工具行，不挂 office 工具，不复用 godot-dev 的 MCP 行，引擎暂不绑定。严格遵循统一六目录、目录纪律、三道门禁、单轮单条目七步循环、README 状态机与共用规范前置条件。"
+ 5509|         order: 36
+ 5510|         plugins:
+ 5511|           # ── identity ────────────────────────────────────────────────────────────────
+ 5512|           # `{{model}}` 由运行时解析；工作目录不写进模板，由 dsh-working-directory 的必需 context 提供。
+ 5513|           - id: persona
+ 5514|             name: '@deepseek-ai/dsh-persona'
+ 5515|             config:
+ 5516|               prefix: |
+ 5517|                 【指令裁决 · 本段优先级最高，其余各段与所引 skill 均不得与之冲突】
+ 5518|                 1. 本预设的要求分两类。【硬红线】仅三条：① 不跨阶段写入（不写下游、不改写上游已确认内容）；② 不创建 6 编号目录 + 3 根级文档白名单之外的文件；③ 不自行把 README 状态置「已确认」。除这三条外，一切流程、步骤、提问与确认节奏均为【默认工作节奏】，可被用户显式指令覆盖。
+ 5519|                 2. 用户本轮指令与【默认工作节奏】冲突时，以用户指令为准，直接执行，无需先提问确认；用户已在同一条消息里写明范围或做法时视为已确认，不必重复提问。可一次性授权「一次做完多个子条目 / 跳过逐轮确认」，按授权节奏执行。
+ 5520|                 3. 用户指令与【硬红线】冲突时，不擅自执行、也不反复自辩：用一句话点明冲突，给「按我说的做（已知悉风险）/ 保持红线」二选一，由用户拍板。
+ 5521|                 4. 引用的 vn-gate / vn-spec / vn-continuity 与本文冲突时，以本文为准；三份 skill 之间冲突时按 vn-gate（流程）> vn-spec（目录与格式）> vn-continuity（核查）执行，不再逐条复述比对。
+ 5522|                 5. 不确定某条规则是否生效时，按本段裁决，不回头逐份溯源旧文档、旧行号或已 disabled 的旧预设；历史文本一律不视为现行规则。
+ 5523|                 6. 措辞以「默认 / 除非用户明确要求」为主，不因未使用绝对化措辞而怀疑规则失效。
+ 5524| 
+ 5525|                 你是「VN-游戏制造」阶段助手（第 7 阶段，order 36），用中文交流。职责：产出 05-Game/ 下的引擎侧实现规格与目录映射，按确认的引擎搭建工程骨架。
+ 5526| 
+ 5527|                 【两道确认门】
+ 5528|                 - 第一轮（规格门）：默认先向用户确认目标引擎（LetsGaL / WebGaL / Ren'Py / Godot 四选一；用户此前倾向 LetsGaL 但未定），只产出 05-Game/implementation-spec.md，内容为引擎选型、剧本/演出/资产到引擎结构的映射、文件命名约定、验收清单、尚未确认项清单。未经确认不写入任何引擎专属结论，不创建 <engine>/ 目录与工程文件。
+ 5529|                 - 第二轮（工程门）：默认在 implementation-spec.md 经用户明确确认且 README 状态=已确认 后，才按确认引擎创建 05-Game/<engine>/ 骨架与工程文件。用户显式授权跳过时按授权执行。
+ 5530|                 - 引擎事实源：LetsGaL Studio 为 JSON 工程格式（project.json / characters.json / scenes.json / chapters/*.json / assets/.manifest.json）；WebGAL 为 game/scene/*.txt + config.txt；Ren'Py / Godot 在第一轮确认引擎后再据实补写。不在未确认引擎时臆造目录结构写进规格文件。
+ 5531| 
+ 5532|                 【本阶段边界】
+ 5533|                 - 可写：05-Game/（implementation-spec.md 与确认后的 <engine>/）；根级 README.md 按双区结构更新状态并追加进度行。
+ 5534|                 - 只读上游：00-Bible/、01-Plan/、02-Script/、03-Asset/、04-ScreenPlay/、根级三文档。上游一律只读，发现缺漏时停下询问，不回写、不补写、不修订；不挂 office 工具，四份 .docx 不读、不引用为事实口径。
+ 5535|                 - 不挂任何引擎专属 MCP 行，不复用 godot-dev 的 MCP 行。
+
+===== YML description lines containing keywords =====
+   20| description: "通用游戏设计模式（派生自 vn-design、原预设不动）：五阶段推进——Brainstorm → 核心玩法与系统设计（核心循环/玩法系统/数值与经济/进度与奖励四项深度要求）→ 世界观与内容设定（含叙事角色档案与可交互单位规格）→ 内容大纲（章节·关卡·任务级）→ 资产清单（模型/动画/特效/UI/音频/场景/配置表，含规格·数量·优先级）；开工先做规范检查并落盘 规范-游戏设计.md（四节骨架）；每轮按 Read→Report→Plan→Do→Check→Write→Ask 循环，内容大纲严守抽象层级红线（不写台词与脚本实现），数值须给推导依据与可验算口径；目录为 00-创意/ 01-系统/ 02-世界观/ 03-大纲/ 04-修订/ 05-资产/，README 游戏登记表记录阶段确认与进度；工具集与官方 standard 一致（含 web_search + web_fetch 检索与网页正文、present 文件卡片交付）。每轮先声明并确认本轮范围，禁止一轮干完整个阶段或整份草稿。"
+  332| description: "面向类型小说的全流程中文创作模式（派生自 novel-writing，原预设不变）：开题判定类型（玄幻/奇幻/恋爱/科幻/武侠/仙侠/悬疑推理/恐怖灵异/都市现实/历史架空/无限流/末世废土/游戏电竞或混合类型，通用文学走通用流程）并加载对应类型 skill，与通用创作方法论叠加使用；覆盖创意与选题、设定集、结构与梗概（logline/treatment）、三层大纲、视角与叙事、逐章正文、连续性检查与修改定稿；含角色声音、考据素材管理与 11 个通用写作 skills + 13 个类型 skills；全局基准事实层（00-设定/anchors.md 锚点矩阵，基准事实先行）与视点配置系统（章级视点声明、特权转移、多心声禁令）贯穿设定与正文阶段，每章动笔前过起飞检查卡（CHAPTER_PREFLIGHT）并执行排版防灾；开工先做规范检查并落盘 规范-创作.md（四节骨架）；目录统一为 00-设定/01-规划/02-正文/03-修订，根目录以 README.md（含类型判定字段）与剧情精述.md 为每轮入口，工具集与官方 standard 一致（含 web_search 检索、web_fetch 打开网页正文、present 文件卡片交付）。每轮先声明并确认本轮范围，禁止一轮干完整个阶段或整份草稿。"
+  681| description: "引导式语言学习模式（默认英语、CEFR 分级、框架语种无关）：先读（缺失则先建）根目录 README.md 总览，工作区按 学习计划/词汇本/语法笔记/练习/测试题目/重难点/常错题/参考资料 分文件夹管理文档；开工先做规范检查并落盘 规范-语言学习.md（四节骨架），应试需求（雅思/托福等）按可选分支处理——先确认目标考试、目标分数与考试日期，再围绕考试结构、评分标准与官方语料组织；制定总学习计划与分阶段计划（文档分离、完成后保留），目标语输入-输出训练覆盖听说读写四技能并按间隔复习复现词汇，讲解中穿插练习并登记重难点与错题本，快速检测以选择题即时提问（ask_user_question），讲解详细且语言点按 形式-意义-用法 呈现，阶段综合测试与结课考核（难度适中、真实语料、CEFR 分级），目标语注音/音标/例句格式输出，理解学习者的平文本输入，确认掌握后更新当前学习进度文档，工具集与官方 standard 一致（含 web_search 检索、web_fetch 打开网页正文、present 文件卡片交付）。"
+ 1001| description: "全流程中文小说创作模式：创意与选题、设定集、结构与梗概（logline/treatment）、三层大纲、视角与叙事、逐章正文写作、连续性检查与修改定稿，含角色声音、通用创作方法论与考据素材管理；全局基准事实层（00-设定/anchors.md 锚点矩阵，基准事实先行）与视点配置系统（章级视点声明、特权转移、多心声禁令）贯穿设定与正文阶段，每章动笔前过起飞检查卡（CHAPTER_PREFLIGHT）并执行排版防灾；目录统一为 00-设定/01-规划/02-正文/03-修订，根目录以 README.md 与剧情精述.md（写作进度+逐章剧情精述）为每轮入口，工具集与官方 standard 一致（含 web_search 检索、web_fetch 打开网页正文、present 文件卡片交付）。每轮先声明并确认本轮范围，禁止一轮干完整个阶段或整份草稿。"
+ 1340| description: "公文与文书起草模式，服务三套默认规范集（党政机关公文 15 文种+GB/T 9704-2012 / 企业行政·商务文书 / 法律函件），六阶段推进：明确文种与受文对象 → 规范确定（开工规范检查，落盘 规范-公文.md）→ 依据材料收集 → 解构起草 → 逐项校对 → 审校定稿；配文种选择与解构、政策口径与法条依据检索纪律（搜索词联想构建）、逐项校对与定稿判定；目录为文种档案制（README 文种登记表 + 01-定稿/ 02-草稿/ 03-依据材料/ 04-校对记录/），工具集与官方 standard 一致（含 web_search 检索、web_fetch 打开网页正文、present 文件卡片交付）。每轮先声明并确认本轮范围，禁止一轮干完整个阶段或整份草稿。"
+ 1699| description: "论文研究与写作模式，服务三套默认规范集（中文学位论文 GB/T 7713.1+GB/T 7714 / 中文期刊论文 / 英文论文 IMRaD+APA·IEEE），七阶段推进：选题与研究问题 → 规范确定（开工规范检查，落盘 规范-论文.md）→ 文献综述 → 提纲与论证结构 → 分节初稿 → 修改与查重自查 → 格式化与引用定稿；配选题与研究问题、文献检索与综述纪律（search-query-craft 检索词联想构建 + 全文可读处代读边界）、学术语体与论证、逐轮修改与查重自查；学术诚信边界（不代写应考、不伪造数据文献、可协助数据/代码草稿）内置于 persona；目录为研究档案制（README + 文献综述进度.md 双根文档 + 00-选题/ 01-文献/ 02-提纲/ 03-正文/ 04-图表数据/ 05-修改记录/），工具集与官方 standard 一致（含 web_search 检索、web_fetch 打开网页正文、present 文件卡片交付）。每轮先声明并确认本轮范围，禁止一轮干完整个阶段或整份草稿。"
+ 2066| description: "ComfyUI 工作流设计与图像生成模式：四阶段推进（提示词指导先查后研、缺口调研与确认、工作流编排与执行、生成结果严格审查）。双轨协同：快捷文生图走 generate_comfyui（智能路由 MOSS-Image 中文排版与 Qwen Image，支持 workflow_path），复杂工作流深度编排走 comfy-mcp 客户端；注重对生成图像的构图、文字、细节与伪影进行闭环审查与交付。"
+ 2305| description: "引导式理科学习模式：先读（缺失则先建）根目录 README.md 总览，工作区按 学习计划/参考资料/测试题目/重难点/常错题 分文件夹管理文档；制定总学习计划与分阶段计划，正文公式以 LaTeX 规范渲染（ask_user_question 提问禁用 LaTeX 改用平文本），讲授中穿插练习并登记重难点与错题本，克制使用提问防滥用（题目跳过视作不会直接降维补讲，选错则启动支架式引导与推荐选项），阶段综合测试与结课考试数值合理正确易运算，确认掌握后更新学习进度文档，工具集与官方 standard 一致（含 web_search 检索、web_fetch 打开网页正文、present 文件卡片交付）。"
+ 2948| description: "社会议题研究与写作模式，内部双轨分立：A 轨议题文章（选题立意 → 事实考据 → 论证框架 → 成文 → 修改定稿）与 B 轨问题解决方法论（问题定义与边界 → 根因分析 → 方案设计 → 可行性与代价评估 → 落地路径 → 复盘框架），两轨共享考据与论证纪律、分开立档输出；内置评论体/研究报告体两套默认规范（开工规范检查落盘 规范-议题.md），配搜索词联想构建与信源交叉验证纪律；根目录以 README.md 为每轮入口，01-议题文章/ 02-方法论/ 03-共享考据/ 分立，工具集与官方 standard 一致（含 web_search 检索、web_fetch 打开网页正文、present 文件卡片交付）。每轮先声明并确认本轮范围，禁止一轮干完整个阶段或整份草稿。"
+ 3306| description: "视觉小说内容全栈设计代理：Brainstorm → 人物设定 → 世界观设定 → 剧情大纲 → 系统设计 → 资产列表六阶段流程，逐阶段确认推进，README.md 记录进度与确认记录，产出可执行资产清单；以 00-设定/anchors.md 为全局基准事实层（年龄矩阵/空间拓扑/称谓网格/核心资产与体态状态机），设定阶段先锚点后档案、连续性核查锚点矩阵优先；工具集与官方 standard 一致（含 web_search 检索、web_fetch 打开网页正文、present 文件卡片交付）。"
+ 4036| description: "面向 Godot 4.7.2 现代架构的专属游戏开发与全流程工程预设：专精 GDScript 2.0 与 C#、场景/节点树设计、着色器/材质、物理碰撞与动画系统；深度集成 godot-ai MCP（编辑器实时闭环）与本地 ClassDB，开工自动查验 4.7.2 API 规范，杜绝陈旧语法与 API 幻觉（严禁 Godot 3/4 早期废弃语法）；支持编辑器内热重载验证、运行时驱动测试与自动化 QA；工具集覆盖全套 Godot 研发工具、Shell 执行、文件操作与规划交付。每轮先声明并确认本轮范围，禁止一轮做完整个游戏或整套系统。"
+ 5508| description: "VN 工作流第七阶段「VN-游戏制造」，order 36，主产出目录 <作品名>/05-Game/。本预设实行两道确认门：第一轮为规格门，必须先向用户确认目标引擎（LetsGaL / WebGaL / Ren'Py / Godot 四选一），只产出 05-Game/implementation-spec.md（引擎侧实现规格与目录映射：引擎选型、剧本/演出/资产到引擎结构的映射、文件命名约定、验收清单、尚未确认项清单），禁止创建 <engine>/ 目录与任何工程文件；第二轮为工程门，只有在 implementation-spec.md 经用户明确确认且 README.md 状态机 状态=已确认 之后，才允许按确认的引擎创建 05-Game/<engine>/ 骨架与工程文件。上游 00-Bible/ 01-Plan/ 02-Script/ 03-Asset/ 04-ScreenPlay/ 一律只读，禁止回写；禁止创建任何计划外文档。沿用 vn-design standard 工具行，不挂 office 工具，不复用 godot-dev 的 MCP 行，引擎暂不绑定。严格遵循统一六目录、目录纪律、三道门禁、单轮单条目七步循环、README 状态机与共用规范前置条件。"
+
+######## vn-bible/vn-bible-docx/SKILL.md (45 lines) ########
+    3| description: 新建：由已确认 Markdown 同步生成 00-Bible/00-Bible-四份版/ 下四个固定名 .docx，只在用户明确要求或收录源经确认变更时触发。
+    9| - 本预设（VN-设定完善 / vn-bible）接到以下三种触发之一时使用：① 用户明确要求同步（含指定某一份或四份全量）；② `00-Bible/anchors.md` 或任一收录源文件经用户确认变更后；③ 用户要求交付四份时。
+   17| - `01-核心创意与基准事实.docx` ← `00-Bible/brainstorm.md` + `00-Bible/anchors.md`
+   18| - `02-角色与关系.docx` ← `00-Bible/characters/` 全部 + `00-Bible/relationships.md`
+   19| - `03-世界观与地理.docx` ← `00-Bible/world.md` + `00-Bible/factions.md` + `00-Bible/geography.md`
+   20| - `04-历史·术语·文风.docx` ← `00-Bible/timeline.md` + `00-Bible/glossary.md` + `00-Bible/style.md`（文件名含 U+00B7 间隔号 `·`，不写成连字符或顿号版本）
+   22| - 四份只装「设定」：即 `00-Bible/` 下的人物、关系、世界观、地理、历史、术语、文风、基准事实与创意核心。不收录 `01-Plan/`（结局、分支条件、好感度 / FLAG、章节大纲、结构表、推进规则）、`03-Asset/`（资产清单、规格、数量、优先级、生成提示词、二进制资产索引）、`02-Script/`（剧本正文、场景表、剧情精述、Draft/ 零散草稿）、`04-ScreenPlay/`（逐场融合稿、scene-map.md、演出精述）、`05-Game/`（实现规格、工程骨架、引擎内容）的任何内容，哪怕只是一句摘要、一个附表或一条索引。
+   23| - 首轮显式读一次 `Specifications.md` 与 `Direction.md`（后续轮不复读），读根级 `README.md` 校验「当前预设」，只读 `00-Bible/` 内已确认的 Markdown 源；不读下游阶段目录作为事实来源。
+   26| - 每轮只处理 1 个子条目：即四个固定 `.docx` 中的 1 份的同步；本轮子条目由用户从候选清单中选定，AI 不自主规划阶段内子任务、不用一份整稿替代逐步确认。同步只改 4 个固定文件的内容，不改文件名、不改目录、不新建第 5 份、不自动迁移或重命名既有 Docx。
+   28| - 表格应原样保留、不压缩丢失：尤其是「年龄矩阵」「称谓网格」「信物流转状态机」三张表，行列、单元格文字、状态迁移条件默认照搬；不把表格改写成叙述、不合并行、不只留表头。
+   30| - 若用户直接改了 Docx：应回写对应 Markdown（经用户确认后按同步方向修正）或在 `README.md` B 区「进度记录」追加一行登记差异（差异位置 / Docx 值 / Markdown 值 / 待裁决，A 区状态置「待确认」），二选一；不让 Docx 成为独立事实源、不据此改写其它 Markdown 而不登记。
+   31| - 一切内容应由已确认 Markdown 与用户确认支撑；存在疑问用 ask_user_question 求证，由用户拍板，不凭空假设。
+   32| - Read → Report → Confirm → Do → Check → Write → Stop 七步为默认顺序；用户显式指令可调整；Write 在 Confirm 之后、Stop 之前，只写这一个 `.docx` + 就地更新 `README.md` A 区「当前状态」5 字段 + 在 B 区「进度记录」追加一行（状态置「待确认」）。
+
+######## vn-bible/vn-bible-brainstorm/SKILL.md (39 lines) ########
+    3| description: 改造自 vn-design/vn-brainstorm 的 Brainstorm 首个严格子阶段：六字段逐个确认、每轮 1 字段，只写 00-Bible/brainstorm.md 的创意意图记录。
+    9| - 本预设（VN-设定完善 / vn-bible）开工时的首个严格子阶段，或用户要求回到创意原点重新确认定位时使用。
+   10| - 本阶段只回答「这是一部什么样的作品」，不写角色细节、世界观规则与具体剧情；不调用其它阶段 skill，不看到下一阶段模板与字段定义。
+   22| - 每字段只写用户确认过的原话 + 至多 1 句归纳，硬上限 2 句；不复合句展开，不角色小传、场景、台词、镜头、走位与演出指示。
+   24| - 一切设定事实应由用户确认后方可落盘；存在任何疑问、缺项、冲突或不确定，用 ask_user_question 求证，由用户拍板，不自行裁决、不凭空假设。
+   25| - Read → Report → Confirm → Do → Check → Write → Stop 七步为默认顺序；用户显式指令可调整；Write 在 Confirm 之后、Stop 之前，只写这一个文件 + 就地更新 `README.md` A 区「当前状态」5 字段 + 在 B 区「进度记录」追加一行（状态置「待确认」）。
+
+######## vn-bible/vn-bible-characters/SKILL.md (38 lines) ########
+    6| # 角色与关系（vn-bible-characters）
+    9| - 本预设（VN-设定完善 / vn-bible）进入角色设定子阶段，或需要新增角色、补充已确认角色档案时使用。
+   18| - 首轮显式读一次 `Specifications.md` 与 `Direction.md`（后续轮不复读），读根级 `README.md` 校验「当前预设」，只读 `00-Bible/` 内本阶段已有产物。年龄矩阵、称谓网格、体貌锚点、信物流转状态机等常量事实只属于 `00-Bible/anchors.md`，本 skill 不改写或另写一套口径；引用时回读该文件。
+   21| - 每轮只处理 1 个子条目：即 1 个角色档案（`<角色名>.md`），或单独 1 轮只处理 `relationships.md` 的关系条目；本轮子条目由用户从候选清单中选定，AI 不自主规划阶段内子任务、不用一份整稿替代逐步确认。
+   22| - 档案以完整、连贯且包含因果关系的复合句为主，不碎片段落；内容只写事实与规则（定位、目标、动机、性格、体貌锚点、成长弧线、与主题的关联），默认守住抽象层级边界、不场景与台词扩写、不镜头/走位/演出指示。
+   24| - 一切设定事实应由用户确认后方可落盘；用户未明示的内容只列开放问题条目标题、不展开，存在疑问用 ask_user_question 求证，由用户拍板。
+   25| - Read → Report → Confirm → Do → Check → Write → Stop 七步为默认顺序；用户显式指令可调整；Write 在 Confirm 之后、Stop 之前，只写这一个文件 + 就地更新 `README.md` A 区「当前状态」5 字段 + 在 B 区「进度记录」追加一行（状态置「待确认」）。
+   26| - Check：按 `vn-continuity` 核查这一个产物（锚点矩阵优先），按 `vn-spec` 校验统一目录与格式，按 `vn-gate` 校验单轮单条目；冲突停下请用户裁决。
+
+######## vn-bible/vn-bible-world/SKILL.md (38 lines) ########
+    3| description: 改造自 vn-design/vn-worldbuilding：逐份写 00-Bible/ 下世界、势力、地理、历史、术语与文风六份设定文档，每轮 1 份。
+    6| # 世界观与文风（vn-bible-world）
+    9| - 本预设（VN-设定完善 / vn-bible）进入世界观设定子阶段，或需要补充、修订已确认的世界观与文风细节时使用。
+   14| - 逐份写、一份一个子条目：`<作品名>/00-Bible/world.md`（核心规则、历史、社会结构与主题关联）、`<作品名>/00-Bible/factions.md`（势力与组织的名称、定位、目标、资源、结构与冲突格局）、`<作品名>/00-Bible/geography.md`（主要地点的位置关系、风貌、功能与空间布局）、`<作品名>/00-Bible/timeline.md`（按时间顺序记录已确认事件）、`<作品名>/00-Bible/glossary.md`（专有名词表，新名词先登记再使用）、`<作品名>/00-Bible/style.md`（文风与叙述口径）。
+   15| - 不写 `00-Bible/brainstorm.md`、`00-Bible/anchors.md`、`00-Bible/characters/`、`00-Bible/relationships.md`、`00-Bible/00-Bible-四份版/` 以及任何其它文件；空间拓扑、动线、声光穿透法则等常量事实只属于 `00-Bible/anchors.md`，本 skill 不改写或另写一套口径。
+   20| - 每轮只处理 1 个子条目：即上述六份文件中的 1 份（每轮 1 份文件）；本轮子条目由用户从候选清单中选定，AI 不自主规划阶段内子任务、不用一份整稿替代逐步确认。
+   21| - 只写事实与规则，不场景、台词、镜头、走位与演出指示；默认守住抽象层级边界。同一规则在所有场合表现一致，代价与边界清晰；发现与已确认内容冲突先提出裁决，不直接改写旧设定。
+   24| - 一切设定事实应由用户确认后方可落盘；用户未明示的内容只列开放问题条目标题、不展开，存在疑问用 ask_user_question 求证，由用户拍板。
+   25| - Read → Report → Confirm → Do → Check → Write → Stop 七步为默认顺序；用户显式指令可调整；Write 在 Confirm 之后、Stop 之前，只写这一个文件 + 就地更新 `README.md` A 区「当前状态」5 字段 + 在 B 区「进度记录」追加一行（状态置「待确认」）。
+   26| - Check：按 `vn-continuity` 核查这一个产物（锚点矩阵优先），按 `vn-spec` 校验统一目录与格式，按 `vn-gate` 校验单轮单条目；冲突停下请用户裁决。
+
+######## vn-script/story-bible/SKILL.md (84 lines) ########
+    9| - 写 `02-Script/` 下剧本正文前，检索本轮涉及的角色、世界观、地理、时间线、术语与文风事实。
+   26| - 无用户明确确认不进入下一轮、不进入下一阶段；按用户逐轮指令推进。
+   28| ## 检索与回指要点（沿用 screenplay-writing 全链并改造）
+   29| - 基准事实优先：`00-Bible/anchors.md` 是全局基准事实层（年龄与生理时间轴矩阵、空间拓扑与动线模型、称谓三层解耦网格、核心资产与体态状态机），只读、优先核对；角色年龄、称呼、空间物理事实、信物与体态状态以锚点为准，不从其它文档另推第二套口径。
+   31| - 世界与地理：`00-Bible/world.md` 的规则与历史、`00-Bible/factions.md` 的势力、`00-Bible/geography.md` 的地点与位置关系；空间物理事实回指锚点。
+   32| - 时间与术语：`00-Bible/timeline.md` 的事件日期序列、`00-Bible/glossary.md` 的专有名词定义与首次出现章节、系统 Speaker ID 与称谓口径默认回指锚点第三节。
+   40| - 不一轮多条目、在 Write 前批量落盘、把「待确认」当作「已确认」推进；不创建计划外文档、另建同义文件与独立修订目录；不写入 `00-Bible/`、不自创设定、不改写上游事实。
+   56| ## 七步循环（Read → Report → Confirm → Do → Check → Write → Stop）
+   57| 默认执行单轮单条目七步循环：Read 首动作读 `README.md` 校验「当前预设」为 vn-script / VN-剧情写作（首轮显式读 `Specifications.md` 与 `Direction.md`，后续轮不复读），并读上游只读清单与本阶段已有产物；Report 报当前阶段、已完成 key 与本轮唯一待办子条目并列出下一候选标题；Confirm 用 `ask_user_question` 让用户确认「本轮就做这一个」；Do 只做这一个子条目且产出只落 `02-Script/`；Check 按 `vn-continuity`；Write 只写本子条目声明的产出文件并同步更新 `README.md` 双区；Stop 应停下、列出下一候选子条目并以 `ask_user_question` 收尾。
+   61| - 每轮 Do 前应按 `vn-gate` 复核本轮子条目；**Check 按 `vn-continuity`** 逐条核查本轮唯一产物，与 `00-Bible/anchors.md`（基准事实层）、`01-Plan/chapter-structure.md`（章节结构唯一事实源）、`01-Plan/endings-and-flags.md`（结局 / 分支 / FLAG 唯一事实源）事实一致；`02-Script/Draft/` 不参与核查。
+   64| - `README.md` **采用双区结构**：A 区「当前状态」块 5 字段（当前预设 / 当前阶段 / 本轮子条目 / 状态 / 下一候选）仅在用户确认后就地更新；B 区「进度记录」区只追加一行、永不改写或删除既有行。AI 不自行把状态置为「已确认」，不把「待确认」当作「已确认」推进。
+   65| - 连续性核查记录与修订记录默认并入 `README.md` 阶段确认记录（B 区进度记录），取消独立修订目录。
+   68| 本 skill 由 `screenplay-writing` 全链复制并改造，旧目录保留原样不删。下列旧值**只允许出现在旧值 / 迁移对照 / 不语境**，**不作为产出落点**、不创建、不写入、不引用为事实源；本阶段唯一产出落点默认 `02-Script/`，表中 `00-Bible/` 与 `01-Plan/` 新值默认为只读事实源，不构成本阶段产出落点。
+   78| | `03-修订/revision-log.md`、`continuity-log.md` | `README.md` 阶段确认记录（取消独立修订目录） |
+
+######## vn-script/character-voice/SKILL.md (84 lines) ########
+    3| description: 角色嗓音与说话方式基准：只读上游角色档案与锚点，逐条核对台词口吻，缺口回指上游文档，不另建声音档案。
+   14| - 写死只读 `00-Bible/characters/<角色名>.md` 的「说话方式」字段与 `00-Bible/anchors.md`（称谓三层解耦网格）。二者是本 skill 唯一事实源，只读，不落盘、追加、改写。
+   16| - 台词口吻应以上游事实为准；发现 `00-Bible/characters/<角色名>.md` 缺「说话方式」字段、或与 `00-Bible/anchors.md` 称谓网格冲突时，应停下并用 `ask_user_question` 回指对应上游文档，由用户拍板，不自创口吻、不补写候选方向、不改写上游事实。
+   24| - 本 skill 一轮只核对用户选定的 1 个子条目内 1 组台词；逐行对照上游「说话方式」字段与 `00-Bible/anchors.md` 称谓三层口径，发现漂移优先修正 `02-Script/` 内台词而不改上游档案；除非角色经历了有意的转变，那种转变应在 `01-Plan/` 已确认剧情里有依据。
+   27| - 无用户明确确认不进入下一轮、不进入下一阶段；按用户逐轮指令推进。
+   29| ## 对白核对要点（沿用 screenplay-writing 全链并改造）
+   40| - 不一轮多条目、在 Write 前批量落盘、把「待确认」当作「已确认」推进；不创建计划外文档、另建同义文件与独立修订目录；不一次写出整份草稿、自主规划该阶段内的子任务。
+   56| ## 七步循环（Read → Report → Confirm → Do → Check → Write → Stop）
+   57| 默认执行单轮单条目七步循环：Read 首动作读 `README.md` 校验「当前预设」为 vn-script / VN-剧情写作（首轮显式读 `Specifications.md` 与 `Direction.md`，后续轮不复读），并读上游只读清单与本阶段已有产物；Report 报当前阶段、已完成 key 与本轮唯一待办子条目并列出下一候选标题；Confirm 用 `ask_user_question` 让用户确认「本轮就做这一个」；Do 只做这一个子条目且产出只落 `02-Script/`；Check 按 `vn-continuity`；Write 只写本子条目声明的产出文件并同步更新 `README.md` 双区；Stop 应停下、列出下一候选子条目并以 `ask_user_question` 收尾。
+   61| - 每轮 Do 前应按 `vn-gate` 复核本轮子条目；**Check 按 `vn-continuity`** 逐条核查本轮唯一产物，与 `00-Bible/anchors.md`（基准事实层）、`01-Plan/chapter-structure.md`（章节结构唯一事实源）、`01-Plan/endings-and-flags.md`（结局 / 分支 / FLAG 唯一事实源）事实一致；`02-Script/Draft/` 不参与核查。
+   64| - `README.md` **采用双区结构**：A 区「当前状态」块 5 字段（当前预设 / 当前阶段 / 本轮子条目 / 状态 / 下一候选）仅在用户确认后就地更新；B 区「进度记录」区只追加一行、永不改写或删除既有行。AI 不自行把状态置为「已确认」，不把「待确认」当作「已确认」推进。
+   65| - 连续性核查记录与修订记录默认并入 `README.md` 阶段确认记录（B 区进度记录），取消独立修订目录。
+   68| 本 skill 由 `screenplay-writing` 全链复制并改造，旧目录保留原样不删。下列旧值**只允许出现在旧值 / 迁移对照 / 不语境**，**不作为产出落点**、不创建、不写入、不引用为事实源；本阶段唯一产出落点默认 `02-Script/`，表中 `00-Bible/` 与 `01-Plan/` 新值默认为只读事实源，不构成本阶段产出落点。
+   78| | `03-修订/revision-log.md`、`continuity-log.md` | `README.md` 阶段确认记录（取消独立修订目录） |
+
+######## vn-script/vn-script-format/SKILL.md (131 lines) ########
+   10| - 每轮 Do 前按本 skill 的「场景起飞检查卡」完成锚点核对再下笔。
+   26| - 无用户明确确认不进入下一轮、不进入下一阶段；按用户逐轮指令推进。
+   30| - 判定所需信息不足时先向用户求证；素材不足以支撑本段内容时先给候选方案讨论、用户拍板后再正式创作；写新章节或关键场景前，先按「场景起飞检查卡」完成锚点核对再下笔。
+   56| 长篇写作中事实漂移的根源是上下文注意力稀释：在输出大篇幅正文前，先「打印并自检」一组关键实体元数据，注意力会被锚定在基准事实上。**每写一个新章节或关键场景前**，在草稿头部显式输出检查卡，逐项对照 `00-Bible/anchors.md` 与 `Specifications.md` 核对，核对无误后方可正式下笔：
+   62| - 物理空间与动线：<按 00-Bible/anchors.md 空间拓扑核对>
+   63| - 登场角色与年龄：<按 00-Bible/anchors.md 年龄矩阵核对>
+   64| - 核心称谓核对：<按 00-Bible/anchors.md 称谓网格三层解耦核对>
+   68| 检查卡字段与 `00-Bible/anchors.md` 四节一一对应；核对中发现矛盾先回指 `00-Bible/anchors.md` 与用户裁决，不带病下笔，不自创设定。
+   72| - 旁白与叙述：不加前缀的段落。对白：`角色名：台词`，每行一位角色，对白不加引号，长对白分段写；说话人标签与旁白 / 对白中的称呼按 `00-Bible/anchors.md` 称谓网格三层解耦，互不混淆。
+   75| - 选项与分支：`【选项】` 下逐条 `1. 选项文本 → 跳转 ch001-2a`；选项文本默认玩家视角，若采用主角口吻先与用户确认口径；FLAG 与变量变化在选项或段落末尾标注 `FLAG：xxx=1`，正文只引用不新造，以 `01-Plan/endings-and-flags.md` 为唯一事实源。
+   87| - 不一轮多条目、在 Write 前批量落盘、把「待确认」当作「已确认」推进；不创建计划外文档、另建同义文件与独立修订目录；不把台词写成大纲、不把演出 / 资产 / 实现层级内容写进正文。
+  103| ## 七步循环（Read → Report → Confirm → Do → Check → Write → Stop）
+  104| 默认执行单轮单条目七步循环：Read 首动作读 `README.md` 校验「当前预设」为 vn-script / VN-剧情写作（首轮显式读 `Specifications.md` 与 `Direction.md`，后续轮不复读），并读上游只读清单与本阶段已有产物；Report 报当前阶段、已完成 key 与本轮唯一待办子条目并列出下一候选标题；Confirm 用 `ask_user_question` 让用户确认「本轮就做这一个」；Do 只做这一个子条目且产出只落 `02-Script/`；Check 按 `vn-continuity`；Write 只写本子条目声明的产出文件并同步更新 `README.md` 双区；Stop 应停下、列出下一候选子条目并以 `ask_user_question` 收尾。
+  108| - 每轮 Do 前应按 `vn-gate` 复核本轮子条目；**Check 按 `vn-continuity`** 逐条核查本轮唯一产物，与 `00-Bible/anchors.md`（基准事实层）、`01-Plan/chapter-structure.md`（章节结构唯一事实源）、`01-Plan/endings-and-flags.md`（结局 / 分支 / FLAG 唯一事实源）事实一致；`02-Script/Draft/` 不参与核查。
+  111| - `README.md` **采用双区结构**：A 区「当前状态」块 5 字段（当前预设 / 当前阶段 / 本轮子条目 / 状态 / 下一候选）仅在用户确认后就地更新；B 区「进度记录」区只追加一行、永不改写或删除既有行。AI 不自行把状态置为「已确认」，不把「待确认」当作「已确认」推进。
+  112| - 连续性核查记录与修订记录默认并入 `README.md` 阶段确认记录（B 区进度记录），取消独立修订目录。
+  115| 本 skill 由 `screenplay-writing` 全链复制并改造，旧目录保留原样不删。下列旧值**只允许出现在旧值 / 迁移对照 / 不语境**，**不作为产出落点**、不创建、不写入、不引用为事实源；本阶段唯一产出落点默认 `02-Script/`，表中 `00-Bible/` 与 `01-Plan/` 新值默认为只读事实源，不构成本阶段产出落点。
+  125| | `03-修订/revision-log.md`、`continuity-log.md` | `README.md` 阶段确认记录（取消独立修订目录） |
+
+######## vn-game/game-acceptance/SKILL.md (24 lines) ########
+   11| - 验收项取自 `implementation-spec.md` 已确认清单，不臆造验收项。
+   14| - `README.md` 按双区结构：A 区 5 字段仅在用户确认后就地更新，B 区「进度记录」只追加一行且不改写既有行；状态置「待确认」。
+   15| - 只有用户在 Stop 步 `ask_user_question` 明确确认后才可置「已确认」并推进；AI 不自行置位。
+
+######## vn-game/game-engine-skeleton/SKILL.md (32 lines) ########
+    3| description: 第二轮工程门专用：仅在 implementation-spec.md 经用户明确确认且 README 状态=已确认 后，按确认引擎逐模块创建 05-Game/<engine>/ 骨架与工程文件。
+    9| - `05-Game/implementation-spec.md` 经用户明确确认；
+   10| - `README.md` A 区 `状态=已确认`（由用户在 `ask_user_question` 中确认，AI 不自行置位）。
+   14| - 唯一允许新建的目录：`<作品名>/05-Game/<engine>/`，`engine` 默认取用户确认值。
+   21| - 分支 C · Ren'Py → 不预写结构，应在第一轮确认引擎后据实补写分支内容再动工。
+   22| - 分支 D · Godot → 不预写结构，应在第一轮确认引擎后据实补写分支内容再动工。
+   23| - 不在未确认引擎时凭空假设任一引擎的目录结构并写进文件；不复用 `godot-dev` 的 MCP 行；不挂任何引擎专属 MCP 行。
+   26| - `README.md` 按双区结构：A 区 5 字段仅在用户确认后就地更新，B 区只追加一行且不改写既有行；状态置「待确认」。
+
+######## vn-game/game-implementation-spec/SKILL.md (32 lines) ########
+    3| description: 第一轮规格门专用：先由用户确认目标引擎，再逐节产出 05-Game/implementation-spec.md 的引擎侧实现规格与目录映射，每轮只写其中一节。
+   14| ## 2. 引擎确认（硬门禁）
+   15| - 应先向用户确认目标引擎，四选一 LetsGaL / WebGaL / Ren'Py / Godot（用户曾表示大概率 LetsGaL，但未定）；未经确认不写入任何引擎专属结论。
+   16| - 引擎事实源只写已确认部分：LetsGaL Studio 为 JSON 工程格式（`project.json` / `characters.json` / `scenes.json` / `chapters/*.json` / `assets/.manifest.json`）；WebGAL 为 `game/scene/*.txt` + `config.txt`；Ren'Py 与 Godot 在第一轮确认引擎后据实补写，不凭空假设。
+   17| - 未确认项只进「尚未确认项清单」：只列条目标题、不展开、不写入正文结论。
+   20| - 应写实，以已确认的上游事实源与已确认的引擎为据，不臆造引擎目录结构、文件名、验收项。
+   27| - `README.md` 按双区结构：A 区「当前状态」5 字段仅在用户确认后就地更新，B 区「进度记录」只追加一行且不改写既有行；状态置「待确认」，AI 不自行置「已确认」。
+
+===== ALL dangling section refs =====
+vn-asset-list\asset-index-gap-bootstrap\SKILL.md:61| - README.md 按双区结构（§3.0.7）：A 区「当前状态」5 字段就地更新、B 区「进度记录」只追加一行且不改写既有行；AI 不自行把状态置为「已确认」。
+vn-asset-list\vn-asset-list\SKILL.md:63| - README.md 按双区结构（§3.0.7）：A 区「当前状态」5 字段仅在用户确认后就地更新，B 区「进度记录」只追加一行且不改写或删除既有行；AI 不自行把状态置为「已确认」。
+vn-asset-make\asset-make-generate\SKILL.md:62| `<作品名>/README.md` 是唯一进度载体，双区结构（§3.0.7）：A 区「当前状态」块 5 字段（当前预设 / 当前阶段 / 本轮子条目 / 状态(进行中|待确认|已确认) / 下一候选）仅在用户确认后就地更新；B 区「进度记录」区只追加一行、永不改写或删除既有行。本 skill **不写 README.md**；A 区字段就地更新与 B 区追加一行由 `asset-make-verify` 承担，AI 不自行把状态置为「已确认」。
+vn-asset-make\asset-make-spec-read\SKILL.md:59| `<作品名>/README.md` 是唯一进度载体，双区结构（§3.0.7）：A 区「当前状态」块 5 字段（当前预设 / 当前阶段 / 本轮子条目 / 状态(进行中|待确认|已确认) / 下一候选）仅在用户确认后就地更新；B 区「进度记录」区只追加一行、永不改写或删除既有行。本 skill 只读校验 A 区「当前预设」为 vn-asset-make，**不写 README.md**；A 区字段就地更新与 B 区追加一行由 `asset-make-verify` 承担，AI 不自行把状态置为「已确认」。
+vn-asset-make\asset-make-status-sync\SKILL.md:59| `<作品名>/README.md` 是唯一进度载体，双区结构（§3.0.7）：A 区「当前状态」块 5 字段（当前预设 / 当前阶段 / 本轮子条目 / 状态(进行中|待确认|已确认) / 下一候选）仅在用户确认后就地更新；B 区「进度记录」区只追加一行、永不改写或删除既有行。本 skill **不写 README.md**（A 区字段就地更新与 B 区追加一行由 `asset-make-verify` 承担），AI 不自行把状态置为「已确认」。
+vn-asset-make\asset-make-verify\SKILL.md:56| `<作品名>/README.md` 是唯一进度载体，双区结构（§3.0.7）：
+vn-bible\vn-bible-bootstrap\SKILL.md:20| - `<作品名>/Specifications.md`：唯一规范事实源，按 §2.4 四节骨架落盘 —— ① 来源记录 ② 结构与目录约定（§2.2 全表「6 个编号目录 + 3 个根级文档」+ §2.3 十条目录纪律，含 `Direction.md` 静态导航定位、02/04 分工、`asset-index.md` / `asset-gap.md` 协作与硬门、越界收敛原则）③ 产出格式规范（三位编号 `ch001` / `sc001`、`-` 连接符防灾、禁裸 `~`、复合句要求、抽象层级边界）④ 红线与禁忌（不台词入大纲、不计划外文档、不越权写入、不跨阶段预写、不把 `Direction.md` 当事实源或状态机）。
+vn-bible\vn-bible-bootstrap\SKILL.md:23| - §2.2 六目录全表只写进 `Specifications.md`；不物理预建 `01-Plan/`、`02-Script/`、`03-Asset/`、`04-ScreenPlay/`、`05-Game/` 等任何下游目录，不跨阶段预写下游文件。
+vn-screenplay\staging-acceptance\SKILL.md:18| - 本 skill 为只读校验型：不产出新文档；仅在「合法交接」时按 §3.0.7 双区结构对 `<作品名>/README.md` 就地登记 A 区「当前预设」为 `vn-screenplay` 并在 B 区追加一行交接登记。
+vn-screenplay\staging-asset-audit\SKILL.md:36| - `README.md` 采用双区结构（§3.0.7）：A 区「当前状态」块 5 字段（当前预设 / 当前阶段 / 本轮子条目 / 状态 / 下一候选）就地更新，B 区「进度记录」只追加一行、永不改写或删除既有行；状态默认「待确认」，不自行置「已确认」。
+vn-screenplay\staging-continuity\SKILL.md:50| - `README.md` 采用双区结构（§3.0.7）：A 区「当前状态」块 5 字段（当前预设 / 当前阶段 / 本轮子条目 / 状态 / 下一候选）就地更新，B 区「进度记录」只追加一行、永不改写或删除既有行；状态默认「待确认」，不自行置「已确认」。
+vn-screenplay\staging-direction\SKILL.md:20| - **制作计划与逐轮进度只归 `README.md`**：README.md 采用双区结构（§3.0.7），A 区「当前状态」块 5 字段（当前预设 / 当前阶段 / 本轮子条目 / 状态 / 下一候选）就地更新，B 区「进度记录」只追加一行、永不改写或删除既有行；本 skill 只读引用 `Direction.md`，不另写这两份。
+vn-screenplay\staging-gap-triage\SKILL.md:32| - `README.md` 采用双区结构（§3.0.7）：A 区「当前状态」块 5 字段（当前预设 / 当前阶段 / 本轮子条目 / 状态 / 下一候选）就地更新，B 区「进度记录」只追加一行、永不改写或删除既有行；状态默认「待确认」，不自行置「已确认」。
+
+===== spec-common first 12 lines =====
+  1| ---
+  2| name: spec-common
+  3| description: 默认规范集共用底座——所有 spec-* 规范集 skill 的共用部分：四节骨架（来源记录/结构与目录约定/产出格式规范/红线与禁忌）的定义、来源记录与写法通则、以及各 spec 末尾「执行要求」节的纳入方式。加载任一 spec-* 时必须与本 skill 一并加载；落盘 规范-<域>.md 时的骨架与写法以本文件为准。
+  4| ---
+  5| 
+  6| # 默认规范集共用底座（spec-common）
+  7| 
+  8| > 用途：本 skill 是各预设 spec-* 规范集的**共用底座**，凡加载任一 spec-* 都必须与之同时加载。规范集的**本域内容**（来源记录条目、结构、要素格式、红线与该域执行要求）在各 spec-* 文件里；**四节骨架的定义、来源记录的写法、执行要求的性质与纳入方式**以本文件为准，各 spec-* 不重复这些部分。
+  9| 
+ 10| ## 何时使用
+ 11| - 开工规范检查选定默认规范集后，加载对应 spec-* skill 时一并加载（缺一不可）。
+ 12| - 落盘 `规范-<域>.md` 时，以及此后每轮 Check、产出校对对照规范文档时。
+
+===== ROOT MD FILES =====
+DSH刷B站插件调研报告.md
+README.md
+VN-工作流改造施工文档.md
+VN-工作流改造说明.md
+
+######## DOC VN-工作流改造施工文档.md (2758 lines) ########
+    1| # VN 工作流改造施工文档（详尽版 · v1）
+    2| 
+    3| > ⚠️ **本文件是 2026-11-07 施工期的历史记录，已不是现行规范源。**
+    4| > 2026-11-10 完成「预设瘦身与矛盾清理」（见 `Reports/预设约束互博成因与治理方案-20261110.md`）：7 个 VN persona 已重写为「宪法 + 独有职责 + 共用规范引用 + 默认节奏」，删除全部 plan-mode 段，移除 77 处「最后一个工具调用必须是 ask_user_question」硬门禁，重写 `vn-shared` 三份 SKILL.md 并清理 36 份阶段 SKILL.md。
+    5| > 本文的「三道锁 / 硬门禁 / 禁止软词 / T 块唯一真源 / 旧行号引用 / 逐字硬约束」等设计已废止；现行规范以 `Plugins/dsh-user-presets/cordis.patch.yml` 的 7 个 VN persona【指令裁决】段 + `skills/vn-shared/` 三份 SKILL.md 为准。本文仅作施工过程与决策留档，不要据此判断现行行为或要求模型遵守。
+    6| 
+    7| > 本文件是**施工依据**，不是讨论稿。经双方确认后据以改动 `Plugins/dsh-user-presets/`。
+    8| > 本轮只产出本文档，**不修改** `cordis.patch.yml`、不安装 bundle、不改动任何 skills。
+    9| > 工作区根：`D:\Tools\DeepSeek Harness`。若无特别说明，路径一律相对 `<作品名>/` 项目目录。
+   10| 
+   11| ---
+   12| 
+   13| ## 0. 施工对象与改动边界
+   14| 
+
+######## DOC VN-工作流改造说明.md (225 lines) ########
+    1| # VN 工作流改造说明
+    2| 
+    3| > ⚠️ **本文件与 `VN-工作流改造施工文档.md` 均为 2026-11-07 施工期的历史记录，已不是现行规范源。**
+    4| > 2026-11-10 完成「预设瘦身与矛盾清理」（见 `Reports/预设约束互博成因与治理方案-20261110.md`），现行规范以 `Plugins/dsh-user-presets/cordis.patch.yml` 的 7 个 VN persona【指令裁决】段 + `skills/vn-shared/` 三份 SKILL.md 为准。
+    5| > 本文件内的「三道锁 / 单轮单条目硬门禁 / 每轮最后一个工具调用必须是 ask_user_question / T 块唯一真源 / 旧行号引用 / §7.2 运行时校验清单」等表述**均已废止**，仅作施工过程留档；不要据此判断现行行为或要求模型遵守。
+    6| 
+    7| > 施工依据：`VN-工作流改造施工文档.md`（2753 行，修订 `6a7b79c1…`）。
+    8| > 施工日期：2026-11-07。范围：7 个 VN 预设一次做完（用户确认「建议叫几个子智能体来一次做完七个再核查」），装配后核查；**不执行** §7.3 回退演练、不执行 §8 既有项目迁移。
+    9| > 本文件是该次施工的交付说明；施工文档本身在施工期内曾是权威规范源。
+   10| 
+   11| ---
+   12| 
+   13| ## 1. 本次做了什么
+   14| 
+
+######## BUNDLE README (55 lines) ########
+    1| # 用户自建 agent 预设（bundle）
+    2| 
+    3| 这个 bundle 承载 13 个自建预设：论文撰写、小说创作、分类文学创作、剧本创作、视觉小说全栈设计、
+    4| 视觉小说演出设计、游戏设计、Godot 游戏开发、语言学习、理科学习、公文撰写、社会议题、ComfyUI工作。
+    5| 
+    6| ## 为什么有它
+    7| 
+    8| 0.1.7 起 Harness **不再扫描** `$DSH_HOME/.agent-presets/` 目录：预设只能由某个 bundle 的 patch
+    9| 以 `@deepseek-ai/dsh-agent-preset` 行声明（见 `@deepseek-ai/dsh-agent-preset` 包里的
+   10| `editing-cordis-compositions` skill 的 “Migrate a legacy preset” 一节）。
+   11| 旧目录里的组合内容已逐字搬进 `cordis.patch.yml`，原目录仅作备份保留。
+   12| 
+   13| ## 结构
+   14| 
+   15| | 文件 | 说明 |
+   16| |---|---|
+   17| | `cordis.patch.yml` | 13 个 `preset-<id>` 声明（组合内容来自原 `agent.cordis.yml`） |
+   18| | `skills/<id>/` | 各预设随身的 skills（原 `~/.dsh/.agent-presets/<id>/skills/` 的副本） |
+   19| | `package.json` | `dsh.bundle.patch` 指向 `cordis.patch.yml` |
+   20| 
+   21| 注册方式：`~/.dsh/profiles/web/package.json` 里作为 `link:` 依赖 + 列入 `dsh.profile.bundles`，
+   22| `~/.dsh/profiles/web/node_modules/@dsh-external/dsh-user-presets` 是指向本目录的 junction。
+   23| 
+   24| ## 写作类预设的共同基线（施工经验四支柱）
+   25| 
+   26| 以下五个预设共享同一套施工经验，术语与核验口径保持一致；改动其中一处规则时，须同步检查另外四处（本表即同步检查表）：
+   27| 
+   28| | 预设 | 角色 |
+   29| |---|---|
+   30| | 剧本创作 `screenplay-writing` | 四支柱的源头定义（三级视点模式、场景起飞检查卡） |
+   31| | 小说创作 `novel-writing` | 四支柱的小说映射（章级视点声明、章节起飞检查卡） |
+   32| | 分类文学创作 `genre-fiction` | 与小说创作同构，另叠加类型 skills（四支柱一致） |
+   33| | 视觉小说全栈设计 `vn-design` | 设定侧 anchors 四节的填写归属与锁定节点 |
+   34| | 视觉小说演出设计 `vn-staging` | 下游锚点核验与中间稿排版防灾（只读上游 anchors） |
+   35| 
+   36| 四支柱与统一术语：
+   37| 
+   38| 1. **全局基准事实层（Anchors Layer）**：`00-设定/anchors.md`，四节固定为 年龄与生理时间轴矩阵 / 空间拓扑与动线模型 / 称谓三层解耦网格 / 核心资产与体态状态机；写作遵循「基准事实先行」，核查遵循「锚点矩阵优先核验」。称谓三层按载体命名、同层同义：剧本为 Speaker ID / 主观叙述层 / 对白呼告，小说为 叙述指称 / 主观认知称谓 / 对白呼告。
+   39| 2. **视点配置系统（POV Configuration）**：视点模式在规范文档中声明（剧本为三级视点模式：单主角强沉浸 / 场段交替轮换 / 电影化群像；小说为：第一人称单视角 / 第三人称限知·章级轮换 / 第三人称全知）；场景头或章头以 `【视点：角色】` 声明，交接即执行特权与限制转移；同段落/同场景严禁多心声。
+   40| 3. **起飞检查卡（Pre-flight Stamp）**：动笔前输出检查块，字段与 anchors 四节一一对应——剧本用 `<!-- SCENE_PREFLIGHT_START -->`…`<!-- SCENE_PREFLIGHT_END -->`，小说用 `<!-- CHAPTER_PREFLIGHT_START -->`…`<!-- CHAPTER_PREFLIGHT_END -->`。
+   41| 4. **排版防灾**：日期、天数、章节与代号范围连接统一用 `-`（如 `6月10日 - 6月11日`、`ch001 - ch005`），严禁裸半角波浪号 `~`。
+   42| 
+   43| ## 改动注意事项
+   44| 
+   45| - **skills 路径是绝对路径**：每个预设的 `skill-filesystem.customSkillDirs` 写的是
+   46|   `D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/<id>`，不再用旧机制里
+   47|   “相对本预设目录” 的 `new URL('skills/', baseUrl)`——声明行里 `baseUrl` 不再指向预设自己的目录。
+   48|   改动本目录位置时必须同步改这些绝对路径（或改 `migrate-presets-to-bundle.mjs` 后重跑）。
+   49| - **persona 模板只引用已注册变量**：`config.prefix` / `suffix` 里的 `{{名}}` 必须在组装时已注册——loop 目前只注册 `{{model}}` 与 `{{provider}}`。`{{cwd}}` 自 DSH 0.2.1 起被上游移除（`source/docs/upgrade-guide/v0.2.1-alpha.1/working-directory/`），写了它会让该预设**每一轮都在发出模型请求前失败**（`unknown prompt variable "{{cwd}}" in section "deployment:persona-prefix"; registered variables: provider, model`）；工作目录由 `dsh-working-directory` 的必需 user context 每轮自动注入，不要写进模板。2026-10-11 已按迁移指南从全部 12 个 preset 中移除该引用；同日新增自检脚本 `Archive/scripts/probe-preset-prompt-vars.mjs`（工作区根执行 `Dependency/nodejs/node.exe Archive/scripts/probe-preset-prompt-vars.mjs`），它把本文件里 12 个 persona 模板喂给 `renderPrompt`，渲染失败会逐条打印并退出码 1。
+   50| - **group 行与它的子行禁止同 id**（2026-10-21 修复）：`cordis:group` 包装行的 `id` 必须与组内插件行不同，官方写法定式为组 `id: planning`、子项 `id: plan-mode`。若两者同名（当日 `comfyui-work` 的规划组被写成 `id: plan-mode`），Loader 的 `EntryGroup.create` 会命中同一个 store 槽位并复用 group 自己的 Entry，使该条目**成为自己的父节点**；随后 `Entry.disabled` 沿 `parent.ctx.fiber.entry` 上溯即成死循环——症状是 **DSH 启动无任何输出、CPU 满转**（不是网络等待，`setTimeout` 都不触发）。诊断法：`node --inspect` 附加后 `Debugger.pause`，栈顶停在 `get disabled`，用 `Debugger.evaluateOnCallFrame` 读 `this` 即可看到自引用链与预设 id。修复后跑下方 roster 探针确认 `ROSTER_BROKEN 0`。
+   51| - **delegation 组的 4 行基线不可缺**：每个预设都应含 `tool-subagent-control`、`tool-subagent`（必须带 `config: provider: spawn / toolName: subagent / modelSelectionSettings: true / backgroundMode: continuable`）、`tool-subagent-fork`、`tool-subagent-codex`（disabled）。2026-10-21 的 `comfyui-work` 曾丢失 `tool-subagent` 的 config 与 fork/codex 两整行（roster 报 `tool-subagent (@deepseek-ai/dsh-tool-subagent): invalid config`），已按其余 12 个预设的同一基线补回。**`tool-subagent-list-agents` 独立行已于 2026-10-27 全部删除（原 5 行基线改 4 行）**：master（`22ddee379` 起）的 `@deepseek-ai/dsh-tool-subagent-control` 包根 `apply()` 已内建 `list_agents` 工具注册，且 exports 表删除了 `./list-agents` 子路径——继续写深路径行会让 import 失败、该行 "never started"，**新建会话报 `agent-preset/invalid`**。上游若再拆分此包，先核对其 `package.json` exports 再写行。
+   52| - **委托行严禁 `toolFilter` / `persona`**（2026-10-15 修复）：`@deepseek-ai/dsh-tool-subagent` 自 DSH 0.2.1 起在**加载时拒绝**这两个键，写了它会让该 preset 挂载失败，后果是**新建会话直接报 `agent-preset/invalid`**（toast 原文 `toolFilter is no longer supported; configure persona and tool plugins in an Agent Preset and select it with agentPreset (spawn only)`）。当日已从全部 13 个 preset 的 `tool-subagent` / `tool-subagent-fork` 两行（共 26 处）删除历史遗留的 `toolFilter: deny: [schedule_*]`；这笔 deny 现在既不需要也不允许——子代理的工具面继承父方 preset，四个 `schedule_*` 执行器按调用方委派深度自行拒绝（`subagent_session`），可见性不等于授权。上游依据：`source/.agents/notes/implemented/simplification/2026-10-09-preset-owned-subagent-composition.md` 与同目录 `architecture/2026-09-24-preset-scoped-schedule-tools.md`（后者明确要求三条 shipped preset 的委托行都不含 `toolFilter`）。核验用下方 roster 探针，要求 `ROSTER_BROKEN 0`。
+   53| - **想加/改预设**：直接编辑 `cordis.patch.yml`（遵循 `skills/prompt-writing/dsh-preset-craft` 规范）。不要再去写已经废弃的 `~/.dsh/.agent-presets/<id>/` 目录。
+   54| - 改完重启 Harness 生效；挂载诊断脚本（`probe-preset-roster.mjs` 与同名 `.patch.yml`）自 2026-10-03 起已随其余诊断工具归档到工作区 `Archive/scripts/`，从工作区根执行 `Dependency/nodejs/node.exe source/apps/cli/lib/bin.js web --patch Archive/scripts/probe-preset-roster.patch.yml --port 3099 --no-open`，会打印 `ROSTER <id> ok|BROKEN` 与 `ROSTER_BROKEN` 计数后自行退出。**flag 顺序有讲究**：`--patch` 是启动器 flag，必须写在 `--port` 之类的应用参数之前——`dsh <profile>` 简写把 profile 名插到最前后，第一个不被启动器识别的 token 起，其余参数全部透传给 web 应用。
+   55| 
+
+######## ROOT README (160 lines) ########
+   50| 
+   51| | 插件 | 用途 |
+   52| | --- | --- |
+   53| | `dsh-antigravity` | Google Antigravity / Cloud Code Assist 模型 provider（本地补丁版：CallId→ToolCallId 修正、Gemini 3.8/Claude 路由与思考预算、tool-result 契约修复、安全闸；**2026-10-06 起网络错误归码 `TRANSPORT` 并覆写 `providerRetryPolicy`——重试上限 10 次/延迟上限 30s（约 2 分钟，`ANTIAGRAVITY_MAX_RETRIES` 可覆盖），由内置 llm-retry 自动重试 VPN 抖动**） |
+   54| | `dsh-model-catalog-manager` | 模型目录管家：拉取实时模型列表，对 settings.yaml（热生效）或 pi-ai 目录 JSON 增删改条目 |
+   55| | `dsh-user-presets` | 13 个自建 agent 预设 bundle（论文撰写、小说创作等）+ 7 个 `VN-*` 工作流预设（2026-11-07 施工，共 20 条 `preset-*`）；注册在 `~/.dsh/profiles/web/package.json` 的 `link:` 依赖 + `dsh.profile.bundles`；**skills 路径是绝对路径，挪动本目录必须同步改 `cordis.patch.yml`；委托行严禁 `toolFilter` / `persona`（0.2.1 加载即拒，会让新建会话报 `agent-preset/invalid`）；`cordis:group` 行禁止与组内子行同 id（同名会让 DSH 启动静默挂起、CPU 满转）**，详见其 README。**2026-11-10 瘦身重构**：7 个 VN persona 由 509 行压到 184 行（加【指令裁决】宪法段、删重复块）、移除 7 处 planning 组与全部 77 处末位 `ask_user_question` 硬门禁、重写 `vn-shared` 三份 SKILL.md 并清理 36 份阶段 SKILL.md；现行规范入口为 `VN-工作流现行规范.md`，旧施工/说明文档已标注为历史留档；改造前备份在 `Archive/Plugins/dsh-user-presets-slim-20261110-slim/`。**Godot MCP（`mcp-godot-ai`，godot-ai 后端）以 preset 作用域挂在本 bundle 的 godot-dev 预设内**：插件与 uv 工具链在 `D:/Tools/GoDot/`（工作区外），架构/接入/纪律见 `D:/Tools/GoDot/GODOT_MCP_GUIDE.md`（2026-10-27 从 godot-mcp-enhanced 换为 hi-godot/godot-ai，旧后端与 3 个候选残留已清） |
+   56| | `dsh-office-editor` | Office 文档编辑与制造（.docx/.xlsx），结构化 JSON 造文档、坐标定向编辑。**2026-11-01 起宿主层全局挂载**（web profile `cordis.patch.yml` insert，file: URL），全部预设可用 |
+   57| | `dsh-office-reader` | Office 文档查阅（.docx/.xlsx/.pptx）：提取、搜索（`office_inspect`/`office_read`/`office_find`）。**2026-11-01 排查：四件套本体健康，此前仅 5 个自建预设携带，官方 ptc/standard 会话拿不到工具、模型退化解压 docx；现已在 web profile `cordis.patch.yml` 宿主层补挂，全部预设可用**；预设层原行保留（同名工具重复注册由 tools registry 自然覆盖）；改插件后仍须重启 DSH |
+   58| | `dsh-pdf-editor` | PDF 编辑：页面操作、AcroForm 填写、水印盖章（pdf-lib）。**2026-11-01 起宿主层全局挂载**（同 office-reader） |
+   59| | `dsh-pdf-reader` | PDF 查阅：概览、文本提取、关键词搜索（pdfjs-dist）。**2026-11-01 起宿主层全局挂载**（同 office-reader） |
+   60| | `dsh-tool-gate` | 宿主侧工具闸门：按预设白名单施加 `tools.restrict` |
+   61| | `dsh-desktop-notifier` | 桌面通知 v0.3.0：任务全状态弹 OrcaMind 品牌系统通知——完成/截断/失败（含 fetch failed）/中止/被阻止/中断 + 等待确认 + 等待回答（监听 `turn/end` 全部 reason、`approval/asked`、旁听 `user-questions/request` waterfall），**按状态播 C:\Windows\Media 系统提示音**（toast 本体静音防双响，`sound` 总开关）。深链跳转已移除（便携壳自解压太慢）。bundle 层改动需重启 DSH，详见其 README |
+   62| | `dsh-auto-continue` | 网络类失败自动续跑：turn/end 以 error 收尾且命中网络特征（`TRANSPORT`/`TIMEOUT` 码或 fetch failed/ECONNRESET 等消息）时，自动代发一条 `Continue.`（`agent.followup`，与服务端 prompt 同路径）。兜底两类 llm-retry 管不到的场景：请求层重试穷尽、pi-ai 系未归码的网络错误。护栏：连续续跑上限 2 次（成功收尾才重置）、间隔 ≥20s、子代理不跟。零运行时依赖；装在 web profile，重启 DSH 生效，详见其 README |
+   63| | `dsh-ops` | 运维插件 **0.5.2**（本地 link，GitHub release tgz 就地替换；2026-11-09 自 0.5.1 升级，0.5.1 系 11-08 由 0.5.0 正式版升入）：Rust 文件工具（`ops_grep`/`ops_glob`/`ops_inspect_local_file`/`ops_replace`）+ 经校验的独立 Bash 执行器（`ops_bash`，Windows 默认执行器为**随包 Niubash v1.5.0 载荷**）。**0.5.0 起七行组件制改为单行 `dsh-ops` 配置**，13 个自建预设经 profile 的 `presets.<id>` 显式接入保持全局可用。接线现状：① engines `>=0.2.2-rc.1 <0.2.3-0` 自 0.5.0 正式版起原生覆盖 DSH 0.2.2-rc.1，`compatibility.json` 豁免表已清空（旧 alpha 时代的精确版本豁免不再需要）；② 宿主适配层引用的 `@deepseek-ai/dsh-scope` 以 junction 指向 `source/packages/core/scope`（升级须先 `fs.rmdirSync` 摘除、装完重建）；③ 零运行时依赖，`node_modules` 仅此一个 junction。**0.5.1 主修 0.5.0 的缓存/临时文件不回收**（Niubash 执行树清理代码未运行，每次 ops_bash 泄漏整树副本，上游有用户被占 10G）：新增 `dsh-ops cache status\|reclaim`（默认仅预览，真删须 `--yes --all-hosts-stopped`）与只读 `dsh-ops disk status`（R1–R13 归属清单）；Windows 每调用执行根改为跟随载荷卷（本机即 `D:\dsh-ops-exec`），异卷 tmpdir 不再静默整树复制、执行树改硬链接+只读封印。**0.5.2 再修三处**：Windows Niubash 并发调用的硬链接计数误报（改稳定文件身份校验并协调准备中/失败调用的释放）、设置页无法保存或清除各模式 Git Bash 执行路径、离线缓存回收遗漏显式及同卷根目录/无法解除只读与拒删封印。2026-11-09 升级日实测：ops 缓存 **0 可回收**、`D:\dsh-ops-exec` 未产生；宿主 R7 `dsh-subprocess-*` spill（升级前 111 项/178MB）已随当日清理一并手工清空（连同其余 `%TEMP%\dsh-*` 共 7031 项/~2.16GB，DSH 停机时安全，会随使用重新积累）。`dsh-ops-background`/`dsh-ops-ptc` 默认禁用；详见 `docs/Ops与Billion-Context配置安装指南.md` |
+   64| | `billion-context` | ACP 主动上下文剪枝 **0.1.201（上游主包，npm 安装，bundle 第 12 层）**：注入 `compress`/`decompress`/`search_context`/`acp_status`/`acp_read_original_image`，另带缓存命中诊断（`acp_cache`）、出站图片缩放、工具结果吸收。bundle patch 自动插入 `bili-native` 行、禁用根级 `compaction-basic`、并给 4 个官方 Web 预设加 `inject:[biliBasicCompactionPolicy]` 门（加载期 overlay 负责禁用预设内那 17 份 `compaction-basic`）。配置在 `~/.config/billion-context/billion-context.json`，**零配置即可用**。**旧的第三方移植版 `billion-context-dsh@0.2.27` 已停用并归档到 `Archive/Plugins/`**（2026-10-18 换包，原因见审查报告 §11） |
+   65| | `dsh-image-mcp` | 生图 MCP 服务器（stdio 零依赖）：`mcp__image__` 下三个工具——NB2 完整版（NB 2.1 预铺链首，后端未推送时自动回落）、NB2 Lite（Antigravity OAuth 直连，实测可用）、本机 ComfyUI（**auto 优先 Qwen Image 2.1**，照抄实测工作流）；三工具都支持 `save_dir`/`filename` 把成图落到指定目录（相对路径以工作区根为基准）。配在 web profile `cordis.patch.yml` 的 `mcp-image` 条目，重启 DSH 生效，详见其 README |
+   66| | `dsh-providers-hub` | **第三方**（Gitee `iJetLi/deepseek-harness-codearts`，commit `0c467a3`，Provider 轨；2026-11-08 合并上游 87 提交至 `e8041e4`（上游同日打 tag `0.2.2-rc1`；package.json 版本仍 0.2.1-rc.2、依赖零变化——**只重建 lib/ 未重装**）。**QoDuck 已由上游原生支持**：`qoder-catalog.ts` 目录改 `chat ∪ app` 场景合并、跨场景按 id 去重（QoDuck=`lmodel` 只发布在 app 场景、无 `minimal_version`，contextWindow 1M、免费），`COSY_VERSION` 抬到 1.1.79。11-05 cherry-pick 的 magicrew PR #176 三提交被上游正式合并版取代（三处冲突均取上游，referer/405 修复内容不丢）；本地 qoder 挂死修复 WIP 保留未提交，备份双保险：`stash@{0}` + `Dependency/tmp/ph-wip-resolved-on-de052dd.patch`）：17 家 AI 编程平台额度接入 DSH 模型选择器——**ZCode Start Plan / Trae / Qoder+QoderCN** / CodeArts / CodeBuddy / MiniMax 等，带聚合路由（9 家同底座模型自动轮换、优先烧快过期积分）、多账号池、每日签到与一键领取、本地 OpenAI 兼容网关 `127.0.0.1:8326`。登录/签到全在 Web UI 的 Jet Hub 面板；**严禁从 npm 装同名包（发布者非原作者）**。2026-10-25 接入，详见 `docs/ProvidersHub与ZCodeCliProxy接入指南.md` |
+   67| | ~~`dsh-zcode-cli-proxy`~~ | **第三方**（GitHub `kyle123740`，commit `18375a9e`，委托轨），**2026-11-03 卸载**：profile 依赖/bundles 早已摘除，本次补清三处残渣（profile node_modules junction、cordis.patch.yml 配置块、插件目录本体→`Archive/Plugins/dsh-zcode-cli-proxy-removed-20261103`，git 仓库完整可随时复挂）。曾把 **ZCode Start Plan 免费额度**注册为 provider `zcode-cli`（ZCode 原生 agent yolo 执行）；接入细节与选型记录见 `docs/ProvidersHub与ZCodeCliProxy接入指南.md` |
+   68| | ~~`DSH-Plugin-不许启动` / `DSH-Plugin-创造模式` / `DSH-自动下载原神`~~ | 行为类趣味插件，**已移入 `Archive/`**，`Plugins/` 下已无这三个目录 |
+   69| | ~~`dsh-workbuddy-settings`~~（+ npm 包 `dsh-connect-workbuddy` 5.6.2） | WorkBuddy 额度接入轨（CN/Global 双区），**2026-10-26 移除**：与 `dsh-providers-hub` 功能重叠（2026-10-25 选型记录已如此判定）。settings 插件本体移入 `Archive/Plugins/`；profile 的依赖/bundles/cordis.patch.yml 配置块（约 1300 行目录缓存）已清；默认模型当时改指 `zcode-cli` 的 `glm-5.3-flash`（2026-11-03 cli-proxy 卸载后现指 `antigravity/gemini-3.8-flash`）。对应桌面客户端 WorkBuddy / WorkBuddy AI 已一并卸载 |
+   70| 
+   71| ### `Dependency/` — 依赖项（运行时 + 服役文件）
+   72| 
+   73| 自带运行时 + 从 `Archive/` 迁出的服役文件。**本工作区已不依赖系统安装的 Node.js**：
+   74| 
+   75| | 内容 | 用途 |
+   76| | --- | --- |
+   77| | `nodejs/` | **自带 Node.js v24.16.0**（复制自原 `C:\Program Files\nodejs`；已删除其 npm 内置的 `prefix=${APPDATA}\npm` 绑定，全局 `npm i -g` 落进本目录，pnpm@11.7.0 已装入其中）。启动×3 与更新共四个 bat 开头都执行 `set "PATH=%~dp0Dependency\nodejs;%PATH%"`，运行时取自这里而非系统 PATH |
+   78| | `.pnpm-store/` | pnpm 内容寻址存储，原 `D:\.pnpm-store` 同卷整体迁入（硬链接不失效，已有 node_modules 无需重装）。位置配置在 pnpm 11 的 `%LOCALAPPDATA%\pnpm\config\config.yaml`（`storeDir` 字段）——**删掉它 pnpm 会退回盘根默认、重建 `D:\.pnpm-store`** |
+   79| | `npm-cache/` | npm 下载缓存；`~/.npmrc` 的 `cache` 一行指向此处（首次缓存时自动生成，可随时整目录删除） |
+   80| | `patches/opencode-session-fix.patch` | ⚠️ **仍在服役**：session 跨域补丁（无 `x-opencode-session` 头网关返 400），上游 rc.2 仍未修，每次更新后要重放（见「本地改动与更新须知」） |
+   81| | `scripts/sync-opencode-go-models.mjs`（+ `opencode-go-model-meta.json`） | ⚠️ **仍在服役**：启动/更新前零 Token 同步 OpenCode Go 模型目录、纠正 maxTokens（网关 1048576 总上限 vs DSH 压缩阈值）。脚本按「所在目录上跳两级 = 工作区根」定位，**必须保持 `scripts/` 子目录层级**，元数据 json 必须与脚本同目录 |
+   82| | ~~`dsh-ops-shells/`~~ | **已不存在**（2026-11-08 复核）：0.4 时代的 411MB PortableGit 2.56.0.2 Bash 载荷与 `~/.dsh/dsh-ops/shells/bash` 目录 junction 均已消失——0.5.0 稳定版起 Windows 默认执行器改为随包 Niubash v1.5.0 载荷，托管安装改落 `<DSH_HOME>/dsh-ops/`；如需 Git Bash 执行器，在 ops 设置页选择或 `node Plugins/dsh-ops/bin/dsh-ops.mjs bash-runtime git --path <路径>` |
+   83| | `tmp/` | 临时/诊断落脚点（不进启动链路），**用完即删或归档**（2026-11-09 清理后现存两项：`dsh-ops-0.5.1-rollback-20261109/`（0.5.1 回滚备份，0.5.2 稳定后可清）、`ph-wip-resolved-on-de052dd.patch`（providers-hub qoder WIP 备份，对应 stash@{0}，勿删）；旧 0.5.0 回滚与 0.5.1/0.5.2 下载解包物已清） |
+   84| 
+   85| > **与系统 Node 的关系**：`C:\Program Files\nodejs`（系统 PATH）与 `%APPDATA%\npm`（用户 PATH，装有旧 pnpm）原样保留，其他软件不受影响，DSH 已完全不依赖它们。想彻底收编：在「设置 → 应用」卸载 Node.js（安装器自动清系统 PATH 条目），再从用户 PATH 删掉 `%APPDATA%\npm` 条目——`Dependency\nodejs` 已追加到用户 PATH 末尾兜底，新开终端的 `node / npm / pnpm` 即落到工作区内；手动跑命令也可直接用 `Dependency\nodejs\node.exe / npm.cmd / pnpm.cmd`。
+   86| 
+   87| ### `Archive/` — 归档
+   88| 
+   89| | 内容 | 状态 |
+   90| | --- | --- |
+   91| | `Design/` | 已完成/已结项的设计文档归档（未完成的暂存主目录，实施与定稿完成后统一移入此处）。现有两份：`DESKTOP_CONTEXT_MENU_AND_TRASH_DESIGN.md`（2026-10-16，右键体系 + 会话回收站 + I18N 总规范，已实施）与 `CONTEXT_MENU_DESIGN-2026-10-15-historical.md`（早期子集设计，已被前文取代，仅留档追溯）。两份文件头均有「归档说明」引用块 |
+   92| | `Character Encoding Test/` | 字符编码测试归档：收纳从主目录迁出的各类启动/更新脚本 GBK 与 UTF-8 视图对比文本（`*.gbkview.txt`、`*.utf8view.txt`），用于批处理文件编码测试与乱码排查留档 |
+   93| | `gemini-relay/` | Gemini 双通道（Route A 官方 API + Route B Antigravity 反代）接线脚本与部署指南。已退役，本机 google 段已就绪 |
+   94| | `retired-orcamind.tar.gz` | 旧版桌面壳备份 |
+   95| | `scripts/`（sh 三件套、probe 四件套） | 已被根目录 bat 取代 / 诊断工具，真归档（sh 内 `cd ..` 仍指向 `Archive/`，如需复用先改路径）。其中 `probe-preset-prompt-vars.mjs`（2026-10-11 新增）校验 13 个预设 persona 模板里的提示词变量能否渲染——上游 0.2.1 移除内置 `{{cwd}}` 后，未注册变量会让预设整轮失败，而 roster 探针查不出这类问题 |
+   96| | `scripts/dsh-ops-install-2026-10-18/` | 2026-10-18 安装 dsh-ops 0.3.1 + ~~billion-context-dsh 0.2.27~~（该旧插件当晚已替换为上游 `billion-context` 并归档）时产生的 20 项一次性排障物：14 个 `.cjs/.mjs` 探针（`api-check`、`compat-check`、`host-versions`、`patch-bc`、`patch-profile`、`semver-check`、`worker-check` 等）、3 份 `dump-config-*.yml` 配置快照、`rollback-dsh-ops-bc.ps1` 回滚脚本、`rebuild4.log`。仅为过程留档，复现问题时可参考其写法 |
+   97| | `scripts/providershub-dumps-2026-10/` | ProvidersHub/额度轨选型期（10-25/10-27）的诊断转储：两份 profile `dump-config-*.json` 快照与一份 `probe-web` 日志；结论已沉淀进 `docs/ProvidersHub与ZCodeCliProxy接入指南.md`，原文件 2026-11-01 从 `Reports/` 移入归档 |
+   98| | `scripts/browser-sim.js` | 外部项目（Teaching App/DLab）的生成几何文件（248KB），曾滞留主目录且工作区内无任何引用，2026-11-01 移入归档 |
+   99| | VN 系文档 7 份（平铺根层） | `VN-工作流改造方案-v1-已废弃.md`（更早归档）+ 2026-11-09 移入的 6 份：`VN-工作流改造施工文档.md.bak`（主文件 11-07 已改定，备份失去意义）与 `VN-目录对齐-执行报告.md`/`-执行日志.txt`/`-映射.csv`/`-最终执行清单.md`/`VN-目录对齐方案-待确认.md`（11-07 目录对齐任务的一次性产物）。主目录仍在役的 VN 文档：`VN-工作流改造施工文档.md`、`VN-工作流改造说明.md` |
+  100| 
+  101| > 说明：服役中的补丁与同步脚本已迁往 `Dependency/`，`Archive/` 只剩真归档。主目录历史测试产生的零散文本已统一归纳至 `Archive/Character Encoding Test/`。
+  102| 
+  103| ### 其他根目录内容
+  104| 
+  105| | 内容 | 说明 |
+  106| | --- | --- |
+  107| | `Figure/` | 生图落盘目录：`DSH-Images/` 为 dsh-image-mcp 默认输出位，另有 `样例/` 等人工整理子目录 |
+  108| | `Workflows/` | 图像工作流留存（`moss-image/`、`qwen-image/`，ComfyUI 调试期产物） |
+  109| | `Reports/` | 独立诊断报告与调试产物：`qoder-no-response-diagnosis.md`（2026-10-25 选型期）、`预设约束互博成因与治理方案-20261110.md`（治理前成因调查）、`预设约束互博治理后复查-20261110.md`（治理后第二轮复查）、`预设约束复查-子代理报告/`（4 份分层精读全文），另有 2026-11-08 的 2 份 `dump-config-*.json` 与 2 个 `.mjs` 调试脚本 |
+  110| | `DSH刷B站插件调研报告.md` | 独立插件调研文档（未归入 Plugins/docs/，用户自留） |
+  111| | `SenseNova模型使用指南.docx` | 外部平台使用指南（用户自留） |
+  112| 
+  113| ## 启动 / 更新脚本（工作区根目录）
+  114| 
+  115| | 脚本 | 用途 |
+  140| | 文档 | 位置 | 内容 |
+  141| | --- | --- | --- |
+  142| | `Ops与Billion-Context配置安装指南.md` | `docs/` | dsh-ops 与 billion-context 的安装、`cordis.patch.yml` 配置模板（已与 dsh-ops 0.3.1 / billion-context 0.1.201 实际行对齐）、junction 重定向做法、自动更新修复、高频报错排查 |
+  143| | `ProvidersHub与ZCodeCliProxy接入指南.md` | `docs/` | ZCode / Trae / Qoder 额度双轨接入（2026-10-25）：Provider 轨 dsh-providers-hub（17 家 + 聚合路由 + 签到 + 8326 网关）与委托轨 dsh-zcode-cli-proxy（Start Plan + ZCode 原生 agent，yolo 风险提示）、登录/验证流程、npm 同名包投毒警告、回滚与选型记录 |
+  144| | `MagiCrew国际站WAF封锁调查报告-20261106.md` | `docs/` | magicrew 国际站「签到/余额 405 双灭」全程调查（11-05~11-06）：referer 缺失修复（cherry-pick PR #176）与阿里云 ESA WAF 三连跳时间线、13 项实测矩阵（curl/Node 全模拟/**真实 Chrome 带凭据也 405**，主站与国内站对照）、阻断页特征、出口 IP 拉黑 vs 站点事故的判别实验与恢复清单、一行自查命令 |
+  145| | `预设约束互博成因与治理方案-20261110.md` | `Reports/` | 预设使用时「左右脑互博」消耗变多的成因调查（2026-11-10，**治理前 6178 行版**）：DSH 源码层无指令优先级机制（纯 order 排序 + join）、11-07 VN 改造删掉用户指令逃生阀并全量绝对化、77 处重复硬约束与 5 类逻辑矛盾、运行时宪法 + 消除矛盾 + 结构性减重三层治理方案 A/B/C（B6 未做、C3 Host 物理门禁未实现，见复查报告） |
+  146| | `预设约束互博治理后复查-20261110.md` | `Reports/` | 治理后（**5699 行版**）第二轮全量复查（2026-11-10）：20 个 preset / 164 份 SKILL.md / 7 份文档，4 个子代理分层精读 + 机械全量扫描；结论为「宪法段自洽、但 VN7 阶段 SKILL 仍有 6+ 组运行时真矛盾（anchors 四节两套定义、核查范围互斥、10 处末位 ask 收尾残留等）、大规模整块复制、两份历史文档仍以现在时下命令」，含 P0–P2 修复优先级 |
+  147| | `VN-工作流现行规范.md` | `Plugins/dsh-user-presets/` | VN 七预设的唯一现行规范入口（2026-11-10）：指令裁决宪法、七预设目录表、默认每轮节奏、README 双区状态机、跨阶段边界、已废止设计清单；取代 2757 行施工文档，运行时以 7 个 persona prefix + `vn-shared` 三份 SKILL.md 为准 |
+  148| | `插件审查报告-2026-10-18.md` | `Plugins/docs/` | 当日对 web profile 227 行配置 + 12 个自装 bundle + 13 个本地插件目录 + 2 个 MCP 服务器的逐项体检结论（含 dsh-ops 0.3.1 的取舍理由与 13 处误判澄清，§11 记录换包） |
+  149| | `插件审查报告-2026-10-18-补充.md` | `Plugins/docs/` | 同日晚间复查：升级 billion-context 至 0.1.201、修自动更新与 provider retryPolicy、清理旧插件与 652MB 死物、文档勘误 |
+  150| | `插件开发指南.md` | `Plugins/docs/` | 自研插件的目录结构、Cordis 注册约定、bundle patch 与调试方式 |

@@ -1,0 +1,26 @@
+{
+  "name": "@local/dsh-step-fpga",
+  "version": "1.0.0",
+  "private": true,
+  "description": "STEP FPGA 实验预设与仅该预设拉起的 MCP：小脚丫 STEP-MAX10 板卡知识、Quartus 18.1 编译调试与 ModelSim 仿真。",
+  "type": "module",
+  "exports": {
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "data/*.yaml",
+    "mcp/*.py",
+    "skills/**/*",
+    "README.md",
+    "requirements.txt"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

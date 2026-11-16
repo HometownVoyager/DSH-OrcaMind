@@ -1,0 +1,47 @@
+top-level type=list len=1
+first entry keys: ['insert']
+insert type=list len=20
+preset rows: 20
+  preset-game-design           disabled=-
+  preset-genre-fiction         disabled=-
+  preset-language-learning     disabled=-
+  preset-novel-writing         disabled=-
+  preset-official-docs         disabled=-
+  preset-paper-writing         disabled=-
+  preset-comfyui-work          disabled=-
+  preset-science-learning      disabled=-
+  preset-screenplay-writing    disabled=True
+  preset-social-issues         disabled=-
+  preset-vn-design             disabled=True
+  preset-vn-staging            disabled=True
+  preset-godot-dev             disabled=-
+  preset-vn-bible              disabled=-
+  preset-vn-outline            disabled=-
+  preset-vn-script             disabled=-
+  preset-vn-asset-list         disabled=-
+  preset-vn-asset-make         disabled=-
+  preset-vn-screenplay         disabled=-
+  preset-vn-game               disabled=-
+
+VN7 parsed customSkillDirs:
+  preset-vn-design         -> ['vn-design']
+  preset-vn-staging        -> ['vn-staging']
+  preset-vn-bible          -> ['vn-shared', 'vn-bible']
+  preset-vn-outline        -> ['vn-shared', 'vn-outline']
+  preset-vn-script         -> ['vn-shared', 'vn-script']
+  preset-vn-asset-list     -> ['vn-shared', 'vn-asset-list']
+  preset-vn-asset-make     -> ['vn-shared', 'vn-asset-make']
+  preset-vn-screenplay     -> ['vn-shared', 'vn-screenplay']
+  preset-vn-game           -> ['vn-shared', 'vn-game']
+
+vn-script R4 wording:
+  Plugins\dsh-user-presets\skills\vn-script\character-voice\SKILL.md -> 1
+  Plugins\dsh-user-presets\skills\vn-script\continuity\SKILL.md -> 1
+  Plugins\dsh-user-presets\skills\vn-script\research-materials\SKILL.md -> 1
+  Plugins\dsh-user-presets\skills\vn-script\story-bible\SKILL.md -> 1
+  Plugins\dsh-user-presets\skills\vn-script\vn-script-format\SKILL.md -> 1
+  Plugins\dsh-user-presets\skills\vn-script\vn-script-outline\SKILL.md -> 1
+  Plugins\dsh-user-presets\skills\vn-script\vn-script-project-bootstrap\SKILL.md -> 1
+  Plugins\dsh-user-presets\skills\vn-script\vn-script-revision\SKILL.md -> 1
+  Plugins\dsh-user-presets\skills\vn-script\vn-script-structure\SKILL.md -> 1
+  Plugins\dsh-user-presets\skills\vn-script\writing-craft\SKILL.md -> 1

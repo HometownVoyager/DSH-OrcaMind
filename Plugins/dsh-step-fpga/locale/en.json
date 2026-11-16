@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "STEP FPGA lab",
+    "description": "An agent preset and a preset-only MCP for STEP-MAX10 FPGA coursework and contests: board knowledge, Quartus 18.1 build/debug loop, and ModelSim simulation."
+  }
+}

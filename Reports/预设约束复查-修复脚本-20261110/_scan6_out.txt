@@ -1,0 +1,277 @@
+===== prompt-writing references in yml =====
+   30| # 搜索词联想构建（通用检索方法论，与 official-docs / paper-writing / prompt-writing / social-issues 共用同一母本）。
+ 1348| # 逐项校对与定稿/搜索词联想构建（通用检索方法论，与 game-design / paper-writing / prompt-writing / social-issues 共用同一母本）。
+ 1708| # 搜索词联想构建（通用检索方法论，与 game-design / official-docs / prompt-writing / social-issues 共用同一母本）。
+ 2955| # 考据与信源/搜索词联想构建（通用检索方法论，与 game-design / official-docs / paper-writing / prompt-writing 共用同一母本）/问题定义与根因/方案与可行性/
+
+===== all customSkillDirs block contents =====
+--- around line 183 ---
+  183|               customSkillDirs:
+  184|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/game-design"
+  185| 
+  186|           - id: tool-skill
+  187|             name: '@deepseek-ai/dsh-tool-skill'
+  188| 
+  189|           # ── goals ───────────────────────────────────────────────────────────────────
+  190| 
+  191|           # 只有模型侧工具。goal SERVICE 与会话驱动留在 host plane。
+--- around line 529 ---
+  529|               customSkillDirs:
+  530|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/genre-fiction"
+  531| 
+  532|           - id: tool-skill
+  533|             name: '@deepseek-ai/dsh-tool-skill'
+  534| 
+  535|           # ── goals ───────────────────────────────────────────────────────────────────
+  536| 
+  537|           # 只有模型侧工具。goal SERVICE 与会话驱动留在 host plane。
+--- around line 849 ---
+  849|               customSkillDirs:
+  850|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/language-learning"
+  851| 
+  852|           - id: tool-skill
+  853|             name: '@deepseek-ai/dsh-tool-skill'
+  854| 
+  855|           # ── goals ───────────────────────────────────────────────────────────────────
+  856| 
+  857|           # 只有模型侧工具。goal SERVICE 与会话驱动留在 host plane。
+--- around line 1188 ---
+ 1188|               customSkillDirs:
+ 1189|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/novel-writing"
+ 1190| 
+ 1191|           - id: tool-skill
+ 1192|             name: '@deepseek-ai/dsh-tool-skill'
+ 1193| 
+ 1194|           # ── goals ───────────────────────────────────────────────────────────────────
+ 1195| 
+ 1196|           # 只有模型侧工具。goal SERVICE 与会话驱动留在 host plane。
+--- around line 1547 ---
+ 1547|               customSkillDirs:
+ 1548|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/official-docs"
+ 1549| 
+ 1550|           - id: tool-skill
+ 1551|             name: '@deepseek-ai/dsh-tool-skill'
+ 1552| 
+ 1553|           # ── goals ──────────────────────────────────────────────────────────────────
+ 1554| 
+ 1555|           # 只有模型侧工具。goal SERVICE 与会话驱动留在 host plane。
+--- around line 1914 ---
+ 1914|               customSkillDirs:
+ 1915|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/paper-writing"
+ 1916| 
+ 1917|           - id: tool-skill
+ 1918|             name: '@deepseek-ai/dsh-tool-skill'
+ 1919| 
+ 1920|           # ── goals ──────────────────────────────────────────────────────────────────
+ 1921| 
+ 1922|           # 只有模型侧工具。goal SERVICE 与会话驱动留在 host plane。
+--- around line 2150 ---
+ 2150|               customSkillDirs:
+ 2151|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/comfyui-work"
+ 2152| 
+ 2153|           - id: tool-skill
+ 2154|             name: '@deepseek-ai/dsh-tool-skill'
+ 2155| 
+ 2156|           # ── goals ──────────────────────────────────────────────────────────────────
+ 2157|           - id: command-goal
+ 2158|             name: '@deepseek-ai/dsh-command-goal'
+--- around line 2460 ---
+ 2460|               customSkillDirs:
+ 2461|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/science-learning"
+ 2462| 
+ 2463|           - id: tool-skill
+ 2464|             name: '@deepseek-ai/dsh-tool-skill'
+ 2465| 
+ 2466|           # ── goals ───────────────────────────────────────────────────────────────────
+ 2467| 
+ 2468|           # 只有模型侧工具。goal SERVICE 与会话驱动留在 host plane。
+--- around line 2799 ---
+ 2799|               customSkillDirs:
+ 2800|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/screenplay-writing"
+ 2801| 
+ 2802|           - id: tool-skill
+ 2803|             name: '@deepseek-ai/dsh-tool-skill'
+ 2804| 
+ 2805|           # ── goals ───────────────────────────────────────────────────────────────────
+ 2806| 
+ 2807|           # 只有模型侧工具。goal SERVICE 与会话驱动留在 host plane。
+--- around line 3153 ---
+ 3153|               customSkillDirs:
+ 3154|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/social-issues"
+ 3155| 
+ 3156|           - id: tool-skill
+ 3157|             name: '@deepseek-ai/dsh-tool-skill'
+ 3158| 
+ 3159|           # ── goals ──────────────────────────────────────────────────────────────────
+ 3160| 
+ 3161|           # 只有模型侧工具。goal SERVICE 与会话驱动留在 host plane。
+--- around line 3464 ---
+ 3464|               customSkillDirs:
+ 3465|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-design"
+ 3466| 
+ 3467|           - id: tool-skill
+ 3468|             name: '@deepseek-ai/dsh-tool-skill'
+ 3469| 
+ 3470|           # ── goals ───────────────────────────────────────────────────────────────────
+ 3471| 
+ 3472|           # 只有模型侧工具。goal SERVICE 与会话驱动留在 host plane。
+--- around line 3885 ---
+ 3885|               customSkillDirs:
+ 3886|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-staging"
+ 3887| 
+ 3888|           - id: tool-skill
+ 3889|             name: '@deepseek-ai/dsh-tool-skill'
+ 3890| 
+ 3891|           # ── goals ───────────────────────────────────────────────────────────────────
+ 3892| 
+ 3893|           # 只有模型侧工具。goal SERVICE 与会话驱动留在 host plane。
+--- around line 4116 ---
+ 4116|               customSkillDirs:
+ 4117|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/godot-dev"
+ 4118| 
+ 4119|           - id: tool-skill
+ 4120|             name: '@deepseek-ai/dsh-tool-skill'
+ 4121| 
+ 4122|           # ── goals ───────────────────────────────────────────────────────────────────
+ 4123|           - id: command-goal
+ 4124|             name: '@deepseek-ai/dsh-command-goal'
+--- around line 4360 ---
+ 4360|               customSkillDirs:
+ 4361|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-shared"
+ 4362|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-bible"
+ 4363| 
+ 4364|           - id: tool-skill
+ 4365|             name: '@deepseek-ai/dsh-tool-skill'
+ 4366| 
+ 4367|           # ── goals ───────────────────────────────────────────────────────────────────
+ 4368|           - id: command-goal
+--- around line 4562 ---
+ 4562|               customSkillDirs:
+ 4563|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-shared"
+ 4564|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-outline"
+ 4565| 
+ 4566|           - id: tool-skill
+ 4567|             name: '@deepseek-ai/dsh-tool-skill'
+ 4568| 
+ 4569|           # ── goals ───────────────────────────────────────────────────────────────────
+ 4570|           - id: command-goal
+--- around line 4765 ---
+ 4765|               customSkillDirs:
+ 4766|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-shared"
+ 4767|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-script"
+ 4768| 
+ 4769|           - id: tool-skill
+ 4770|             name: '@deepseek-ai/dsh-tool-skill'
+ 4771| 
+ 4772|           # ── goals ───────────────────────────────────────────────────────────────────
+ 4773|           - id: command-goal
+--- around line 4968 ---
+ 4968|               customSkillDirs:
+ 4969|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-shared"
+ 4970|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-asset-list"
+ 4971| 
+ 4972|           - id: tool-skill
+ 4973|             name: '@deepseek-ai/dsh-tool-skill'
+ 4974| 
+ 4975|           # ── goals ───────────────────────────────────────────────────────────────────
+ 4976|           - id: command-goal
+--- around line 5176 ---
+ 5176|               customSkillDirs:
+ 5177|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-shared"
+ 5178|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-asset-make"
+ 5179| 
+ 5180|           - id: tool-skill
+ 5181|             name: '@deepseek-ai/dsh-tool-skill'
+ 5182| 
+ 5183|           # ── goals ───────────────────────────────────────────────────────────────────
+ 5184|           - id: command-goal
+--- around line 5393 ---
+ 5393|               customSkillDirs:
+ 5394|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-shared"
+ 5395|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-screenplay"
+ 5396| 
+ 5397|           - id: tool-skill
+ 5398|             name: '@deepseek-ai/dsh-tool-skill'
+ 5399| 
+ 5400|           # ── goals ───────────────────────────────────────────────────────────────────
+ 5401|           - id: command-goal
+--- around line 5591 ---
+ 5591|               customSkillDirs:
+ 5592|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-shared"
+ 5593|                 - "D:/Tools/DeepSeek Harness/Plugins/dsh-user-presets/skills/vn-game"
+ 5594| 
+ 5595|           - id: tool-skill
+ 5596|             name: '@deepseek-ai/dsh-tool-skill'
+ 5597| 
+ 5598|           # ── goals ───────────────────────────────────────────────────────────────────
+ 5599|           - id: command-goal
+
+===== N1/N2/N5 non-VN files =====
+
+--- genre-fiction/novel-project-bootstrap/SKILL.md (170 lines) first 22 ---
+   1| ---
+   2| name: novel-project-bootstrap
+   3| description: 搭建与维护小说作品的标准目录结构（设定/规划/正文/修订）与根目录 README.md、剧情精述.md 两份总览文档，优先生成 00-设定/anchors.md 全局基准事实层（年龄与生理时间轴矩阵/空间拓扑与动线模型/称谓三层解耦网格/核心资产与体态状态机），执行开工规范检查（落盘 规范-创作.md），维护阶段状态与确认记录，执行阶段推进门控。新建作品或接手缺文档的已有项目时使用。
+   4| ---
+   5| 
+   6| # 小说项目搭建（novel-project-bootstrap）
+   7| 
+   8| 本文件派生自家族母本 `novel-writing/skills/novel-project-bootstrap/SKILL.md`：目录结构、README 与剧情精述模板、开工规范检查、阶段门控与注意事项等共性部分与母本一致，改动须同时回改母本；本预设的域内增补有两项——①「开题类型判定」整节（13 个类型 skill 的判定与加载，通用文学与类型混合的分支）；② 何时使用、README 模板与执行步骤中的类型判定字段与已加载 genre skill 字段登记。
+   9| 
+  10| ## 何时使用
+  11| - 用户提出创作一部新小说、且尚未建立项目目录时（收到新作品创意后先判定作品类型、与用户确认类型/题材/篇幅，再执行本 skill）。
+  12| - 用户要求"开新坑""新建作品""搭建项目"时。
+  13| - 每轮对话开始检阅项目状态、每阶段结束时更新进度与确认记录。
+  14| - 接手已有作品但缺少 README.md、剧情精述.md 或 anchors.md 时：先按本 skill 模板补建（已有内容照实填入，不确定处标注待确认；缺 anchors 时按「只增不改」补建，内容从已确认设定照实汇总、不新造事实、补建前先请用户确认），再展开工作。
+  15| 
+  16| ## 开题类型判定
+  17| - 与用户确认作品名、题材、目标篇幅与更新节奏之前，先判定作品类型：玄幻 / 奇幻 / 恋爱 / 科幻 / 武侠 / 仙侠 / 悬疑推理 / 恐怖灵异 / 都市现实 / 历史架空 / 无限流规则怪谈 / 末世废土 / 游戏电竞 / 类型混合 / 通用文学（不属于以上类型的文学创作）。
+  18| - 判定为单一类型或混合类型 → 记入 README 的类型判定字段，并在此后全程加载对应类型 skill（genre-xuanhuan / genre-fantasy / genre-romance / genre-scifi / genre-wuxia / genre-xianxia / genre-mystery / genre-horror / genre-urban / genre-historical / genre-infinite / genre-postapoc / genre-esports，混合类型按主类型+次类型全部加载）；判定结果与用户的创作意图不符时以用户确认为准。
+  19| - 通用文学项目 → README 的类型判定字段标「通用文学」，不加载任何 genre skill。
+  20| 
+  21| ## 开工规范检查
+  22| - 每个项目第一步先检查工作区主目录的 `规范-创作.md` 与既有文档：
+
+--- novel-writing/novel-project-bootstrap/SKILL.md (163 lines) first 22 ---
+   1| ---
+   2| name: novel-project-bootstrap
+   3| description: 搭建与维护小说作品的标准目录结构（设定/规划/正文/修订）与根目录 README.md、剧情精述.md 两份总览文档，优先生成 00-设定/anchors.md 全局基准事实层（年龄与生理时间轴矩阵/空间拓扑与动线模型/称谓三层解耦网格/核心资产与体态状态机），执行开工规范检查（落盘 规范-创作.md），维护阶段状态与确认记录，执行阶段推进门控。新建作品或接手缺文档的已有项目时使用。
+   4| ---
+   5| 
+   6| # 小说项目搭建（novel-project-bootstrap）
+   7| 
+   8| 本文件是家族母本（领域无关的通用写作流程与文档约定）：`genre-fiction/skills/novel-project-bootstrap/SKILL.md` 在其基础上派生，只增补本域内容（开题类型判定）；两者的共性部分以本文件为准，改动须同时回改派生版。
+   9| 
+  10| ## 何时使用
+  11| - 用户提出创作一部新小说、且尚未建立项目目录时（收到新作品创意后先与用户确认类型/题材/篇幅，再执行本 skill）。
+  12| - 用户要求"开新坑""新建作品""搭建项目"时。
+  13| - 每轮对话开始检阅项目状态、每阶段结束时更新进度与确认记录。
+  14| - 接手已有作品但缺少 README.md、剧情精述.md 或 anchors.md 时：先按本 skill 模板补建（已有内容照实填入，不确定处标注待确认；缺 anchors 时按「只增不改」补建，内容从已确认设定照实汇总、不新造事实、补建前先请用户确认），再展开工作。
+  15| 
+  16| ## 开工规范检查
+  17| - 每个项目第一步先检查工作区主目录的 `规范-创作.md` 与既有文档：
+  18|   - 存在结构/格式/文风规范且完整 → 直接采用，不再询问；此后每轮 Check 与落盘都以它为唯一规范事实源。
+  19|   - 没有、不全，或与默认规范冲突 → 停下询问，给三个方向由用户选：① 选默认集（本预设模板体系：00-设定/style.md 文风规则 + 本文件的标准目录与文档约定）；② 新放一份（用户自备规范文档，可等待用户放入工作区后继续）；③ 由 agent 当场起草一份（用 web_search 检索、用 web_fetch 打开原文核对），草稿经用户逐条确认后定稿。
+  20| - 选定后落盘 `规范-创作.md`（Markdown，统一四节骨架）：①来源记录（所选规范集名称、出处与定稿日期）②结构与目录约定（整体结构、各部分职能、项目目录与命名）③产出格式规范（标题层级、编号体系、引用/署名等要素格式）④红线与禁忌（明令禁止的做法）。选默认集时，该文档汇总引用既有模板（00-设定/style.md 与目录约定）而非复制全文。
+  21| - 自备规范不全时，在其基础上按默认集补全缺失部分，补全内容标注并请用户确认后并入规范文档。
+  22| 
+
+--- comfyui moss-image-guide:65 ---
+  63| 
+  64| ```bash
+  65| python Plugins/dsh-user-presets/skills/comfyui-work/moss-image-prompt-enhancer/scripts/compile_prompt.py \
+  66|   draft.json --output prompt.txt
+  67| ```
+
+===== MD5 duplicate groups (all SKILL.md) =====
+2356ae4884 => genre-fiction\character-voice\SKILL.md | novel-writing\character-voice\SKILL.md
+086e492abe => genre-fiction\continuity\SKILL.md | novel-writing\continuity\SKILL.md
+32404bf4d0 => genre-fiction\novel-chapter-writing\SKILL.md | novel-writing\novel-chapter-writing\SKILL.md
+92ccfb8357 => genre-fiction\novel-outlining\SKILL.md | novel-writing\novel-outlining\SKILL.md
+65cc0e0f95 => genre-fiction\novel-revision\SKILL.md | novel-writing\novel-revision\SKILL.md
+5034b55501 => genre-fiction\novel-structure\SKILL.md | novel-writing\novel-structure\SKILL.md
+a530729482 => genre-fiction\pov-craft\SKILL.md | novel-writing\pov-craft\SKILL.md
+b4c02731b7 => genre-fiction\research-materials\SKILL.md | novel-writing\research-materials\SKILL.md
+5f355119a0 => genre-fiction\story-bible\SKILL.md | novel-writing\story-bible\SKILL.md
+bda6b2274e => genre-fiction\writing-craft\SKILL.md | novel-writing\writing-craft\SKILL.md
+7c0ac33ebd => official-docs\spec-common\SKILL.md | paper-writing\spec-common\SKILL.md | prompt-writing\spec-common\SKILL.md | social-issues\spec-common\SKILL.md

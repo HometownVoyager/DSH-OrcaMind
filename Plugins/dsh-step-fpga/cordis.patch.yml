@@ -1,0 +1,200 @@
+# STEP FPGA 实验：一个 Agent 预设 + 一个「仅本预设挂载」的 stdio MCP。
+#
+# 设计要点：
+#  * mcp-stepfpga 放在 preset-step-fpga 的 config.plugins 内，而不是 Host 层。
+#    这样 13 个 mcp__stepfpga__* 工具的 schema 只在选中本预设的会话里出现，
+#    其它预设不付这部分 token（参照 preset-godot-dev / preset-comfyui-work 的做法）。
+#  * 三个 cordis:group + isolate 是必需的：planMode / compaction / toolResultPruner /
+#    workflowEngine 由预设内插件提供，不隔离会触发 "Preset services require isolate realms"。
+#  * dsh-mcp-client 只 consume Host 的 tools，不提供 service，因此不需要 isolate。
+#  * failOnStartupError: false：没接板卡、Python 依赖缺失或工具链暂不可用时只让工具缺席，
+#    不拖垮整个 Harness 启动。
+- insert:
+    - id: preset-step-fpga
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: step-fpga
+        name: "STEP FPGA 实验"
+        description: "面向小脚丫 STEP-MAX10 + STEP BaseBoard V4.0 的课程作业与竞赛预设：内置板卡/引脚/18 个实验的结构化知识、Quartus 18.1 编译调试闭环与 ModelSim 仿真，配套一个仅本预设拉起的 stepfpga MCP（13 工具）。每轮先声明范围再动手，引脚与器件绝不臆造。"
+        order: 60
+        plugins:
+          # ── identity ────────────────────────────────────────────────────────────────
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: |
+                你是「STEP FPGA 实验」预设的工程助手，由 {{model}} 模型驱动，用中文交流。专精小脚丫 STEP-MAX10 核心板 + STEP BaseBoard V4.0 底板的课程作业与竞赛开发，以可编译、可复现、可交付为准绳。
+
+                ## 环境与权威事实源
+                - 板卡：小脚丫 STEP-MAX10（STEP-MAX10-08A）+ BaseBoard V4.0；FPGA 10M08SAM153C8G（MAX 10）；IO 默认 3.3-V LVTTL。
+                - 时钟：clk = PIN_J5 = 12MHz；LED/按键/数码管低电平有效；HDMI 与 TFT-LCD 复用 DISP 管脚，二者互斥；I2C 的 SDA 为 inout 需上拉。
+                - 工具链：Quartus Prime 18.1 Lite + ModelSim ASE；工程在 D:/Study/Quartus/projects/，工程名/路径不得含中文与空格。
+                - 专属 MCP：工具名 mcp__stepfpga__*。板卡、实验、引脚的唯一事实源是 get_board_info / list_experiments / read_manual_page，绝不臆造 PIN_ 或器件型号。
+                - 资料：《STEP BaseBoard v4.0 实验指导书》288 页，18 个实验（章 2-19）；引脚表在第 12 页。
+
+                ## 标准作业流（不跳步）
+                get_toolchain → list_experiments / read_manual_page 建事实 → create_project → write_source → set_assignments → compile → get_report → simulate →（接板后）jtag_status / program。
+                编译失败先 get_report(detail=true) 再改代码；是否 PASS 以 sofGenerated 与 verdict 为准。
+
+                ## 纪律
+                - 每轮先声明本轮范围，与用户确认后再动手；不一轮做完整个系统。
+                - 引脚/约束走 set_assignments，不手写 .qsf/.sdc；日志不当结论，一切以 get_report 结构化字段为准。
+                - 未接 JTAG 时如实写「仅编译/仿真，未上板验证」，不谎称已烧录。
+                - 交付按 homework-handoff 技能整理工程、编译报告、复现步骤与限制。
+
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: time-context
+            name: '@deepseek-ai/dsh-time-context'
+
+          # ── 基础工具（与 standard 一致）────────────────────────────────────────────
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+            config:
+              applyPatch: false
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+          - id: tool-jobs
+            name: '@deepseek-ai/dsh-tool-jobs'
+          - id: tool-schedule
+            name: '@deepseek-ai/dsh-tool-schedule'
+
+          # ── skills：只挂载本预设自己的精简技能树 ───────────────────────────────────
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+            config:
+              customSkillDirs:
+                - "D:/Tools/DeepSeek Harness/Plugins/dsh-step-fpga/skills/step-fpga"
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+
+          - id: command-goal
+            name: '@deepseek-ai/dsh-command-goal'
+          - id: tool-goal
+            name: '@deepseek-ai/dsh-tool-goal'
+
+          # ── 规划 / 压缩 / 委托：预设内提供 service，必须 group + isolate ───────────
+          - id: planning
+            name: cordis:group
+            group: true
+            isolate:
+              planMode: true
+            config:
+              - id: plan-mode
+                name: '@deepseek-ai/dsh-plan-mode'
+                config:
+                  section: |
+                    You are in plan mode. Stay in plan mode until the user approves your plan through exit_plan_mode or switches the session mode. Imperative language to implement changes means plan the implementation, not execute it. A user's conversational agreement — including an answer confirming something you asked — approves nothing and does not end plan mode; fold the confirmed decision into the plan and submit it through exit_plan_mode.
+
+                    Explore first. Use non-mutating reads, searches, static analysis, and checks to ground the plan in the actual repository. Do not edit or write files, change configuration, run formatters or code generation that rewrites tracked files, commit, or otherwise carry out the plan. Prefer existing functions and patterns over new machinery.
+
+                    The tool catalog stays the same across modes for request-cache stability. These plan-mode rules override any later tool description or guidance that suggests using mutation tools; those tools remain listed to keep the tool catalog unchanged. Do not use todo_write to track this planning phase: it tracks implementation after an approved plan, while the plan itself belongs in exit_plan_mode.
+
+                    Resolve discoverable facts by inspection. Use ask_user_question only for user-owned choices or material ambiguity that inspection cannot answer. Do not ask the user where code lives or how current behavior works when you can find out.
+
+                    Make the plan decision-complete: state the goal and success criteria; group implementation changes by subsystem; identify public API, schema, and data-flow changes; cover edge cases, failure modes, tests, acceptance criteria, and explicit assumptions. Keep it concise enough to review but detailed enough that another engineer can implement it without making design decisions.
+
+                    When ready, call exit_plan_mode with the complete plan markdown, starting with a # title. Make exit_plan_mode the only and final tool call in that assistant response: it presents the plan for approval, and implementation begins only in a later step after approval. Do not paste the final plan as a plain reply or ask "should I proceed?" through prose or ask_user_question. If review rejects it, incorporate the feedback and present again. If the review channel is unavailable or aborted, stay in plan mode and ask the user to switch modes manually; do not proceed with implementation.
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+              toolResultPruner: true
+            config:
+              - id: compaction-basic
+                name: '@deepseek-ai/dsh-compaction-basic'
+              - id: command-compact
+                name: '@deepseek-ai/dsh-command-compact'
+              - id: tool-result-pruner
+                name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+                config:
+                  thresholdChars: 8192
+                  headChars: 4096
+                  tailChars: 1024
+          - id: delegation
+            name: cordis:group
+            group: true
+            isolate:
+              workflowEngine: true
+            config:
+              - id: tool-subagent-control
+                name: '@deepseek-ai/dsh-tool-subagent-control'
+              - id: tool-subagent
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: spawn
+                  toolName: subagent
+                  modelSelection: true
+                  modelDiscovery: true
+              - id: tool-subagent-fork
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: fork
+                  toolName: subagent_fork
+              - id: workflow-ptc
+                name: '@deepseek-ai/dsh-workflow-ptc'
+                config:
+                  provider: spawn
+              - id: tool-workflow
+                name: '@deepseek-ai/dsh-tool-workflow'
+
+          # ── 交互 / 交付 ───────────────────────────────────────────────────────────
+          - id: tool-ask-user
+            name: '@deepseek-ai/dsh-tool-ask-user'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+            config:
+              allowParallelInProgress: true
+          - id: tool-web
+            name: '@deepseek-ai/dsh-tool-web'
+            config:
+              fetch: true
+              searchTimeoutMs: 60000
+          - id: present
+            name: '@deepseek-ai/dsh-tool-present'
+          - id: tool-plugin-manager
+            name: '@deepseek-ai/dsh-plugin-manager/tools'
+            disabled: !!js "!ctx.get('profileContext')"
+          - id: tool-plugin-market
+            name: '@deepseek-ai/dsh-plugin-market/tools'
+            disabled: true
+
+          # ── STEP FPGA MCP（仅本预设挂载）─────────────────────────────────────────
+          # stdio：拉起本机 Python 3.12 跑 mcp/stepfpga_mcp.py。
+          #  - 绝对路径用 WindowsApps stub 之外的真实解释器；
+          #  - env 显式给出工作区/工具链/数据目录，DSH 会 scrub 父进程里的 DSH_* 与凭据类变量，
+          #    这里全部是 STEPFPGA_*/PYTHON* 前缀，不受影响；
+          #  - toolCallTimeoutMs 600000：quartus_sh --flow compile 实测约 20-25s，留足余量；
+          #  - failOnStartupError:false：没接板 / 依赖缺失只让工具缺席，不拖垮 Harness。
+          - id: mcp-stepfpga
+            name: '@deepseek-ai/dsh-mcp-client'
+            config:
+              serverName: stepfpga
+              transport: stdio
+              command: 'C:/Users/HometownVoyager/AppData/Local/Programs/Python/Python312/python.exe'
+              args:
+                - '-u'
+                - 'D:/Tools/DeepSeek Harness/Plugins/dsh-step-fpga/mcp/stepfpga_mcp.py'
+              cwd: 'D:/Tools/DeepSeek Harness/Plugins/dsh-step-fpga'
+              env:
+                STEPFPGA_WORKSPACE: 'D:/Study/Quartus'
+                STEPFPGA_QUARTUS_DIR: 'D:/Study/Quartus/quartus/bin64'
+                STEPFPGA_MODELSIM_DIR: 'D:/Study/Quartus/modelsim_ase/win32aloem'
+                STEPFPGA_DOCS_DIR: 'D:/Study/Quartus/STEP FPGA'
+                STEPFPGA_DATA_DIR: 'D:/Tools/DeepSeek Harness/Plugins/dsh-step-fpga/data'
+                STEPFPGA_PROJECTS_DIR: 'D:/Study/Quartus/projects'
+                PYTHONIOENCODING: 'utf-8'
+                PYTHONUTF8: '1'
+              toolCallTimeoutMs: 600000
+              failOnStartupError: false

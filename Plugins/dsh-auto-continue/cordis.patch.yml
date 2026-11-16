@@ -1,0 +1,7 @@
+# dsh-auto-continue bundle 层：把自动续跑挂进引导列表（宿主级，监听全局 session/event）。
+# 插件行按包名引用；配置省略时走插件内缺省：开关开、文本 Continue.、连续上限 2 次、
+# 冷却 20s、子代理不跟、调试日志关。要调参可在 profile 的 cordis.patch.yml 里
+# 用 `- id: dsh-auto-continue` + config 覆写。
+- insert:
+    - id: dsh-auto-continue
+      name: '@dsh-external/dsh-auto-continue'

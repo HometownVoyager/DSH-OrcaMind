@@ -1,0 +1,58 @@
+=== YAML parse ===
+  parsed OK: top-level list entries 1
+  preset rows parsed: 0
+  ids: 
+
+=== SKILL.md frontmatter (post-note) ===
+  genre-fiction/character-voice/SKILL.md               starts='---'=True  note=1  close='---' at 123
+      frontmatter keys: ['name', 'description']
+  official-docs/spec-common/SKILL.md                   starts='---'=True  note=1  close='---' at 197
+      frontmatter keys: ['name', 'description']
+  paper-writing/spec-common/SKILL.md                   starts='---'=True  note=1  close='---' at 197
+      frontmatter keys: ['name', 'description']
+  prompt-writing/spec-common/SKILL.md                  starts='---'=True  note=1  close='---' at 197
+      frontmatter keys: ['name', 'description']
+  game-design/search-query-craft/SKILL.md              starts='---'=True  note=1  close='---' at 162
+      frontmatter keys: ['name', 'description']
+
+=== root README doc table ===
+    55| | `dsh-user-presets` | 13 个自建 agent 预设 bundle（论文撰写、小说创作等）+ 7 个 `VN-*` 工作流预设（2026-11-07 施工，共 20 条 `preset-*`）；注册在 `~/.dsh/profiles/web/package.json` 的 
+    99| | VN 系文档 7 份（平铺根层） | `VN-工作流改造方案-v1-已废弃.md`（更早归档）+ 2026-11-09 移入的 6 份：`VN-工作流改造施工文档.md.bak`（主文件 11-07 已改定，备份失去意义）与 `VN-目录对齐-执行报告.md`/`-执行日志.txt`/`-映射.
+   147| | `skills/_SYNC-POLICY.md` | `Plugins/dsh-user-presets/skills/` | 同源副本同步政策（2026-11-10 复查后建立）：登记 6 组逐字节相同 / 派生 SKILL.md 与 7 份宪法段，说明 Loader 每 preset 独立挂
+   148| | `VN-工作流现行规范.md` | `Plugins/dsh-user-presets/` | VN 七预设的唯一现行规范入口（2026-11-10）：指令裁决宪法、七预设目录表、默认每轮节奏、README 双区状态机、跨阶段边界、已废止设计清单；取代长篇施工文档（已删内嵌旧 skill 草案）
+
+=== backup ===
+  root: ['cordis.patch.yml', 'README.md', 'VN-工作流改造施工文档.md', 'VN-工作流改造说明.md', 'VN-工作流现行规范.md', '预设约束互博成因与治理方案-20261110.md']
+  skills/: 22 items
+  skills\comfyui-work/: 5 items
+  skills\game-design/: 11 items
+  skills\genre-fiction/: 24 items
+  skills\godot-dev/: 8 items
+  skills\language-learning/: 1 items
+  skills\novel-writing/: 11 items
+  skills\official-docs/: 8 items
+  skills\paper-writing/: 11 items
+  skills\prompt-writing/: 9 items
+  skills\science-learning/: 1 items
+  skills\screenplay-writing/: 10 items
+  skills\social-issues/: 10 items
+  skills\vn-asset-list/: 2 items
+  skills\vn-asset-make/: 4 items
+  skills\vn-bible/: 6 items
+  skills\vn-design/: 8 items
+  skills\vn-game/: 3 items
+  skills\vn-outline/: 3 items
+  skills\vn-screenplay/: 8 items
+  skills\vn-script/: 10 items
+  skills\vn-shared/: 3 items
+  skills\vn-staging/: 8 items
+  total files in backup: 174
+
+=== positive: user-override coverage in VN stage skills ===
+  vn-script        0/10 files mention override/default
+  vn-screenplay    8/8 files mention override/default
+  vn-outline       0/3 files mention override/default
+  vn-bible         6/6 files mention override/default
+  vn-asset-list    2/2 files mention override/default
+  vn-asset-make    1/4 files mention override/default
+  vn-game          3/3 files mention override/default

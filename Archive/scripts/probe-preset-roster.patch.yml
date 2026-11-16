@@ -1,0 +1,3 @@
+- insert:
+    - id: preset-roster-probe
+      name: 'file:///D:/Tools/DeepSeek%20Harness/Archive/scripts/probe-preset-roster.mjs'

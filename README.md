@@ -42,7 +42,12 @@ desktop/main.js（壳托管模式）──────┘         │
 
 ### `desktop/` — OrcaMind Electron 桌面壳
 
-- `main.js`：薄壳，只做三件事——探测/挂载 3080 服务、未运行时调 `serve-harness.mjs` 拉起、提供无浏览器 chrome 的窗口与托盘（单实例锁保留：重复启动聚焦既有窗口）。**通知深链 `orcamind://` 已于 2026-10-06 移除**：协议处理器指向便携自解压 exe，每次点击通知都要完整解压启动一个 Electron 实例（数秒延迟），得不偿失；壳不再注册协议，注册表残留键已清理。
+`main.js` 约 2000 行，**壳本体远不止薄壳**——服务托管之外还有划词翻译与智能朗读两大自研功能；desktop 下 13 个源码文件全部入库（无未跟踪内容），换机恢复不依赖现存 exe，重打包（`npm run dist`）或开发模式即可重建：
+
+- **服务托管**：探测/挂载 3080 服务、未运行时调 `serve-harness.mjs` 拉起；单实例锁保留：重复启动聚焦既有窗口。**通知深链 `orcamind://` 已于 2026-10-06 移除**：协议处理器指向便携自解压 exe，每次点击通知都要完整解压启动一个 Electron 实例（数秒延迟），得不偿失；壳不再注册协议，注册表残留键已清理。
+- **右键菜单 + 划词翻译**（`translate.html` 独立浮窗 + `preload-translate.js`）：壳自绘网页右键菜单（复制/链接/图片操作、翻译、朗读三件套）；选中文本「让 AI 翻译为…」唤起独立轻量浮窗——按触发位置锚定、会话级尺寸记忆、零上下文污染。翻译三通道：AI 模型翻译（**默认用当前会话活跃模型**，页面经 IPC 上报；模型列表取自 DSH 页面目录，单次无状态调用、严格关思考、错误真实回显）、MyMemory 免 Key 容错通道、跳必应翻译；结果可复制或回填 DSH 输入框（composer 注入）；主题/语言/缩放与主窗同步。
+- **智能双引擎朗读**（`tts-service.js` 449 行，纯 Node/Electron 零 npm 依赖）：微软 Edge 在线神经网络语音（自实现 Sec-MS-GEC v2 DRM 握手，wss 连 speech.platform.bing.com）+ 本地 Web Speech API 离线兜底（按中英文自动选 voice）；右键「朗读选中文本 / 朗读设置 / 停止朗读」，音频经 executeJavaScript 注入页面播放；音色默认 auto（中文晓晓 / 英文 Jenny 智能推荐）+ 语速可调，存 userData/tts-settings.json。
+- **桌面集成**（`preload.js` 感知 DSH 主题/语言与会话状态同步主进程）：托盘中英双语菜单（打开窗口/浏览器打开/重启服务/退出）、深浅色主题跟随与背景色适配；系统通知以壳 AppUserModelId `com.deepseek.harness.desktop` 品牌弹出（dsh-desktop-notifier 插件的系统通知依赖此身份）。
 - `desktop.config.json`：`{ "DSH_ROOT": "D:/Tools/DeepSeek Harness", "port": 3080 }`，可被环境变量覆盖。
 - `dist/`：打包产物，`OrcaMind.exe`（无版本号）为首选便携版；`build/` 内是图标；`scripts/make-icon.js` 生成图标。**改过 main.js 后要重新 `npm run dist`。**（2026-11-17：main.js 改为外置读 `oauth-client.local.json` 后曾两度重建，均因沙箱网络拉不动 electron 分发而失败（TLS 断连，ELECTRON_MIRROR 亦无效）；现行 exe 仍为 10-15 版——内嵌凭据与外置文件同值，行为完全等同，下次在正常网络环境重建即可，`package.json` build.files 已含该凭据文件。）
 

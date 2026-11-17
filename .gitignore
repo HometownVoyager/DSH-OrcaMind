@@ -1,6 +1,9 @@
 # ===== 不入库:官方源码 / 运行时 / 本机 agent 配置 =====
 /source/
-/Dependency/
+/Dependency/*
+# 自建服役物入库(补丁兜底备份 + 同步脚本):
+!/Dependency/patches/
+!/Dependency/scripts/
 /.zcode/
 /tmp/
 

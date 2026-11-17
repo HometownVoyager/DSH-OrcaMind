@@ -1,0 +1,3796 @@
+#> 本地功能叠加补丁（source 未提交改动的兜底备份，2026-11-18 自 39163dd30 = v0.2.2-rc.3 导出）
+#> 内容: 会话回收站(trash) + session-log 全模型上传开关 + desktop 壳接线 + liveshare 端点表 + acp model-control 等
+#> 重放: git -C source apply ../Dependency/patches/local-features-overlay.patch
+#> 与 opencode-session-fix.patch 互补: 该补丁覆盖 packages/llm/llm-pi-ai/src，本补丁 = 其余全部本地改动
+
+diff --git a/apps/desktop/src/ipc.ts b/apps/desktop/src/ipc.ts
+index 83ebe7415..e6f3d4682 100644
+--- a/apps/desktop/src/ipc.ts
++++ b/apps/desktop/src/ipc.ts
+@@ -44,6 +44,7 @@ export const DESKTOP_IPC = {
+   windowFullscreen: 'dsh-desktop:window-fullscreen',
+   windowsAppearance: 'dsh-desktop:windows-appearance',
+   windowsMenu: 'dsh-desktop:windows-menu',
++  trashItem: 'dsh-desktop:trash-item',
+ } as const
+ 
+ /** Desktop release update state rendered by desktop-owned UI. */
+@@ -102,6 +103,7 @@ export interface DshDesktopProductApi {
+    * @returns `name=value` fields separated by `; `, with no hostname, user name, or serial number.
+    */
+   deviceInfo(): Promise<string>
++  trashItem(path: string): Promise<void>
+   readonly updates: {
+     readonly channels: DesktopChannelBridge
+     status(): Promise<DesktopUpdatePresentation>
+diff --git a/apps/desktop/src/locale.ts b/apps/desktop/src/locale.ts
+index 3e2db64e2..cb3691689 100644
+--- a/apps/desktop/src/locale.ts
++++ b/apps/desktop/src/locale.ts
+@@ -58,6 +58,9 @@ export const en = {
+   copy: 'Copy',
+   paste: 'Paste',
+   selectAll: 'Select All',
++  copyLink: 'Copy Link Address',
++  openLinkExternal: 'Open in Browser',
++  copyImage: 'Copy Image',
+   startupFailed: 'DeepSeek Harness is unavailable',
+   fatalSummary: 'The application could not start or stopped unexpectedly.',
+   startupAddressInUse: 'Another DSH instance (such as dsh web or the desktop app) is running. They cannot start at the same time. Quit the other running DSH instance, then restart.',
+@@ -253,6 +256,9 @@ export const zh = {
+   copy: '复制',
+   paste: '粘贴',
+   selectAll: '全选',
++  copyLink: '复制链接地址',
++  openLinkExternal: '在浏览器中打开',
++  copyImage: '复制图片',
+   startupFailed: 'DeepSeek Harness 无法使用',
+   fatalSummary: '应用无法启动或已意外停止。',
+   startupAddressInUse: '有其他正在运行的 DSH（如其他 dsh web、桌面端），无法同时启动，请退出其他正在运行的 DSH 后重启。',
+@@ -578,6 +584,9 @@ export const ja = {
+   mandatoryCopyFailed: 'リンクをコピーできませんでした。以下から選択してコピーしてください。',
+   mandatoryAddress: 'ダウンロードリンク',
+   mandatoryNotification: 'アプリに戻り、インストールと再起動を確認してください。',
++  copyLink: 'リンクのアドレスをコピー',
++  openLinkExternal: 'ブラウザで開く',
++  copyImage: '画像をコピー',
+ } satisfies Record<keyof typeof en, string>
+ 
+ /** Spanish dictionary, checked against the English keys. */
+@@ -771,6 +780,9 @@ export const es = {
+   mandatoryCopyFailed: 'No se pudo copiar el enlace. Selecciónelo y cópielo a continuación.',
+   mandatoryAddress: 'Enlace de descarga',
+   mandatoryNotification: 'Regrese a la aplicación para confirmar la instalación y reiniciar.',
++  copyLink: 'Copiar la dirección del enlace',
++  openLinkExternal: 'Abrir en el navegador',
++  copyImage: 'Copiar imagen',
+ } satisfies DesktopMessages
+ 
+ /** French dictionary, checked against the English keys. */
+@@ -964,6 +976,9 @@ export const fr = {
+   mandatoryCopyFailed: 'Impossible de copier le lien. Sélectionnez-le et copiez-le ci-dessous.',
+   mandatoryAddress: 'Lien de téléchargement',
+   mandatoryNotification: "Revenez à l'application pour confirmer l'installation et redémarrer.",
++  copyLink: "Copier l'adresse du lien",
++  openLinkExternal: 'Ouvrir dans le navigateur',
++  copyImage: "Copier l'image",
+ } satisfies DesktopMessages
+ 
+ /** German dictionary, checked against the English keys. */
+@@ -1157,6 +1172,9 @@ export const de = {
+   mandatoryCopyFailed: 'Der Link konnte nicht kopiert werden. Wählen Sie es aus und kopieren Sie es unten.',
+   mandatoryAddress: 'Download-Link',
+   mandatoryNotification: 'Kehren Sie zur Anwendung zurück, um die Installation zu bestätigen und neu zu starten.',
++  copyLink: 'Linkadresse kopieren',
++  openLinkExternal: 'Im Browser öffnen',
++  copyImage: 'Bild kopieren',
+ } satisfies DesktopMessages
+ 
+ /** Russian dictionary, checked against the English keys. */
+@@ -1350,6 +1368,9 @@ export const ru = {
+   mandatoryCopyFailed: 'Не удалось скопировать ссылку. Выделите и скопируйте его ниже.',
+   mandatoryAddress: 'Ссылка для скачивания',
+   mandatoryNotification: 'Вернитесь в приложение, чтобы подтвердить установку и перезапустить.',
++  copyLink: 'Скопировать адрес ссылки',
++  openLinkExternal: 'Открыть в браузере',
++  copyImage: 'Скопировать изображение',
+ } satisfies DesktopMessages
+ 
+ /** Portuguese dictionary, checked against the English keys. */
+@@ -1543,6 +1564,9 @@ export const pt = {
+   mandatoryCopyFailed: 'Não foi possível copiar o link. Selecione e copie abaixo.',
+   mandatoryAddress: 'Link de download',
+   mandatoryNotification: 'Retorne ao aplicativo para confirmar a instalação e reinicie.',
++  copyLink: 'Copiar endereço do link',
++  openLinkExternal: 'Abrir no navegador',
++  copyImage: 'Copiar imagem',
+ } satisfies DesktopMessages
+ 
+ const dictionaries = { en, zh, ja, es, fr, de, ru, pt }
+diff --git a/apps/desktop/src/main.ts b/apps/desktop/src/main.ts
+index 923271091..48077f3d9 100644
+--- a/apps/desktop/src/main.ts
++++ b/apps/desktop/src/main.ts
+@@ -261,6 +261,44 @@ function platformLoginUrl(authorizeUrl: string): string {
+   return url.href
+ }
+ 
++/** Validate whether a URL uses http or https scheme. */
++function isAllowedHttpLink(url: unknown): url is string {
++  if (typeof url !== 'string' || url.length === 0) return false
++  try {
++    const parsed = new URL(url)
++    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
++  } catch {
++    return false
++  }
++}
++
++/**
++ * Present a popup menu with zoomFactor coordinate scaling when anchor coordinates are provided,
++ * or at current cursor position when omitted.
++ */
++function popupScaledMenu(
++  menu: Menu,
++  window: BrowserWindow,
++  x?: number,
++  y?: number,
++  callback?: () => void,
++): void {
++  if (typeof x === 'number' && typeof y === 'number') {
++    const zoom = window.webContents.getZoomFactor()
++    menu.popup({
++      window,
++      x: Math.round(x * zoom),
++      y: Math.round(y * zoom),
++      ...(callback === undefined ? {} : { callback }),
++    })
++  } else {
++    menu.popup({
++      window,
++      ...(callback === undefined ? {} : { callback }),
++    })
++  }
++}
++
+ function createWindow(preload: string, show = false, primary = false): BrowserWindow {
+   const window = new BrowserWindow({
+     width: 1280,
+@@ -339,8 +377,11 @@ function createWindow(preload: string, show = false, primary = false): BrowserWi
+     window.on('restore', applyBackdrop)
+     window.on('show', applyBackdrop)
+   }
+-  window.webContents.on('context-menu', (_event, { isEditable, selectionText, editFlags }) => {
++  window.webContents.on('context-menu', (_event, {
++    isEditable, selectionText, editFlags, linkURL, x, y, hasImageContents, mediaType,
++  }) => {
+     const items: MenuItemConstructorOptions[] = []
++    const messages = currentDesktopLocale().messages
+     if (isEditable) {
+       items.push(
+         { role: 'undo', enabled: editFlags.canUndo },
+@@ -349,21 +390,47 @@ function createWindow(preload: string, show = false, primary = false): BrowserWi
+         { role: 'cut', enabled: editFlags.canCut },
+         { role: 'copy', enabled: editFlags.canCopy },
+         { role: 'paste', enabled: editFlags.canPaste },
++        { role: 'delete', enabled: editFlags.canDelete },
+         { type: 'separator' },
+         { role: 'selectAll', enabled: editFlags.canSelectAll },
+       )
+-    } else if (selectionText.length > 0) {
+-      items.push({ role: 'copy', enabled: editFlags.canCopy })
++    } else {
++      const hasSelection = typeof selectionText === 'string' && selectionText.length > 0
++      const hasImage = hasImageContents || mediaType === 'image'
++      const hasLink = isAllowedHttpLink(linkURL)
++
++      if (hasSelection) {
++        items.push({ role: 'copy', enabled: editFlags.canCopy })
++      }
++      if (hasImage) {
++        if (items.length > 0) items.push({ type: 'separator' })
++        items.push({
++          label: messages.copyImage,
++          click: () => { window.webContents.copyImageAt(x, y) },
++        })
++      }
++      if (hasLink) {
++        if (items.length > 0) items.push({ type: 'separator' })
++        items.push(
++          {
++            label: messages.copyLink,
++            click: () => { void clipboard.writeText(linkURL) },
++          },
++          {
++            label: messages.openLinkExternal,
++            click: () => { void shell.openExternal(linkURL) },
++          },
++        )
++      }
+     }
+     // Empty accelerators suppress Electron's default shortcut labels for native roles.
+     if (items.length > 0) {
+-      const messages = currentDesktopLocale().messages
+-      Menu.buildFromTemplate(items.map(item => ({
++      popupScaledMenu(Menu.buildFromTemplate(items.map(item => ({
+         ...item,
+-        ...(process.platform === 'win32' && item.role !== undefined && item.role in messages
++        ...((process.platform === 'win32' || process.platform === 'linux') && item.role !== undefined && item.role in messages
+           ? { label: messages[item.role as keyof typeof messages] } : {}),
+         accelerator: '',
+-      }))).popup({ window })
++      }))), window, x, y)
+     }
+   })
+   window.webContents.on('will-navigate', (event, url) => {
+@@ -962,6 +1029,13 @@ async function main(): Promise<void> {
+     assertProductSender(event)
+     await openUpdatePrompt()
+   })
++  ipcMain.handle(DESKTOP_IPC.trashItem, async (event, path: unknown) => {
++    assertProductSender(event)
++    if (typeof path !== 'string' || path.trim().length === 0) {
++      throw new Error('dsh desktop: trashItem requires a non-empty string path')
++    }
++    await shell.trashItem(path)
++  })
+ 
+   let configurationPrompt: Promise<void> | undefined
+   const showConfigurationError = (): Promise<void> => {
+@@ -1293,9 +1367,8 @@ async function main(): Promise<void> {
+         { type: 'separator' },
+         editItem(currentDesktopLocale().messages.selectAll, 'A', ['control'], 'Ctrl+A'),
+       ]
+-      const zoom = mainWindow.webContents.getZoomFactor()
+       return new Promise<void>((resolve) => {
+-        Menu.buildFromTemplate(items).popup({ window, x: Math.round(x * zoom), y: Math.round(y * zoom), callback: resolve })
++        popupScaledMenu(Menu.buildFromTemplate(items), window, x, y, resolve)
+       })
+     })
+     ipcMain.on(DESKTOP_IPC.windowsAppearance, (event, _language: unknown, color: unknown, symbolColor: unknown) => {
+diff --git a/apps/desktop/src/preload-app.ts b/apps/desktop/src/preload-app.ts
+index 6b4e98961..6c1099cc2 100644
+--- a/apps/desktop/src/preload-app.ts
++++ b/apps/desktop/src/preload-app.ts
+@@ -34,6 +34,7 @@ function createProductApi(): DshDesktopProductApi {
+       }) },
+     },
+     deviceInfo: () => ipcRenderer.invoke(DESKTOP_IPC.deviceInfo) as Promise<string>,
++    trashItem: (path: string) => ipcRenderer.invoke(DESKTOP_IPC.trashItem, path) as Promise<void>,
+     keyboard: {
+       closeWindow: revision => ipcRenderer.invoke(DESKTOP_IPC.shortcutsCloseWindow, revision) as Promise<void>,
+       subscribe: (listener) => {
+diff --git a/apps/desktop/tests/main-startup.spec.ts b/apps/desktop/tests/main-startup.spec.ts
+index c20ea6e90..0461d369b 100644
+--- a/apps/desktop/tests/main-startup.spec.ts
++++ b/apps/desktop/tests/main-startup.spec.ts
+@@ -74,6 +74,8 @@ const harness = await vi.hoisted(async () => {
+   const updateCheck = vi.fn(async (_manual?: boolean): Promise<DesktopUpdateState> => updateState)
+   const updateDownload = vi.fn(async (_version: string, _revision?: number): Promise<DesktopUpdateState> => updateState)
+   const updateInstall = vi.fn(async (_version: string, _revision?: number): Promise<DesktopUpdateState> => updateState)
++  const clipboardWriteText = vi.fn()
++  const trashItem = vi.fn(async () => {})
+   const popup = vi.fn<(options: { window: FakeWindow; x?: number; y?: number; callback?: () => void }) => void>()
+   const menuBuilder = vi.fn<(template: MenuItemConstructorOptions[]) => { popup: typeof popup }>(() => ({ popup }))
+   const menu = Object.assign(menuBuilder, { buildFromTemplate: menuBuilder, setApplicationMenu: vi.fn() })
+@@ -94,6 +96,7 @@ const harness = await vi.hoisted(async () => {
+       setIgnoreMenuShortcuts: vi.fn(),
+       focus: vi.fn(),
+       sendInputEvent: vi.fn(),
++      copyImageAt: vi.fn(),
+       send: vi.fn((channel: string, state: { policy?: { blocking: boolean } }) => {
+         if (channel === 'dsh-desktop:mandatory-state' && state.policy?.blocking) policyBlocked.resolve()
+       }),
+@@ -249,6 +252,8 @@ const harness = await vi.hoisted(async () => {
+     dialog: { showOpenDialog: vi.fn(), showErrorBox: vi.fn(), showMessageBox: vi.fn() },
+     openExternal: vi.fn(async () => {}),
+     showItemInFolder: vi.fn(),
++    clipboardWriteText,
++    trashItem,
+     protocolHandle: vi.fn<(scheme: string, handler: (request: Request) => Response | Promise<Response>) => void>(),
+     applyRelease: vi.fn(() => { preparing.resolve(); return prepared.promise }),
+     disableAllPlugins: vi.fn(async () => {
+@@ -289,6 +294,8 @@ const harness = await vi.hoisted(async () => {
+       updateInstall.mockReset().mockImplementation(async () => updateState)
+       nativeTheme.removeAllListeners()
+       nativeTheme.themeSource = 'system'; nativeTheme.shouldUseDarkColors = false
++      clipboardWriteText.mockReset()
++      trashItem.mockReset()
+       preparing = deferred(); prepared = deferred(); hostStarted = deferred()
+       navigated = deferred(); dialogShown = deferred(); quitCompleted = deferred()
+       policyBlocked = deferred()
+@@ -315,7 +322,8 @@ vi.mock('electron', () => ({
+   BrowserWindow: harness.FakeWindow,
+   WebContentsView: harness.FakeView,
+   dialog: harness.dialog,
+-  shell: { openExternal: harness.openExternal, showItemInFolder: harness.showItemInFolder },
++  shell: { openExternal: harness.openExternal, showItemInFolder: harness.showItemInFolder, trashItem: harness.trashItem },
++  clipboard: { writeText: harness.clipboardWriteText },
+   nativeTheme: harness.nativeTheme,
+   ipcMain: {
+     on: harness.ipcOn,
+@@ -1340,6 +1348,10 @@ describe('desktop main startup', () => {
+     listener(event, 'en', '#1b1b1c', '#f9fafb')
+     window.webContents.emit('context-menu', {}, { isEditable: false, selectionText: 'text', editFlags: { canCopy: true } })
+     expect(harness.menu.buildFromTemplate).toHaveBeenLastCalledWith([{ role: 'copy', enabled: true, label: 'Copy', accelerator: '' }])
++    window.webContents.emit('context-menu', {}, { isEditable: true, selectionText: '', editFlags: { canDelete: true } })
++    expect(harness.menu.buildFromTemplate.mock.lastCall![0]).toContainEqual(
++      expect.objectContaining({ role: 'delete', label: 'Delete', enabled: true }),
++    )
+     window.setTitleBarOverlay.mockClear()
+     listener(event, 'en', 'url(file:///bad)', '#fff')
+     expect(window.setTitleBarOverlay).not.toHaveBeenCalled()
+@@ -1574,7 +1586,7 @@ describe('desktop main startup', () => {
+     await import('../src/main.ts')
+     await harness.preparing.promise
+     const window = harness.windows[0]!
+-    const editFlags = { canUndo: true, canRedo: false, canCut: true, canCopy: true, canPaste: true, canSelectAll: true }
++    const editFlags = { canUndo: true, canRedo: false, canCut: true, canCopy: true, canPaste: true, canDelete: true, canSelectAll: true }
+     harness.menu.mockClear()
+ 
+     window.webContents.emit('context-menu', {}, { isEditable: true, selectionText: 'text', editFlags })
+@@ -1582,7 +1594,8 @@ describe('desktop main startup', () => {
+       { role: 'undo', enabled: true, accelerator: '' }, { role: 'redo', enabled: false, accelerator: '' },
+       { type: 'separator', accelerator: '' },
+       { role: 'cut', enabled: true, accelerator: '' }, { role: 'copy', enabled: true, accelerator: '' },
+-      { role: 'paste', enabled: true, accelerator: '' }, { type: 'separator', accelerator: '' },
++      { role: 'paste', enabled: true, accelerator: '' }, { role: 'delete', enabled: true, accelerator: '' },
++      { type: 'separator', accelerator: '' },
+       { role: 'selectAll', enabled: true, accelerator: '' },
+     ])
+     expect(harness.popup).toHaveBeenCalledWith({ window })
+@@ -1595,6 +1608,112 @@ describe('desktop main startup', () => {
+     expect(harness.menu).not.toHaveBeenCalled()
+   })
+ 
++  it('builds context menu for links, images, combinations, and ignores invalid protocols', async () => {
++    vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
++    await import('../src/main.ts')
++    await harness.preparing.promise
++    const window = harness.windows[0]!
++    const editFlags = {
++      canUndo: false, canRedo: false, canCut: false, canCopy: true, canPaste: false, canDelete: false, canSelectAll: false,
++    }
++    harness.menu.mockClear()
++    const anyFunction = expect.any(Function) as () => void
++
++    // 1. Pure hyperlink (http/https)
++    window.webContents.emit('context-menu', {}, {
++      isEditable: false, selectionText: '', editFlags, linkURL: 'https://deepseek.com',
++    })
++    const linkItems = harness.menu.mock.lastCall![0]
++    expect(linkItems.map((item: { label?: string }) => item.label)).toEqual(['Copy Link Address', 'Open in Browser'])
++    ;(linkItems[0] as { click: () => void }).click()
++    expect(harness.clipboardWriteText).toHaveBeenCalledWith('https://deepseek.com')
++    ;(linkItems[1] as { click: () => void }).click()
++    expect(harness.openExternal).toHaveBeenCalledWith('https://deepseek.com')
++
++    // 2. Selection on a hyperlink: copy text first, then separator, then link actions
++    harness.menu.mockClear()
++    window.webContents.emit('context-menu', {}, {
++      isEditable: false, selectionText: 'DeepSeek', editFlags, linkURL: 'https://deepseek.com',
++    })
++    const comboItems = harness.menu.mock.lastCall![0]
++    expect(comboItems).toEqual([
++      { role: 'copy', enabled: true, accelerator: '' },
++      { type: 'separator', accelerator: '' },
++      { label: 'Copy Link Address', click: anyFunction, accelerator: '' },
++      { label: 'Open in Browser', click: anyFunction, accelerator: '' },
++    ])
++
++    // 3. Image object
++    harness.menu.mockClear()
++    window.webContents.emit('context-menu', {}, {
++      isEditable: false, selectionText: '', editFlags, mediaType: 'image', x: 120, y: 240,
++    })
++    const imageItems = harness.menu.mock.lastCall![0]
++    expect(imageItems.map((item: { label?: string }) => item.label)).toEqual(['Copy Image'])
++    ;(imageItems[0] as { click: () => void }).click()
++    expect(window.webContents.copyImageAt).toHaveBeenCalledWith(120, 240)
++
++    // 4. Image inside a hyperlink
++    harness.menu.mockClear()
++    window.webContents.emit('context-menu', {}, {
++      isEditable: false, selectionText: '', editFlags, hasImageContents: true, linkURL: 'https://deepseek.com/logo.png', x: 50, y: 60,
++    })
++    const imageLinkItems = harness.menu.mock.lastCall![0]
++    expect(imageLinkItems).toEqual([
++      { label: 'Copy Image', click: anyFunction, accelerator: '' },
++      { type: 'separator', accelerator: '' },
++      { label: 'Copy Link Address', click: anyFunction, accelerator: '' },
++      { label: 'Open in Browser', click: anyFunction, accelerator: '' },
++    ])
++
++    // 5. Invalid/unsafe link protocol: ignored and does not pop up if nothing else
++    harness.menu.mockClear()
++    window.webContents.emit('context-menu', {}, {
++      isEditable: false, selectionText: '', editFlags, linkURL: 'javascript:alert(1)',
++    })
++    expect(harness.menu).not.toHaveBeenCalled()
++  })
++
++  it('handles trashItem via IPC and validates sender and arguments', async () => {
++    await import('../src/main.ts')
++    await harness.preparing.promise
++    const window = harness.windows[0]!
++    const handler = harness.handlers.get(DESKTOP_IPC.trashItem)!
++    const validEvent = { sender: window.webContents, senderFrame: window.webContents.mainFrame }
++
++    // Valid path moves to trash
++    await handler(validEvent, '/path/to/session.jsonl')
++    expect(harness.trashItem).toHaveBeenCalledWith('/path/to/session.jsonl')
++
++    // Empty or non-string path rejected
++    await expect(handler(validEvent, '')).rejects.toThrow('non-empty string path')
++    await expect(handler(validEvent, '   ')).rejects.toThrow('non-empty string path')
++    await expect(handler(validEvent, 123)).rejects.toThrow('non-empty string path')
++
++    // Foreign sender rejected
++    const foreignEvent = { ...validEvent, sender: {} }
++    await expect(handler(foreignEvent, '/path/to/session.jsonl')).rejects.toThrow('rejected IPC')
++  })
++
++  it('updates nativeTheme immediately on nativeThemeSet IPC', async () => {
++    await import('../src/main.ts')
++    await harness.preparing.promise
++    const window = harness.windows[0]!
++    const listener = harness.ipcOn.mock.calls.find(([channel]) => channel === DESKTOP_IPC.nativeThemeSet)![1]
++    const event = { sender: window.webContents, senderFrame: window.webContents.mainFrame }
++
++    listener(event, 'dark')
++    expect(harness.nativeTheme.themeSource).toBe('dark')
++    listener(event, 'light')
++    expect(harness.nativeTheme.themeSource).toBe('light')
++    listener(event, 'system')
++    expect(harness.nativeTheme.themeSource).toBe('system')
++
++    // Foreign sender ignored
++    listener({ ...event, sender: {} }, 'dark')
++    expect(harness.nativeTheme.themeSource).toBe('system')
++  })
++
+   it('opens message links externally while retaining same-origin application navigation', async () => {
+     await readyForUpdate()
+     const window = harness.windows[0]!
+diff --git a/apps/desktop/tests/preload-app.spec.ts b/apps/desktop/tests/preload-app.spec.ts
+index fa3d2386f..ee2069bcc 100644
+--- a/apps/desktop/tests/preload-app.spec.ts
++++ b/apps/desktop/tests/preload-app.spec.ts
+@@ -93,6 +93,15 @@ it('reads the local machine description only from the application main frame', a
+   expect(electron.contextBridge.exposeInMainWorld).toHaveBeenCalledWith('dshDesktop', { protocolVersion: 1 })
+ })
+ 
++it('forwards trashItem to the main process via IPC', async () => {
++  vi.stubGlobal('location', new URL('dsh-app://app/index.html'))
++  electron.ipcRenderer.invoke.mockResolvedValue(undefined)
++  await import('../src/preload-app.ts')
++  const api = electron.contextBridge.exposeInMainWorld.mock.calls.find(([name]) => name === 'dshDesktop')?.[1] as DshDesktopProductApi
++  await api.trashItem('/path/to/session.jsonl')
++  expect(electron.ipcRenderer.invoke).toHaveBeenCalledWith(DESKTOP_IPC.trashItem, '/path/to/session.jsonl')
++})
++
+ it('exposes asynchronous boot only to the local application document', async () => {
+   vi.stubGlobal('location', new URL('dsh-app://app/'))
+   await import('../src/preload-app.ts')
+diff --git a/packages/acp/acp/src/model-control.ts b/packages/acp/acp/src/model-control.ts
+index 7ca4512ad..e9751d7b2 100644
+--- a/packages/acp/acp/src/model-control.ts
++++ b/packages/acp/acp/src/model-control.ts
+@@ -67,8 +67,18 @@ export class AcpModelControl {
+         const state = await this.state(signal)
+         const selected = state.choices.get(value)
+         if (selected === undefined) throw new AcpModelConfigError(`unknown model option: ${value}`)
+-        await this.resolveSelection(selected, signal)
+-        this.model.select(selected)
++        // Carry the live reasoning effort onto the new route when it is still
++        // advertised there. Resolving the bare route instead would let
++        // `resolveCallConfig` substitute the provider's default effort, so an
++        // explicit choice such as `max` would silently revert on every switch.
++        const carried = await this.carryReasoningEffort(current.reasoningEffort, selected, signal)
++        const next: ModelSelection = {
++          provider: selected.provider,
++          model: selected.model,
++          ...carried === undefined ? {} : { reasoningEffort: carried },
++        }
++        await this.resolveSelection(next, signal)
++        this.model.select(next)
+       } else if (configId === REASONING_CONFIG_ID) {
+         const info = await this.llm.resolveModelInfo(current.provider, current.model, signal)
+         const providerDefault = value === PROVIDER_DEFAULT_REASONING_VALUE
+@@ -178,6 +188,29 @@ export class AcpModelControl {
+     return { choices, options }
+   }
+ 
++  /**
++   * Reuse the current reasoning effort on a newly selected route.
++   *
++   * A model switch replaces the whole route, so the effort only survives when
++   * the target model advertises it. An unknown or unsupported effort is
++   * dropped rather than copied: the target's own default then applies, which
++   * is what the reasoning option reports.
++   *
++   * @param effort - effort currently in effect, or undefined at the provider default.
++   * @param target - route the switch moves to.
++   * @param signal - optional catalog and exact-model cancellation.
++   * @returns the effort to keep, or undefined when the target cannot honour it.
++   */
++  private async carryReasoningEffort(
++    effort: ModelSelection['reasoningEffort'],
++    target: ModelSelection,
++    signal?: AbortSignal,
++  ): Promise<ModelSelection['reasoningEffort']> {
++    if (effort === undefined) return undefined
++    const info = await this.llm.resolveModelInfo(target.provider, target.model, signal)
++    return info.reasoning?.efforts.some(candidate => candidate.id === effort) === true ? effort : undefined
++  }
++
+   /** Validate an exact route and retain only Agent-owned selection fields. */
+   private async resolveSelection(selection: ModelSelection, signal?: AbortSignal): Promise<ModelSelection> {
+     const resolved: LlmCallConfig = await this.llm.resolveCallConfig(selection, signal)
+diff --git a/packages/acp/acp/tests/model-control.spec.ts b/packages/acp/acp/tests/model-control.spec.ts
+index f463eb99a..153e4e82c 100644
+--- a/packages/acp/acp/tests/model-control.spec.ts
++++ b/packages/acp/acp/tests/model-control.spec.ts
+@@ -146,4 +146,52 @@ describe('ACP model configuration control', () => {
+     expect(restored.find(option => option.id === 'reasoning_effort')).toMatchObject({ currentValue: '' })
+     expect(model.current()).toEqual({ provider: 'mock', model: 'mock' })
+   })
++
++  it('carries the live reasoning effort across a model switch', async () => {
++    const runtime = llmRuntime({
++      listModels: () => Promise.resolve([
++        { provider: 'mock', id: 'mock', name: 'Mock' },
++        { provider: 'mock', id: 'other', name: 'Other' },
++      ]),
++    })
++    const { control, model } = await createControl(runtime, { provider: 'mock', model: 'mock' })
++
++    await control.set('reasoning_effort', 'low')
++    await control.set('model', '["mock","other"]')
++
++    expect(model.current()).toEqual({
++      provider: 'mock',
++      model: 'other',
++      reasoningEffort: 'low',
++    })
++  })
++
++  it('drops a reasoning effort the target model does not advertise', async () => {
++    const runtime = llmRuntime({
++      listModels: () => Promise.resolve([
++        { provider: 'mock', id: 'mock', name: 'Mock' },
++        { provider: 'mock', id: 'other', name: 'Other' },
++      ]),
++      resolveModelInfo: (provider: string, model: string) => Promise.resolve({
++        provider,
++        id: model,
++        name: model,
++        reasoning: {
++          efforts: model === 'other'
++            ? [{ id: brandString<ReasoningEffortId>('high'), name: 'High' }]
++            : [
++              { id: brandString<ReasoningEffortId>('low'), name: 'Low' },
++              { id: brandString<ReasoningEffortId>('high'), name: 'High' },
++            ],
++          defaultEffort: brandString<ReasoningEffortId>('high'),
++        },
++      }),
++    })
++    const { control, model } = await createControl(runtime, { provider: 'mock', model: 'mock' })
++
++    await control.set('reasoning_effort', 'low')
++    await control.set('model', '["mock","other"]')
++
++    expect(model.current()).toEqual({ provider: 'mock', model: 'other' })
++  })
+ })
+diff --git a/packages/api/session-controller/src/client/contract/sessions.ts b/packages/api/session-controller/src/client/contract/sessions.ts
+index c1fede093..5ce601de0 100644
+--- a/packages/api/session-controller/src/client/contract/sessions.ts
++++ b/packages/api/session-controller/src/client/contract/sessions.ts
+@@ -105,6 +105,12 @@ export interface ISessions {
+    */
+   refreshProjections(sessionId: SessionId): Promise<void>
+ 
++  /**
++   * Apply immediate local removal of a Session from the catalog.
++   * @param sessionId - identity of the removed Session.
++   */
++  removeSession?(sessionId: SessionId): void
++
+   /**
+    * Refresh the Host-authoritative Session list.
+    * @returns completion of the current or newly started Session-list refresh.
+diff --git a/packages/api/session-controller/src/client/sessions/service.ts b/packages/api/session-controller/src/client/sessions/service.ts
+index 86b1ad475..d909ce2f7 100644
+--- a/packages/api/session-controller/src/client/sessions/service.ts
++++ b/packages/api/session-controller/src/client/sessions/service.ts
+@@ -403,6 +403,14 @@ export class ClientSessions implements ISessions {
+     this.manager.handleSessionAdded(summary)
+   }
+ 
++  /**
++   * Apply immediate local removal of a Session from the catalog.
++   * @param sessionId - removed Session identity.
++   */
++  removeSession(sessionId: SessionId): void {
++    this.handleSessionRemoved(sessionId)
++  }
++
+   /**
+    * Apply one remotely forwarded Session removal.
+    * @param sessionId - removed Session identity.
+diff --git a/packages/api/session-controller/src/index.ts b/packages/api/session-controller/src/index.ts
+index 5a8b178a6..9cbedc45d 100644
+--- a/packages/api/session-controller/src/index.ts
++++ b/packages/api/session-controller/src/index.ts
+@@ -17,6 +17,7 @@ import { Remote, RemoteError, TypertRemoteService, principalOf, type TypertResou
+ import { canonicalClientTimeZone } from '@deepseek-ai/dsh-util-time'
+ import { assertNever } from '@deepseek-ai/dsh-util-values'
+ import type {} from '@deepseek-ai/dsh-api-remote-access'
++import type {} from '@deepseek-ai/dsh-workspace'
+ import {
+   ApiSessionAgentController,
+   type ApiSessionAgentResult,
+@@ -228,6 +229,24 @@ export class SessionController extends TypertRemoteService {
+     ctx.on('session/disposed', (session) => {
+       ctx.emit('api-session/removed', session.id)
+     })
++    ctx.on('workspace/session-delete', async ({ sessionId }) => {
++      const agent = ctx.agents.get(sessionId)
++      if (agent !== undefined) {
++        agent.cancel({ kind: 'disposed' })
++        try {
++          await agent.whenIdle()
++          const agentScope = (agent as unknown as { scope?: { dispose(): Promise<void> } }).scope
++          if (agentScope !== undefined && typeof agentScope.dispose === 'function') {
++            await agentScope.dispose()
++          } else if (typeof agent.ctx.fiber.dispose === 'function') {
++            await agent.ctx.fiber.dispose()
++          }
++        } catch (error) {
++          ctx.logger.warn(`failed to dispose agent for deleted session '${sessionId}': ${String(error)}`)
++        }
++      }
++      ctx.emit('api-session/removed', sessionId)
++    })
+     const publishAgentAvailability = ({ agent }: { agent: Agent }): undefined => {
+       if (ctx.sessions.get(agent.id) === agent.session) {
+         ctx.emit('api-session/added', this.listState.summaryFor(agent.session))
+diff --git a/packages/api/session-controller/tests/remote-events.host.spec.ts b/packages/api/session-controller/tests/remote-events.host.spec.ts
+new file mode 100644
+index 000000000..1a4242252
+--- /dev/null
++++ b/packages/api/session-controller/tests/remote-events.host.spec.ts
+@@ -0,0 +1,54 @@
++import { Context } from '@deepseek-ai/cordis'
++import AgentRegistry from '@deepseek-ai/dsh-agent'
++import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
++import type {} from '@deepseek-ai/dsh-workspace'
++import { describe, expect, it, vi } from 'vitest'
++import { createSessionTestController } from './test-remote.ts'
++
++describe('Session Controller Remote Events', () => {
++  it('emits api-session/removed when workspace/session-delete is emitted', async () => {
++    const ctx = new Context()
++    await ctx.plugin(SessionStore)
++    await ctx.plugin(AgentRegistry)
++    const sessionId = SessionId('deleted-session')
++    createSessionTestController(ctx, {
++      defaultModelSelection: () => ({ provider: 'fixture', model: 'fixture-model' }),
++      cwd: '/tmp',
++    })
++    const removed = vi.fn()
++    ctx.on('api-session/removed', removed)
++
++    await ctx.parallel('workspace/session-delete', { sessionId })
++    expect(removed).toHaveBeenCalledWith(sessionId)
++    await ctx.fiber.dispose()
++  })
++
++  it('cancels and disposes active agent when workspace/session-delete is emitted', async () => {
++    const ctx = new Context()
++    await ctx.plugin(SessionStore)
++    await ctx.plugin(AgentRegistry)
++    const sessionId = SessionId('active-session')
++    createSessionTestController(ctx, {
++      defaultModelSelection: () => ({ provider: 'fixture', model: 'fixture-model' }),
++      cwd: '/tmp',
++    })
++    const agentCancel = vi.fn()
++    const scopeDispose = vi.fn().mockResolvedValue(undefined)
++    const mockAgent = {
++      id: sessionId,
++      cancel: agentCancel,
++      whenIdle: () => Promise.resolve(),
++      scope: { dispose: scopeDispose },
++      ctx: { scope: { dispose: scopeDispose } },
++    }
++    vi.spyOn(ctx.agents, 'get').mockImplementation(id => (id === sessionId ? (mockAgent as never) : undefined))
++    const removed = vi.fn()
++    ctx.on('api-session/removed', removed)
++
++    await ctx.parallel('workspace/session-delete', { sessionId })
++    expect(agentCancel).toHaveBeenCalledWith({ kind: 'disposed' })
++    expect(scopeDispose).toHaveBeenCalled()
++    expect(removed).toHaveBeenCalledWith(sessionId)
++    await ctx.fiber.dispose()
++  })
++})
+diff --git a/packages/api/workspace-controller/src/client/index.ts b/packages/api/workspace-controller/src/client/index.ts
+index 7f8246aa6..88854bb06 100644
+--- a/packages/api/workspace-controller/src/client/index.ts
++++ b/packages/api/workspace-controller/src/client/index.ts
+@@ -16,11 +16,11 @@ export { ClientWorkspaceModel } from './model.ts'
+ export type {
+   WorkspaceFollowSink, WorkspaceListPhase, WorkspaceRemote, WorkspaceSnapshot,
+ } from './model.ts'
+-export { WorkspaceArchiveError, WorkspaceController, WorkspaceCreateError } from './service.ts'
++export { WorkspaceArchiveError, WorkspaceController, WorkspaceCreateError, WorkspaceTrashError } from './service.ts'
+ export type { IWorkspaces, WorkspaceSource } from './service.ts'
+ export type {
+-  SessionActivity, SessionActivityItem, SessionActivityKind, SessionActivityKindMap, WorkspaceId,
+-  WorkspaceView,
++  SessionActivity, SessionActivityItem, SessionActivityKind, SessionActivityKindMap,
++  WorkspaceId, WorkspaceTrashSessionRequest, WorkspaceTrashValue, WorkspaceView,
+ } from '../types.ts'
+ 
+ type WorkspaceBaselineFrame = Extract<WorkspaceFollowFrame, { type: 'baseline' }>
+diff --git a/packages/api/workspace-controller/src/client/model.ts b/packages/api/workspace-controller/src/client/model.ts
+index 779ffb161..251946b97 100644
+--- a/packages/api/workspace-controller/src/client/model.ts
++++ b/packages/api/workspace-controller/src/client/model.ts
+@@ -4,6 +4,7 @@ import { notifySubscribers } from '@deepseek-ai/dsh-client-store'
+ import type {} from '@deepseek-ai/dsh-api-workspace-controller/remote'
+ import { isRemoteFailure } from '@deepseek-ai/dsh-api-gateway/client'
+ import type { RemoteFailure, RemoteResult, TypertClientRemote } from '@deepseek-ai/dsh-typert-protocol'
++import type { SessionId } from '@deepseek-ai/dsh-session'
+ import type {
+   WorkspaceArchiveSessionRequest,
+   WorkspaceArchiveValue,
+@@ -15,6 +16,8 @@ import type {
+   WorkspaceOrderValue,
+   WorkspacePinSessionRequest,
+   WorkspacePinValue,
++  WorkspaceTrashSessionRequest,
++  WorkspaceTrashValue,
+   WorkspaceUnarchiveSessionRequest,
+   WorkspaceUnpinSessionRequest,
+   WorkspaceValue,
+@@ -257,6 +260,62 @@ export class ClientWorkspaceModel implements WorkspaceFollowSink {
+     return result
+   }
+ 
++  /**
++   * Move one Session to trash or delete it durably and remove it from the local projection.
++   * @param sessionId - Session to trash.
++   * @param options - Whether the Host stops the Session's running work instead of refusing.
++   * @returns generated Remote result.
++   */
++  async trashSession(
++    sessionId: WorkspaceTrashSessionRequest['sessionId'],
++    options: Pick<WorkspaceTrashSessionRequest, 'stopActivity'> = {},
++  ): Promise<RemoteResult<WorkspaceTrashValue>> {
++    const result = await this.remote.trashSession({
++      sessionId,
++      ...(options.stopActivity === true ? { stopActivity: true } : {}),
++    })
++    if (result.ok) {
++      this.applySessionRemoval(sessionId)
++    }
++    return result
++  }
++
++  /**
++   * Delete one Session durably.
++   * @param sessionId - Session to delete.
++   * @param options - Whether the Host stops the Session's running work instead of refusing.
++   * @returns generated Remote result.
++   */
++  async deleteSession(
++    sessionId: WorkspaceTrashSessionRequest['sessionId'],
++    options: { readonly stopActivity?: boolean } = {},
++  ): Promise<RemoteResult<WorkspaceTrashValue>> {
++    const result = await this.remote.deleteSession({
++      sessionId,
++      ...(options.stopActivity === true ? { stopActivity: true } : {}),
++    })
++    if (result.ok) {
++      this.applySessionRemoval(sessionId)
++    }
++    return result
++  }
++
++  private applySessionRemoval(sessionId: SessionId): void {
++    const hasSession = this.items.some(workspace => workspace.sessionIds.includes(sessionId))
++    if (hasSession) {
++      this.items = this.items.map((workspace) => {
++        if (!workspace.sessionIds.includes(sessionId)) return workspace
++        return {
++          ...workspace,
++          sessionIds: workspace.sessionIds.filter(id => id !== sessionId),
++        }
++      })
++      this.invalidate()
++    }
++    this.installPinned(this.pinnedSessionIds.filter(id => id !== sessionId))
++    this.installArchived(this.archivedSessionIds.filter(id => id !== sessionId))
++  }
++
+   /**
+    * Replace the projection from one complete stream-generation baseline.
+    * @param baseline - complete Workspace and archive projection.
+diff --git a/packages/api/workspace-controller/src/client/service.ts b/packages/api/workspace-controller/src/client/service.ts
+index 637cc4e57..532d69278 100644
+--- a/packages/api/workspace-controller/src/client/service.ts
++++ b/packages/api/workspace-controller/src/client/service.ts
+@@ -31,6 +31,20 @@ export class WorkspaceArchiveError extends Error {
+   }
+ }
+ 
++/**
++ * Trash/delete failed on the Host. `rpcError.code` distinguishes the active-session
++ * refusal (`workspace/session-active`, whose details name what still runs)
++ * from a missing session or a carrier fault.
++ */
++export class WorkspaceTrashError extends Error {
++  override readonly name = 'WorkspaceTrashError'
++
++  /** @param rpcError - Host business or folded carrier failure. */
++  constructor(readonly rpcError: RemoteFailure) {
++    super(`workspace session trash failed: ${rpcError.code}: ${rpcError.message}`)
++  }
++}
++
+ /** Bare observable source for the Workspace Controller snapshot. */
+ export interface WorkspaceSource {
+   /** Read the identity-stable current snapshot. */
+@@ -85,6 +99,20 @@ export interface IWorkspaces {
+    *   running work fails as `workspace/session-active`, its details naming what runs.
+    */
+   archiveSession(sessionId: SessionId, options?: { readonly stopActivity?: boolean }): Promise<void>
++  /**
++   * Move a Session to trash or delete it durably.
++   * @param sessionId - Session to trash.
++   * @param options - `stopActivity` asks the Host to stop the Session's running work instead of refusing.
++   * @throws {WorkspaceTrashError} when the Host refuses (e.g. running work without `stopActivity`).
++   */
++  trashSession(sessionId: SessionId, options?: { readonly stopActivity?: boolean }): Promise<void>
++  /**
++   * Delete a Session durably. Alias for {@link trashSession}.
++   * @param sessionId - Session to delete.
++   * @param options - `stopActivity` asks the Host to stop the Session's running work instead of refusing.
++   * @throws {WorkspaceTrashError} when the Host refuses.
++   */
++  deleteSession(sessionId: SessionId, options?: { readonly stopActivity?: boolean }): Promise<void>
+   /**
+    * Unarchive a Session from the archived Session list.
+    * @param sessionId - Session to unarchive.
+@@ -160,6 +188,19 @@ export class WorkspaceController extends Service implements IWorkspaces {
+     if (!result.ok) throw new WorkspaceArchiveError(result.error)
+   }
+ 
++  async trashSession(sessionId: SessionId, options: { readonly stopActivity?: boolean } = {}): Promise<void> {
++    const result = await this.model.trashSession(sessionId, options)
++    if (!result.ok) throw new WorkspaceTrashError(result.error)
++  }
++
++  async deleteSession(sessionId: SessionId, options: { readonly stopActivity?: boolean } = {}): Promise<void> {
++    const result = await this.model.deleteSession(sessionId, options)
++    if (!result.ok) {
++      if (result.error.code === 'workspace/session-active') throw new WorkspaceTrashError(result.error)
++      throw commandError('session trash', result.error)
++    }
++  }
++
+   async unarchiveSession(sessionId: SessionId): Promise<void> {
+     const result = await this.model.unarchiveSession(sessionId)
+     if (!result.ok) throw commandError('session unarchive', result.error)
+diff --git a/packages/api/workspace-controller/src/commands.ts b/packages/api/workspace-controller/src/commands.ts
+index 2911aac4c..7ff16950c 100644
+--- a/packages/api/workspace-controller/src/commands.ts
++++ b/packages/api/workspace-controller/src/commands.ts
+@@ -2,6 +2,7 @@
+ 
+ import type { Context } from '@deepseek-ai/cordis'
+ import { brandString } from '@deepseek-ai/dsh-brand'
++import type { SessionId } from '@deepseek-ai/dsh-session'
+ import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
+ import type { Workspace } from '@deepseek-ai/dsh-workspace'
+ import {
+@@ -26,6 +27,8 @@ import type {
+   WorkspacePinSessionRequest,
+   WorkspacePinValue,
+   WorkspaceRenameRequest,
++  WorkspaceTrashSessionRequest,
++  WorkspaceTrashValue,
+   WorkspaceUnarchiveSessionRequest,
+   WorkspaceUnpinSessionRequest,
+   WorkspaceValue,
+@@ -167,18 +170,7 @@ export class WorkspaceCommands {
+         request.stopActivity === true ? { stopActivity: true } : {},
+       )
+     } catch (error) {
+-      if (error instanceof WorkspaceUnknownSessionError) {
+-        throw new RemoteError('session/not-found', error.message, { sessionId: request.sessionId }, { cause: error })
+-      }
+-      if (error instanceof WorkspaceActiveSessionError) {
+-        throw new RemoteError(
+-          'workspace/session-active',
+-          error.message,
+-          { sessionId: request.sessionId, activity: error.activity },
+-          { cause: error },
+-        )
+-      }
+-      throw error
++      rethrowSessionErrors(error, request.sessionId)
+     }
+     return { archivedSessionIds: [...this.ctx.workspaceRegistry.archivedSessionIds] }
+   }
+@@ -227,6 +219,41 @@ export class WorkspaceCommands {
+     return { pinnedSessionIds: [...this.ctx.workspaceRegistry.pinnedSessionIds] }
+   }
+ 
++  /**
++   * Move one known Session to trash or delete it durably. Without `stopActivity`,
++   * a Session with running work is refused as `workspace/session-active` with
++   * the activity reported; with it, running work is stopped.
++   * @param request - Session identity to trash and whether to stop its work.
++   * @returns trash confirmation.
++   */
++  async trashSession(request: WorkspaceTrashSessionRequest): Promise<WorkspaceTrashValue> {
++    return this.performSessionRemoval(request, (id, options) => this.ctx.workspaceRegistry.trashSession(id, options))
++  }
++
++  /**
++   * Delete one known Session durably. Alias for {@link trashSession}.
++   * @param request - Session identity to delete and whether to stop its work.
++   * @returns deletion confirmation.
++   */
++  async deleteSession(request: WorkspaceTrashSessionRequest): Promise<WorkspaceTrashValue> {
++    return this.performSessionRemoval(request, (id, options) => this.ctx.workspaceRegistry.deleteSession(id, options))
++  }
++
++  private async performSessionRemoval(
++    request: WorkspaceTrashSessionRequest,
++    action: (sessionId: SessionId, options: { stopActivity?: boolean }) => Promise<void>,
++  ): Promise<WorkspaceTrashValue> {
++    try {
++      await action(
++        request.sessionId,
++        request.stopActivity === true ? { stopActivity: true } : {},
++      )
++    } catch (error) {
++      rethrowSessionErrors(error, request.sessionId)
++    }
++    return { trashed: true }
++  }
++
+   private requireWorkspace(workspaceId: WorkspaceId): Workspace {
+     const workspace = this.ctx.workspaceRegistry.get(brandString<WorkspaceId>(workspaceId))
+     if (workspace === undefined) throw workspaceNotFound(workspaceId)
+@@ -251,3 +278,18 @@ function workspaceNotFound(workspaceId: WorkspaceId): RemoteError<'workspace/not
+ function errorMessage(error: unknown): string {
+   return error instanceof Error ? error.message : String(error)
+ }
++
++function rethrowSessionErrors(error: unknown, sessionId: SessionId): never {
++  if (error instanceof WorkspaceUnknownSessionError) {
++    throw new RemoteError('session/not-found', error.message, { sessionId }, { cause: error })
++  }
++  if (error instanceof WorkspaceActiveSessionError) {
++    throw new RemoteError(
++      'workspace/session-active',
++      error.message,
++      { sessionId, activity: error.activity },
++      { cause: error },
++    )
++  }
++  throw error
++}
+diff --git a/packages/api/workspace-controller/src/index.ts b/packages/api/workspace-controller/src/index.ts
+index f275eb3d1..5aeb9fd88 100644
+--- a/packages/api/workspace-controller/src/index.ts
++++ b/packages/api/workspace-controller/src/index.ts
+@@ -25,6 +25,8 @@ import type {
+   WorkspacePinSessionRequest,
+   WorkspacePinValue,
+   WorkspaceRenameRequest,
++  WorkspaceTrashSessionRequest,
++  WorkspaceTrashValue,
+   WorkspaceUnarchiveSessionRequest,
+   WorkspaceUnpinSessionRequest,
+   WorkspaceValue,
+@@ -191,6 +193,26 @@ export class WorkspaceController extends TypertRemoteService {
+     return this.commands.unpinSession(request)
+   }
+ 
++  /**
++   * Move one known Session to trash or delete it from Workspace grouping and storage.
++   * @param request - Session identity to trash.
++   * @returns trash confirmation.
++   */
++  @Remote('trashSession')
++  trashSession(request: WorkspaceTrashSessionRequest): Promise<WorkspaceTrashValue> {
++    return this.commands.trashSession(request)
++  }
++
++  /**
++   * Delete one known Session durably. Alias for {@link trashSession}.
++   * @param request - Session identity to delete.
++   * @returns deletion confirmation.
++   */
++  @Remote('deleteSession')
++  deleteSession(request: WorkspaceTrashSessionRequest): Promise<WorkspaceTrashValue> {
++    return this.commands.deleteSession(request)
++  }
++
+   /**
+    * Stream a complete Workspace baseline followed by ordered increments. A
+    * non-owner receives only the Workspaces and Sessions `allows()` admits.
+diff --git a/packages/api/workspace-controller/src/types.ts b/packages/api/workspace-controller/src/types.ts
+index cdf9adf07..a82b9a075 100644
+--- a/packages/api/workspace-controller/src/types.ts
++++ b/packages/api/workspace-controller/src/types.ts
+@@ -149,6 +149,22 @@ export interface WorkspacePinValue {
+   readonly pinnedSessionIds: readonly SessionId[]
+ }
+ 
++/** Session requested for trashing or deleting from Workspace grouping surfaces and storage. */
++export interface WorkspaceTrashSessionRequest {
++  readonly sessionId: SessionId
++  /**
++   * Stop the Session's running work — its turn, subagent descendants, owned
++   * background jobs, and active schedules — instead of refusing with
++   * `workspace/session-active`.
++   */
++  readonly stopActivity?: boolean
++}
++
++/** Receipt after one Session is trashed or deleted. */
++export interface WorkspaceTrashValue {
++  readonly trashed: true
++}
++
+ /** Complete reconnect baseline for Workspace browser state. */
+ export interface WorkspaceBaseline {
+   readonly items: readonly WorkspaceView[]
+diff --git a/packages/api/workspace-controller/tests/model.client.spec.ts b/packages/api/workspace-controller/tests/model.client.spec.ts
+index 9660b2ead..d81689514 100644
+--- a/packages/api/workspace-controller/tests/model.client.spec.ts
++++ b/packages/api/workspace-controller/tests/model.client.spec.ts
+@@ -16,6 +16,8 @@ import type {
+   WorkspacePinSessionRequest,
+   WorkspacePinValue,
+   WorkspaceRenameRequest,
++  WorkspaceTrashSessionRequest,
++  WorkspaceTrashValue,
+   WorkspaceUnarchiveSessionRequest,
+   WorkspaceUnpinSessionRequest,
+   WorkspaceValue,
+@@ -102,6 +104,10 @@ class FakeWorkspaceRemote implements WorkspaceRemote {
+     _request: WorkspaceUnpinSessionRequest,
+   ) => Promise<RemoteResult<WorkspacePinValue>> = () =>
+     Promise.resolve(remoteOk({ pinnedSessionIds: [] }))
++  onTrashSession: (
++    _request: WorkspaceTrashSessionRequest,
++  ) => Promise<RemoteResult<WorkspaceTrashValue>> = () =>
++    Promise.resolve(remoteOk({ trashed: true }))
+ 
+   create(request: WorkspaceCreateRequest): Promise<RemoteResult<WorkspaceCreateValue>> {
+     this.record('create', request)
+@@ -148,6 +154,16 @@ class FakeWorkspaceRemote implements WorkspaceRemote {
+     return this.onUnpinSession(request)
+   }
+ 
++  trashSession(request: WorkspaceTrashSessionRequest): Promise<RemoteResult<WorkspaceTrashValue>> {
++    this.record('trashSession', request)
++    return this.onTrashSession(request)
++  }
++
++  deleteSession(request: WorkspaceTrashSessionRequest): Promise<RemoteResult<WorkspaceTrashValue>> {
++    this.record('deleteSession', request)
++    return this.onTrashSession(request)
++  }
++
+   follow(_signal?: AbortSignal): RemoteStreamHandle<WorkspaceFollowFrame, never> {
+     return streamHandle<WorkspaceFollowFrame>((async function* () {})())
+   }
+@@ -516,6 +532,24 @@ describe('ClientWorkspaceModel', () => {
+     expect(model.getSnapshot().pinnedSessionIds).toEqual(['kept'])
+   })
+ 
++  it('trashes a session, removes it from items, pinned and archived, and records the call', async () => {
++    const remote = new FakeWorkspaceRemote()
++    const model = modelFor(remote)
++    baseline(model, [workspace('one', [sid('s1'), sid('s2')]), workspace('two', [sid('s3')])], [sid('s2')], [sid('s1')])
++
++    const result = await model.trashSession(sid('s1'))
++    expect(result.ok).toBe(true)
++    expect(model.getSnapshot().items[0]?.sessionIds).toEqual([sid('s2')])
++    expect(model.getSnapshot().pinnedSessionIds).toEqual([])
++    expect(remote.calls).toContainEqual({ method: 'trashSession', request: { sessionId: 's1' } })
++
++    const delResult = await model.deleteSession(sid('s2'))
++    expect(delResult.ok).toBe(true)
++    expect(model.getSnapshot().items[0]?.sessionIds).toEqual([])
++    expect(model.getSnapshot().archivedSessionIds).toEqual([])
++    expect(remote.calls).toContainEqual({ method: 'deleteSession', request: { sessionId: 's2' } })
++  })
++
+   it('keeps the newest row and places Workspaces missing from partial orders last', async () => {
+     const model = modelFor()
+     baseline(model, [
+diff --git a/packages/api/workspace-controller/tests/remote/workspace.client.ts b/packages/api/workspace-controller/tests/remote/workspace.client.ts
+index b8951c0c3..c0c2a666c 100644
+--- a/packages/api/workspace-controller/tests/remote/workspace.client.ts
++++ b/packages/api/workspace-controller/tests/remote/workspace.client.ts
+@@ -22,6 +22,8 @@ import type {
+   WorkspacePinSessionRequest,
+   WorkspacePinValue,
+   WorkspaceRenameRequest,
++  WorkspaceTrashSessionRequest,
++  WorkspaceTrashValue,
+   WorkspaceUnarchiveSessionRequest,
+   WorkspaceUnpinSessionRequest,
+   WorkspaceValue,
+@@ -107,5 +109,7 @@ export const workspaceWorld: RemoteTable = {
+     'workspace/unarchiveSession': (_request: WorkspaceUnarchiveSessionRequest): RemoteResult<WorkspaceArchiveValue> => ok({ archivedSessionIds: [] }),
+     'workspace/pinSession': (request: WorkspacePinSessionRequest): RemoteResult<WorkspacePinValue> => ok({ pinnedSessionIds: [request.sessionId] }),
+     'workspace/unpinSession': (_request: WorkspaceUnpinSessionRequest): RemoteResult<WorkspacePinValue> => ok({ pinnedSessionIds: [] }),
++    'workspace/trashSession': (_request: WorkspaceTrashSessionRequest): RemoteResult<WorkspaceTrashValue> => ok({ trashed: true }),
++    'workspace/deleteSession': (_request: WorkspaceTrashSessionRequest): RemoteResult<WorkspaceTrashValue> => ok({ trashed: true }),
+   },
+ }
+diff --git a/packages/api/workspace-controller/tests/transport.client.spec.ts b/packages/api/workspace-controller/tests/transport.client.spec.ts
+index ec1b347a4..ea62ac3b2 100644
+--- a/packages/api/workspace-controller/tests/transport.client.spec.ts
++++ b/packages/api/workspace-controller/tests/transport.client.spec.ts
+@@ -16,6 +16,7 @@ import {
+   WorkspaceArchiveError,
+   WorkspaceController,
+   WorkspaceCreateError,
++  WorkspaceTrashError,
+   type WorkspaceFollowSink,
+ } from '../src/client/index.ts'
+ import type { WorkspaceFollowFrame, WorkspaceId } from '../src/types.ts'
+@@ -374,6 +375,8 @@ describe('WorkspaceController', () => {
+     await expect(controller.unarchiveSession(sid('session'))).resolves.toBeUndefined()
+     await expect(controller.pinSession(sid('session'))).resolves.toBeUndefined()
+     await expect(controller.unpinSession(sid('session'))).resolves.toBeUndefined()
++    await expect(controller.trashSession(sid('session'))).resolves.toBeUndefined()
++    await expect(controller.deleteSession(sid('session'))).resolves.toBeUndefined()
+     await expect(controller.delete(wid('one'))).resolves.toBeUndefined()
+     // Each command crosses the wire as one positional request object.
+     expect(mock.log.requests('workspace/create')).toEqual([{ path: '/work/created' }])
+@@ -381,10 +384,13 @@ describe('WorkspaceController', () => {
+     expect(mock.log.requests('workspace/insertBefore')).toEqual([{ workspaceId: 'one' }])
+     expect(mock.log.requests('workspace/insertSessionBefore')).toEqual([{ workspaceId: 'one', sessionId: 'session' }])
+     await expect(controller.archiveSession(sid('session'), { stopActivity: true })).resolves.toBeUndefined()
++    await expect(controller.trashSession(sid('session'), { stopActivity: true })).resolves.toBeUndefined()
+     expect(mock.log.requests('workspace/archiveSession')).toEqual([{ sessionId: 'session' }, { sessionId: 'session', stopActivity: true }])
+     expect(mock.log.requests('workspace/unarchiveSession')).toEqual([{ sessionId: 'session' }])
+     expect(mock.log.requests('workspace/pinSession')).toEqual([{ sessionId: 'session' }])
+     expect(mock.log.requests('workspace/unpinSession')).toEqual([{ sessionId: 'session' }])
++    expect(mock.log.requests('workspace/trashSession')).toEqual([{ sessionId: 'session' }, { sessionId: 'session', stopActivity: true }])
++    expect(mock.log.requests('workspace/deleteSession')).toEqual([{ sessionId: 'session' }])
+     expect(mock.log.requests('workspace/delete')).toEqual([{ workspaceId: 'one' }])
+   })
+ 
+@@ -431,6 +437,16 @@ describe('WorkspaceController', () => {
+     mock.remote.workspace.unpinSession.mockResolvedValueOnce(err(missingSession))
+     await expect(controller.unpinSession(sid('session')))
+       .rejects.toThrow('workspace session unpin failed: session/not-found: missing session')
++    mock.remote.workspace.trashSession.mockResolvedValueOnce(err(active))
++    const trashActive = controller.trashSession(sid('session'))
++    await expect(trashActive).rejects.toBeInstanceOf(WorkspaceTrashError)
++    await expect(trashActive).rejects.toMatchObject({
++      name: 'WorkspaceTrashError',
++      rpcError: { code: 'workspace/session-active', details: { activity: [{ kind: 'probe' }, { kind: 'probe-items', items: [{ id: 'item-1' }] }] } },
++    })
++    mock.remote.workspace.deleteSession.mockResolvedValueOnce(err(missingSession))
++    await expect(controller.deleteSession(sid('session')))
++      .rejects.toThrow('workspace session trash failed: session/not-found: missing session')
+     mock.remote.workspace.insertSessionBefore.mockResolvedValueOnce(err(new RemoteError(
+       'workspace/move-invalid', 'invalid move', { workspaceId: wid('missing'), sessionId: sid('session') },
+     )))
+diff --git a/packages/api/workspace-controller/tests/workspace-controller.host.spec.ts b/packages/api/workspace-controller/tests/workspace-controller.host.spec.ts
+index 9716961e2..6dbb3e2de 100644
+--- a/packages/api/workspace-controller/tests/workspace-controller.host.spec.ts
++++ b/packages/api/workspace-controller/tests/workspace-controller.host.spec.ts
+@@ -205,6 +205,16 @@ describe('WorkspaceController commands', () => {
+     vi.spyOn(ctx.workspaceRegistry, 'unpinSession').mockRejectedValueOnce(unpinFailure)
+     await expect(controller.unpinSession({ sessionId: brandString<SessionId>('session') }))
+       .rejects.toBe(unpinFailure)
++
++    const trashFailure = new Error('trash storage failed')
++    vi.spyOn(ctx.workspaceRegistry, 'trashSession').mockRejectedValueOnce(trashFailure)
++    await expect(controller.trashSession({ sessionId: brandString<SessionId>('session') }))
++      .rejects.toBe(trashFailure)
++
++    const deleteFailure = new Error('delete storage failed')
++    vi.spyOn(ctx.workspaceRegistry, 'deleteSession').mockRejectedValueOnce(deleteFailure)
++    await expect(controller.deleteSession({ sessionId: brandString<SessionId>('session') }))
++      .rejects.toBe(deleteFailure)
+   })
+ 
+   it('resolves queued Workspace identities when their operation starts', async () => {
+@@ -330,6 +340,39 @@ describe('WorkspaceController commands', () => {
+     await expect(controller.unpinSession({ sessionId: session.id }))
+       .resolves.toEqual({ pinnedSessionIds: [] })
+   })
++
++  it('trashes and deletes Sessions with activity and not-found checks', async () => {
++    const { controller, ctx, root } = await harness()
++    const created = await controller.create({ path: stageDir(root, 'trash') })
++    const session = ctx.sessions.create(brandString<SessionId>('trash-me'), {
++      meta: { cwd: created.workspace.path },
++    })
++
++    await expect(controller.trashSession({ sessionId: brandString<SessionId>('unknown') }))
++      .rejects.toMatchObject({ code: 'session/not-found' })
++
++    const activity = [{ kind: 'probe' as const }]
++    const stopReporting = ctx.on('workspace/session-activity', async ({ sessionId }, next) =>
++      sessionId === session.id ? [...activity, ...(await next())] : next())
++    await expect(controller.trashSession({ sessionId: session.id })).rejects.toMatchObject({
++      code: 'workspace/session-active',
++      details: { sessionId: session.id, activity },
++    })
++
++    const stops: string[] = []
++    const stopListening = ctx.on('workspace/session-stop', ({ sessionId }) => { stops.push(String(sessionId)) })
++    await expect(controller.trashSession({ sessionId: session.id, stopActivity: true }))
++      .resolves.toEqual({ trashed: true })
++    expect(stops).toEqual([String(session.id)])
++    stopListening()
++    stopReporting()
++
++    const session2 = ctx.sessions.create(brandString<SessionId>('delete-me'), {
++      meta: { cwd: created.workspace.path },
++    })
++    await expect(controller.deleteSession({ sessionId: session2.id }))
++      .resolves.toEqual({ trashed: true })
++  })
+ })
+ 
+ describe('WorkspaceController follow', () => {
+diff --git a/packages/client/ui-settings-session-log/README.i18n.yaml b/packages/client/ui-settings-session-log/README.i18n.yaml
+index 1ae4954c1..c92d2167c 100644
+--- a/packages/client/ui-settings-session-log/README.i18n.yaml
++++ b/packages/client/ui-settings-session-log/README.i18n.yaml
+@@ -15,8 +15,8 @@
+   en: d152484eb41ac6b4
+   zh: bda879a892f240f0
+ /deepseek-ai-dsh-client-ui-settings-session-log/use-this-package:
+-  en: 57f1a5defa6e8d89
+-  zh: 88525c972f18b6ac
++  en: 9010e69a249a9c27
++  zh: e2a66ee87fc49489
+ /deepseek-ai-dsh-client-ui-settings-session-log/understand-the-implementation:
+   en: 573cd565e22a6f6e
+   zh: d214978ce1c43a86
+diff --git a/packages/client/ui-settings-session-log/README.md b/packages/client/ui-settings-session-log/README.md
+index 8da599467..4f14cedc7 100644
+--- a/packages/client/ui-settings-session-log/README.md
++++ b/packages/client/ui-settings-session-log/README.md
+@@ -25,7 +25,7 @@ Use **Upload Session Log when using the official model API** above the version n
+ <a id="use-this-package"></a>
+ ## Use this package
+ 
+-The Web bundle mounts this companion. Its switch edits the Host plugin's `enabled` field through the shared configuration form. A save failure keeps the accepted value and shows a toast that survives closing Settings. See [Session-log upload](../../session/session-log-deepseek/README.md#configuration) for request timing, resumed uploads, and the separate OpenTelemetry setting.
++The Web bundle mounts this companion. Its switch edits the Host plugin's `enabled` field through the shared configuration form; when enabled, an indented sub-switch "Upload Session Log when using any model" controls the `allModelsEnabled` preference. A save failure keeps the accepted value and shows a toast that survives closing Settings. See [Session-log upload](../../session/session-log-deepseek/README.md#configuration) for request timing, resumed uploads, and the separate OpenTelemetry setting.
+ 
+ -----
+ 
+diff --git a/packages/client/ui-settings-session-log/README.zh.md b/packages/client/ui-settings-session-log/README.zh.md
+index 55e6edb62..2b994aeea 100644
+--- a/packages/client/ui-settings-session-log/README.zh.md
++++ b/packages/client/ui-settings-session-log/README.zh.md
+@@ -25,7 +25,7 @@ kind: "package-reference"
+ <a id="use-this-package"></a>
+ ## 使用本包
+ 
+-Web bundle 挂载本配套插件。开关通过共享配置表单修改 Host 插件的 `enabled` 字段。保存失败时保留已接受的值，并显示关闭设置后仍可见的提示。请求生效时机、恢复上传和独立的 OpenTelemetry 设置见[会话日志上传](../../session/session-log-deepseek/README.zh.md#configuration)。
++Web bundle 挂载本配套插件。主开关通过共享配置表单修改 Host 插件的 `enabled` 字段；开启时展示二级子开关「在使用任何模型时上传 Session Log」，控制 `allModelsEnabled` 偏好。保存失败时保留已接受的值，并显示关闭设置后仍可见的提示。请求生效时机、恢复上传和独立的 OpenTelemetry 设置见[会话日志上传](../../session/session-log-deepseek/README.zh.md#configuration)。
+ 
+ -----
+ 
+diff --git a/packages/client/ui-settings-session-log/src/client/UploadRow.module.css b/packages/client/ui-settings-session-log/src/client/UploadRow.module.css
+index b3751d7f0..e8025a4a7 100644
+--- a/packages/client/ui-settings-session-log/src/client/UploadRow.module.css
++++ b/packages/client/ui-settings-session-log/src/client/UploadRow.module.css
+@@ -1,10 +1,22 @@
++.container {
++  border-bottom: 0.5px solid var(--dsw-alias-border-l2);
++}
++
+ .row {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   gap: 24px;
+   padding: 16px 0;
+-  border-bottom: 0.5px solid var(--dsw-alias-border-l2);
++}
++
++.subRow {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 24px;
++  padding: 12px 0 16px 24px;
++  border-top: 0.5px dashed var(--dsw-alias-border-l2);
+ }
+ 
+ .title {
+diff --git a/packages/client/ui-settings-session-log/src/client/UploadRow.tsx b/packages/client/ui-settings-session-log/src/client/UploadRow.tsx
+index 458752156..6dbf53946 100644
+--- a/packages/client/ui-settings-session-log/src/client/UploadRow.tsx
++++ b/packages/client/ui-settings-session-log/src/client/UploadRow.tsx
+@@ -13,6 +13,7 @@ export interface UploadInjected {
+     mutation: ObservableSnapshot<UploadMutation>
+   }
+   setEnabled(enabled: boolean): Promise<void>
++  setAllModelsEnabled(enabled: boolean): Promise<void>
+   dismiss(): void
+ }
+ 
+@@ -23,17 +24,32 @@ type Face = InjectFace<UploadInjected> & PropsLocale<'settings.sessionLog'>
+  * @param props - settings hooks, writer and localized copy.
+  * @returns the bottom preference row.
+  */
+-export function UploadRow({ useUpload, useMutation, setEnabled, t }: PropsRuntime<'settings.general.item'> & Face) {
++export function UploadRow({ useUpload, useMutation, setEnabled, setAllModelsEnabled, t }: PropsRuntime<'settings.general.item'> & Face) {
+   const upload = useUpload(value => value)
+   const busy = useMutation(value => value.busy)
+-  return <div className={css.row}>
+-    <div>
+-      <div className={css.title}>{t('title')}</div>
+-      <div className={css.description}>{t('description')}</div>
++  const isEnabled = upload.value?.enabled === true
++  const isAllModelsEnabled = upload.value?.allModelsEnabled === true
++  const isReadOnly = busy || upload.status !== 'ready' || !upload.writable
++
++  return <div className={css.container}>
++    <div className={css.row}>
++      <div>
++        <div className={css.title}>{t('title')}</div>
++        <div className={css.description}>{t('description')}</div>
++      </div>
++      <Switch checked={isEnabled} label={t('title')}
++        disabled={isReadOnly}
++        onChange={(enabled) => { void setEnabled(enabled) }} />
+     </div>
+-    <Switch checked={upload.value?.enabled === true} label={t('title')}
+-      disabled={busy || upload.status !== 'ready' || !upload.writable}
+-      onChange={(enabled) => { void setEnabled(enabled) }} />
++    {isEnabled && <div className={css.subRow}>
++      <div>
++        <div className={css.title}>{t('allModelsTitle')}</div>
++        <div className={css.description}>{t('allModelsDescription')}</div>
++      </div>
++      <Switch checked={isAllModelsEnabled} label={t('allModelsTitle')}
++        disabled={isReadOnly}
++        onChange={(enabled) => { void setAllModelsEnabled(enabled) }} />
++    </div>}
+   </div>
+ }
+ 
+diff --git a/packages/client/ui-settings-session-log/src/client/index.ts b/packages/client/ui-settings-session-log/src/client/index.ts
+index c959d1a64..a60fce8bb 100644
+--- a/packages/client/ui-settings-session-log/src/client/index.ts
++++ b/packages/client/ui-settings-session-log/src/client/index.ts
+@@ -31,6 +31,7 @@ export function apply(ctx: Context): void {
+   const face = (): UploadInjected => ({
+     hooks: { upload: form, mutation: preference.state },
+     setEnabled: enabled => preference.setEnabled(enabled),
++    setAllModelsEnabled: enabled => preference.setAllModelsEnabled(enabled),
+     dismiss: () => { preference.dismiss() },
+   })
+   ctx.effect(() => ctx.configForms.whileServed([namespace], () => ctx.slots.inject('settings.general.item', () =>
+diff --git a/packages/client/ui-settings-session-log/src/client/locales.ts b/packages/client/ui-settings-session-log/src/client/locales.ts
+index aeb0d22bb..89f00f0d7 100644
+--- a/packages/client/ui-settings-session-log/src/client/locales.ts
++++ b/packages/client/ui-settings-session-log/src/client/locales.ts
+@@ -2,6 +2,8 @@
+ export const en = {
+   title: 'Upload Session Log when using the official model API',
+   description: 'Help improve DeepSeek models and products.',
++  allModelsTitle: 'Upload Session Log when using any model',
++  allModelsDescription: 'Help improve DeepSeek models and products across all model providers.',
+   saved: 'Preference saved',
+   failed: 'Could not save preference',
+ }
+@@ -10,6 +12,8 @@ export const en = {
+ export const zh: Record<keyof typeof en, string> = {
+   title: '在使用官方模型 API 时上传 Session Log',
+   description: '帮助改进 DeepSeek 模型与产品',
++  allModelsTitle: '在使用任何模型时上传 Session Log',
++  allModelsDescription: '在使用其他模型时也上传 Session Log，帮助改进 DeepSeek 模型与产品',
+   saved: '设置已保存',
+   failed: '无法保存设置',
+ }
+@@ -20,6 +24,8 @@ export const ja = {
+   'description': 'DeepSeek のモデルと製品の改善にご協力ください。',
+   'saved': '設定を保存しました',
+   'failed': '設定を保存できませんでした',
++  allModelsTitle: 'すべてのモデル使用時にセッションログをアップロード',
++  allModelsDescription: 'すべてのモデルプロバイダーにわたり、DeepSeek のモデルと製品の改善にご協力ください。',
+ } satisfies Record<keyof typeof en, string>
+ 
+ /** Spanish dictionary, checked against the English keys. */
+@@ -28,6 +34,8 @@ export const es = {
+   description: 'Ayude a mejorar los modelos y productos DeepSeek.',
+   saved: 'Preferencia guardada',
+   failed: 'No se pudo guardar la preferencia',
++  allModelsTitle: 'Subir el registro de sesión con cualquier modelo',
++  allModelsDescription: 'Ayude a mejorar los modelos y productos de DeepSeek en todos los proveedores de modelos.',
+ } satisfies Record<keyof typeof en, string>
+ 
+ /** French dictionary, checked against the English keys. */
+@@ -36,6 +44,8 @@ export const fr = {
+   description: 'Aidez à améliorer les modèles et produits DeepSeek.',
+   saved: 'Préférence enregistrée',
+   failed: "Impossible d'enregistrer la préférence",
++  allModelsTitle: 'Envoyer le journal de session quel que soit le modèle utilisé',
++  allModelsDescription: 'Aidez à améliorer les modèles et produits DeepSeek auprès de tous les fournisseurs de modèles.',
+ } satisfies Record<keyof typeof en, string>
+ 
+ /** German dictionary, checked against the English keys. */
+@@ -44,6 +54,8 @@ export const de = {
+   description: 'Helfen Sie mit, DeepSeek-Modelle und -Produkte zu verbessern.',
+   saved: 'Präferenz gespeichert',
+   failed: 'Präferenz konnte nicht gespeichert werden',
++  allModelsTitle: 'Sitzungsprotokoll bei der Nutzung beliebiger Modelle hochladen',
++  allModelsDescription: 'Helfen Sie, DeepSeek-Modelle und -Produkte über alle Modellanbieter hinweg zu verbessern.',
+ } satisfies Record<keyof typeof en, string>
+ 
+ /** Russian dictionary, checked against the English keys. */
+@@ -52,6 +64,8 @@ export const ru = {
+   description: 'Помогите улучшить модели и продукты DeepSeek.',
+   saved: 'Предпочтение сохранено.',
+   failed: 'Не удалось сохранить предпочтения.',
++  allModelsTitle: 'Отправлять журнал сеансов при использовании любой модели',
++  allModelsDescription: 'Помогите улучшить модели и продукты DeepSeek у всех поставщиков моделей.',
+ } satisfies Record<keyof typeof en, string>
+ 
+ /** Portuguese dictionary, checked against the English keys. */
+@@ -60,4 +74,6 @@ export const pt = {
+   description: 'Ajude a melhorar DeepSeek modelos e produtos.',
+   saved: 'Preferência salva',
+   failed: 'Não foi possível salvar a preferência',
++  allModelsTitle: 'Enviar o registro de sessão ao usar qualquer modelo',
++  allModelsDescription: 'Ajude a melhorar os modelos e produtos da DeepSeek em todos os provedores de modelos.',
+ } satisfies Record<keyof typeof en, string>
+diff --git a/packages/client/ui-settings-session-log/src/client/upload-preference.ts b/packages/client/ui-settings-session-log/src/client/upload-preference.ts
+index 044f5402c..b4d336ca3 100644
+--- a/packages/client/ui-settings-session-log/src/client/upload-preference.ts
++++ b/packages/client/ui-settings-session-log/src/client/upload-preference.ts
+@@ -5,6 +5,7 @@ import type { ConfigForm } from '@deepseek-ai/dsh-client-ui-settings/client'
+ /** Fields exposed by the Session-log plugin. */
+ export interface UploadSettings {
+   enabled: boolean
++  allModelsEnabled?: boolean
+ }
+ 
+ /** Mutation state shared by the preference row and shell notice. */
+@@ -43,6 +44,27 @@ export class UploadPreference {
+     })
+   }
+ 
++  /**
++   * Persist all-models upload preference; refusal or transport failure leaves the accepted value visible.
++   * @param enabled - requested all-models upload state.
++   * @returns completion after the write settles.
++   */
++  async setAllModelsEnabled(enabled: boolean): Promise<void> {
++    if (this.state.getSnapshot().busy) return
++    this.state.update((state) => { state.busy = true; state.notice = null })
++    let accepted = false
++    try {
++      accepted = await this.form.set('allModelsEnabled', enabled)
++    } catch (_error) {
++      // The shell notice reports the failed write while the form retains accepted state.
++    }
++    this.state.update((state) => {
++      state.busy = false
++      state.notice = accepted ? 'saved' : 'failed'
++      state.sequence++
++    })
++  }
++
+   /** Clear the displayed mutation notice. */
+   dismiss(): void {
+     this.state.update((state) => { state.notice = null })
+diff --git a/packages/client/ui-settings-session-log/tests/apply.client.spec.ts b/packages/client/ui-settings-session-log/tests/apply.client.spec.ts
+index aee231dff..0ecccc9e0 100644
+--- a/packages/client/ui-settings-session-log/tests/apply.client.spec.ts
++++ b/packages/client/ui-settings-session-log/tests/apply.client.spec.ts
+@@ -44,6 +44,8 @@ it('adds the last General row only while served and removes all contributions on
+     await face.setEnabled(false)
+     expect(set).toHaveBeenCalledWith('enabled', false)
+     expect(face.hooks.mutation.getSnapshot().notice).toBe('failed')
++    await face.setAllModelsEnabled(true)
++    expect(set).toHaveBeenCalledWith('allModelsEnabled', true)
+     const toast = slots.entries('shell.overlay')[0]!.inject!() as UploadInjected & Record<string, unknown>
+     expect(toast.hooks.mutation).toBe(face.hooks.mutation)
+     toast.dismiss()
+diff --git a/packages/client/ui-settings-session-log/tests/expected/upload-row.zh.txt b/packages/client/ui-settings-session-log/tests/expected/upload-row.zh.txt
+index dffca17e1..11489dc5f 100644
+--- a/packages/client/ui-settings-session-log/tests/expected/upload-row.zh.txt
++++ b/packages/client/ui-settings-session-log/tests/expected/upload-row.zh.txt
+@@ -1 +1 @@
+-在使用官方模型 API 时上传 Session Log帮助改进 DeepSeek 模型与产品
++在使用官方模型 API 时上传 Session Log帮助改进 DeepSeek 模型与产品在使用任何模型时上传 Session Log在使用其他模型时也上传 Session Log，帮助改进 DeepSeek 模型与产品
+diff --git a/packages/client/ui-settings-session-log/tests/upload.client.spec.tsx b/packages/client/ui-settings-session-log/tests/upload.client.spec.tsx
+index 4ddc52d85..2fe0f2495 100644
+--- a/packages/client/ui-settings-session-log/tests/upload.client.spec.tsx
++++ b/packages/client/ui-settings-session-log/tests/upload.client.spec.tsx
+@@ -12,12 +12,14 @@ import { en, zh } from '../src/client/locales.ts'
+ 
+ afterEach(cleanup)
+ 
+-function fixture(writable = true) {
++function fixture(writable = true, initialValue: UploadSettings = { enabled: true }) {
+   const formState = createSnapshotStore<ConfigFormSnapshot<UploadSettings>>({
+-    status: 'ready', value: { enabled: true }, base: {}, user: {}, revision: 0, writable,
++    status: 'ready', value: initialValue, base: {}, user: {}, revision: 0, writable,
+   })
+-  const set = vi.fn(async (_field: string, enabled: unknown) => {
+-    formState.update((state) => { state.value = { enabled: enabled === true } })
++  const set = vi.fn(async (field: string, value: unknown) => {
++    formState.update((state) => {
++      state.value = { ...state.value, [field]: value === true } as UploadSettings
++    })
+     return true
+   })
+   const form: ConfigForm<UploadSettings> = {
+@@ -27,7 +29,9 @@ function fixture(writable = true) {
+   const preference = new UploadPreference(form)
+   const props = {
+     useUpload: bindSnapshotSelector(formState), useMutation: bindSnapshotSelector(preference.state),
+-    setEnabled: (enabled: boolean) => preference.setEnabled(enabled), dismiss: () => { preference.dismiss() },
++    setEnabled: (enabled: boolean) => preference.setEnabled(enabled),
++    setAllModelsEnabled: (enabled: boolean) => preference.setAllModelsEnabled(enabled),
++    dismiss: () => { preference.dismiss() },
+     t: (key: keyof typeof en) => en[key],
+   } as ComponentProps<typeof UploadRow>
+   return { formState, set, preference, props }
+@@ -38,20 +42,37 @@ it('shows a saved preference and keeps its notice after the row unmounts', async
+   const row = render(<UploadRow {...props} />)
+   render(<UploadToast {...props} />)
+   fireEvent.click(screen.getByRole('switch', { name: en.title }))
+-  await waitFor(() => { expect(screen.getByRole('switch').getAttribute('aria-checked')).toBe('false') })
++  await waitFor(() => { expect(screen.getByRole('switch', { name: en.title }).getAttribute('aria-checked')).toBe('false') })
+   expect(set).toHaveBeenCalledWith('enabled', false)
+   row.unmount()
+   expect(screen.getByText(en.saved)).toBeTruthy()
+ })
+ 
++it('hides the all-models switch when official model upload is disabled', () => {
++  const { props } = fixture(true, { enabled: false })
++  render(<UploadRow {...props} />)
++  expect(screen.getByRole('switch', { name: en.title })).toBeTruthy()
++  expect(screen.queryByRole('switch', { name: en.allModelsTitle })).toBeNull()
++})
++
++it('toggles the all-models switch and persists the preference', async () => {
++  const { props, set } = fixture(true, { enabled: true, allModelsEnabled: false })
++  render(<UploadRow {...props} />)
++  const subSwitch = screen.getByRole('switch', { name: en.allModelsTitle })
++  expect(subSwitch.getAttribute('aria-checked')).toBe('false')
++  fireEvent.click(subSwitch)
++  await waitFor(() => { expect(screen.getByRole('switch', { name: en.allModelsTitle }).getAttribute('aria-checked')).toBe('true') })
++  expect(set).toHaveBeenCalledWith('allModelsEnabled', true)
++})
++
+ it.each(['refused', 'rejected'] as const)('retains accepted state after a %s write', async (failure) => {
+   const { props, set } = fixture()
+   if (failure === 'refused') set.mockResolvedValue(false)
+   else set.mockRejectedValue(new Error('Disconnected'))
+   render(<><UploadRow {...props} /><UploadToast {...props} /></>)
+-  fireEvent.click(screen.getByRole('switch'))
++  fireEvent.click(screen.getByRole('switch', { name: en.title }))
+   await screen.findByText(en.failed)
+-  expect(screen.getByRole('switch').getAttribute('aria-checked')).toBe('true')
++  expect(screen.getByRole('switch', { name: en.title }).getAttribute('aria-checked')).toBe('true')
+ })
+ 
+ it('disables input until a pending write settles', async () => {
+@@ -59,12 +80,13 @@ it('disables input until a pending write settles', async () => {
+   const pending = Promise.withResolvers<boolean>()
+   set.mockReturnValue(pending.promise)
+   render(<UploadRow {...props} />)
+-  fireEvent.click(screen.getByRole('switch'))
+-  expect(screen.getByRole('switch').hasAttribute('disabled')).toBe(true)
++  fireEvent.click(screen.getByRole('switch', { name: en.title }))
++  expect(screen.getByRole('switch', { name: en.title }).hasAttribute('disabled')).toBe(true)
++  expect(screen.getByRole('switch', { name: en.allModelsTitle }).hasAttribute('disabled')).toBe(true)
+   await preference.setEnabled(true)
+   expect(set).toHaveBeenCalledTimes(1)
+   pending.resolve(false)
+-  await waitFor(() => { expect(screen.getByRole('switch').hasAttribute('disabled')).toBe(false) })
++  await waitFor(() => { expect(screen.getByRole('switch', { name: en.title }).hasAttribute('disabled')).toBe(false) })
+ })
+ 
+ it('shows the Chinese label and cannot edit read-only settings', async () => {
+@@ -73,7 +95,9 @@ it('shows the Chinese label and cannot edit read-only settings', async () => {
+   const { container } = render(<UploadRow {...props} t={key => translated[key] ?? key} />)
+   await expect(container.textContent + '\n').toMatchFileSnapshot('./expected/upload-row.zh.txt')
+   expect(screen.getByRole('switch', { name: zh.title }).hasAttribute('disabled')).toBe(true)
+-  expect(screen.getByRole('switch').getAttribute('aria-checked')).toBe('true')
+-  fireEvent.click(screen.getByRole('switch'))
++  expect(screen.getByRole('switch', { name: zh.title }).getAttribute('aria-checked')).toBe('true')
++  expect(screen.getByRole('switch', { name: zh.allModelsTitle }).hasAttribute('disabled')).toBe(true)
++  expect(screen.getByRole('switch', { name: zh.allModelsTitle }).getAttribute('aria-checked')).toBe('false')
++  fireEvent.click(screen.getByRole('switch', { name: zh.title }))
+   expect(set).not.toHaveBeenCalled()
+ })
+diff --git a/packages/client/ui-workspace/src/client/contract/slots.ts b/packages/client/ui-workspace/src/client/contract/slots.ts
+index bb704633b..fe413f26f 100644
+--- a/packages/client/ui-workspace/src/client/contract/slots.ts
++++ b/packages/client/ui-workspace/src/client/contract/slots.ts
+@@ -329,6 +329,8 @@ export type WorkspaceBrowserInjected = {
+   unarchiveSession: (sessionId: SessionId) => Promise<void>
+   /** Adopt a picked host directory as a real Workspace before targeting a Session. */
+   createWorkspace: (input: { path: string }) => Promise<WorkspaceView>
++  /** Move a Session to trash (raises confirmation if running work exists). */
++  trashSession: (sessionId: SessionId) => void
+ }
+ 
+ /** The browser's declared viewing store handle, shared with the row actions that write view state. */
+@@ -351,6 +353,7 @@ export type RowToast =
+   | { kind: 'archived'; sessionId: SessionId; message?: string; tone?: 'success' | 'warning' }
+   | { kind: 'stoppedAndArchived'; sessionId: SessionId; message?: string; tone?: 'success' | 'warning' }
+   | { kind: 'readingFailed' }
++  | { kind: 'trashed'; sessionId?: SessionId }
+   | { kind: 'sessionIdCopied' }
+   | { kind: 'sessionIdCopyFailed' }
+   | { kind: 'pinFailed' }
+@@ -443,6 +446,43 @@ export interface SessionArchiveConfirmInjected {
+   stopAndArchiveSession: (sessionId: SessionId) => Promise<void>
+ }
+ 
++/** Trash action share (menu row). */
++export interface TrashSessionInjected {
++  /** Move a Session to trash (raises confirmation if running work exists). */
++  trashSession: (sessionId: SessionId) => void
++}
++
++/**
++ * A stop-and-trash confirmation the trash action asked for: the Host
++ * refused the plain trash because this work still runs.
++ */
++export interface SessionTrashConfirmRequest {
++  /** Session to stop and move to trash. */
++  sessionId: SessionId
++  /** The row's display title, named in the dialog. */
++  displayTitle: string
++  /** What the Host reported running, in family order. */
++  activity: readonly SessionActivity[]
++}
++
++/**
++ * Stop-and-trash dialog share: the pending confirmation, its settlement,
++ * and the trash hop that asks the Host to stop the work first.
++ */
++export interface SessionTrashConfirmInjected {
++  hooks: {
++    /** The confirmation asked for, until the dialog consumes or cancels it. */
++    trashRequest: HostObservable<SessionTrashConfirmRequest | null>
++  }
++  /** Consume or cancel the pending confirmation. */
++  settleSessionTrash: () => void
++  /**
++   * Move a Session to trash after the Host stops its running work;
++   * raises the trashed notice.
++   */
++  stopAndTrashSession: (sessionId: SessionId) => Promise<void>
++}
++
+ /** Fork action share. */
+ export interface ForkSessionInjected {
+   /** Fork a Session at its last completed turn; the child arrives through the Host list. */
+@@ -515,6 +555,13 @@ export type SessionArchiveConfirmProps =
+   & Omit<SessionArchiveConfirmInjected, 'hooks'>
+   & PropsHooks<SessionArchiveConfirmInjected['hooks']>
+ 
++/** Props of the stop-and-trash dialog entry in `shell.overlay`. */
++export type SessionTrashConfirmProps =
++  PropsRuntime<'shell.overlay'>
++  & PropsLocale<'workspace'>
++  & Omit<SessionTrashConfirmInjected, 'hooks'>
++  & PropsHooks<SessionTrashConfirmInjected['hooks']>
++
+ /** Props of the existing overlay's keyed notice dispatcher. */
+ export type RowToastProps =
+   PropsRuntime<'shell.overlay'>
+diff --git a/packages/client/ui-workspace/src/client/index.ts b/packages/client/ui-workspace/src/client/index.ts
+index 920182b43..29eb7c404 100644
+--- a/packages/client/ui-workspace/src/client/index.ts
++++ b/packages/client/ui-workspace/src/client/index.ts
+@@ -23,7 +23,7 @@ import type { Context } from '@deepseek-ai/cordis'
+ import type { RemoteHostFacts } from '@deepseek-ai/dsh-api-remotes/client'
+ import type { ISessions, SessionForkError } from '@deepseek-ai/dsh-api-session-controller/client'
+ import type {
+-  IWorkspaces, SessionActivity, WorkspaceArchiveError, WorkspaceId, WorkspaceSnapshot,
++  IWorkspaces, SessionActivity, WorkspaceId, WorkspaceSnapshot,
+ } from '@deepseek-ai/dsh-api-workspace-controller/client'
+ import type { RemoteEndpoint } from '@deepseek-ai/dsh-api-remote-access/client'
+ import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
+@@ -45,6 +45,8 @@ import type {} from '@deepseek-ai/dsh-client-ui-session-status/client'
+ import {
+   type ArchiveSessionInjected, type DirectoryFlowSlotName, type ForkSessionInjected, menuOpenStateFactory, type PinSessionInjected,
+   type SessionArchiveConfirmInjected, type SessionArchiveConfirmRequest,
++  type SessionTrashConfirmInjected, type SessionTrashConfirmRequest,
++  type TrashSessionInjected,
+   type RenameSessionInjected, type RowToast, type RowToastInjected, type RowToastState, type SessionRenameDialogInjected,
+   type WorkspaceActionRequest, type SessionIdInjected, type WorkspaceBrowserInjected, type WorkspacePickerInjected,
+ } from './contract/slots.ts'
+@@ -53,6 +55,7 @@ import { UiWorkspaceService } from './navigation.ts'
+ import { createWorkspaceViewStore } from './stores.ts'
+ import { WorkspaceBrowser } from './rows/WorkspaceBrowser.tsx'
+ import { ArchiveSessionRowButton, SessionArchiveConfirmDialog } from './session-actions/ArchiveSession.tsx'
++import { TrashSessionMenuItem, SessionTrashConfirmDialog } from './session-actions/TrashSession.tsx'
+ import { derive } from './session-actions/derived.ts'
+ import { registerSessionMenus } from './session-actions/context-menus.tsx'
+ import { PinSessionRowButton } from './session-actions/PinSession.tsx'
+@@ -67,6 +70,7 @@ export type {
+   DirectoryFlowOwnerProps, DirectoryFlowSlotName, DirectoryPickingHooks, DirectoryPickingInjected,
+   MenuOpenState, RowToast, SessionRenameTarget, SessionRowOwnerProps, UseMenuOpenState, WorkspaceBrowserInjected,
+   SessionRowScheduleOwnerProps,
++  SessionTrashConfirmProps, SessionTrashConfirmRequest, TrashSessionInjected,
+   WorkspaceBrowserProps,
+   WorkspacePickerInjected, WorkspacePickerInput, WorkspacePickerProps,
+ } from './contract/slots.ts'
+@@ -207,12 +211,26 @@ export function apply(ctx: Context): void {
+   // its bound hook.
+   const renameRequest = derive(shortcutControls.state, state => state.renameTarget)
+   const archiveRequest = createSnapshotStore<SessionArchiveConfirmRequest | null>(null)
++  const trashRequest = createSnapshotStore<SessionTrashConfirmRequest | null>(null)
+   const requestSessionRename = shortcutControls.rename
+   const unarchiveSession = (sessionId: SessionId): void => {
+     uiWorkspace.unarchiveSession(sessionId).catch((reason: unknown) => {
+       console.warn('session unarchive rejected:', reason)
+     })
+   }
++  const trashSession = (sessionId: SessionId): void => {
++    uiWorkspace.trashSession(sessionId).then(() => {
++      notify({ kind: 'trashed', sessionId })
++    }).catch((reason: unknown) => {
++      const activity = activeSessionRefusal(reason)
++      if (activity === undefined) {
++        console.warn('session trash rejected:', reason)
++        return
++      }
++      const displayTitle = sessions.list.getSnapshot().byId[sessionId]?.displayTitle ?? sessionId
++      trashRequest.set({ sessionId, displayTitle, activity })
++    })
++  }
+   const renameSession: SessionRenameDialogInjected['renameSession'] = async (sessionId, title) => {
+     const result = await sessions.using(
+       sessionId,
+@@ -266,6 +284,17 @@ export function apply(ctx: Context): void {
+     },
+     unarchiveSession,
+   })
++  const trashInjected = (): TrashSessionInjected => ({
++    trashSession,
++  })
++  const trashConfirmInjected = (): SessionTrashConfirmInjected => ({
++    hooks: { trashRequest },
++    settleSessionTrash: () => { trashRequest.set(null) },
++    stopAndTrashSession: async (sessionId) => {
++      await uiWorkspace.trashSession(sessionId, { stopActivity: true })
++      notify({ kind: 'trashed', sessionId })
++    },
++  })
+   installWorkspaceShortcuts(ctx, uiWorkspace, shortcutControls, archiveInjected().archiveSession,
+     (reason) => { notify({ kind: 'shortcutForkFailed', reason }) }, markSession)
+   const archiveConfirmInjected = (): SessionArchiveConfirmInjected => ({
+@@ -358,6 +387,7 @@ export function apply(ctx: Context): void {
+       await workspaces.insertBefore(workspaceId, beforeWorkspaceId)
+     },
+     unarchiveSession: async (sessionId) => { await uiWorkspace.unarchiveSession(sessionId) },
++    trashSession,
+     createWorkspace: input => workspaces.create(input),
+     requestSearch: shortcutControls.search,
+     requestAddWorkspace: shortcutControls.add,
+@@ -398,6 +428,13 @@ export function apply(ctx: Context): void {
+     ...pinInjected(), ...archiveInjected(), ...renameInjected(), ...forkInjected(), ...sessionIdInjected(),
+     markSession,
+   })
++  // The built-in actions moved to contextMenus above; trash stays a legacy
++  // slot contribution: SessionMenu still renders this list, and the list-level
++  // inject provides the menuOpenState hook the row needs. The order leaves
++  // room for plugin entries behind the contextMenus actions.
++  ctx.slots.inject('sidebar.workspaces.session.menu.item', function* () {
++    yield ctx.slots.register({ name: 'sidebar.workspaces.session.menu.item', id: 'trash', order: 500, locale: NS, inject: trashInjected }, TrashSessionMenuItem)
++  })
+   ctx.slots.inject('sidebar.workspaces.session.row.action', function* () {
+     yield ctx.slots.register({ name: 'sidebar.workspaces.session.row.action', id: 'archive', order: 100, locale: NS, inject: archiveInjected }, ArchiveSessionRowButton)
+     yield ctx.slots.register({ name: 'sidebar.workspaces.session.row.action', id: 'pin', order: 200, locale: NS, inject: pinInjected }, PinSessionRowButton)
+@@ -411,6 +448,9 @@ export function apply(ctx: Context): void {
+     yield ctx.slots.register({
+       name: 'shell.overlay', id: 'workspace.session-archive', locale: NS, inject: archiveConfirmInjected,
+     }, SessionArchiveConfirmDialog)
++    yield ctx.slots.register({
++      name: 'shell.overlay', id: 'workspace.session-trash', locale: NS, inject: trashConfirmInjected,
++    }, SessionTrashConfirmDialog)
+     yield ctx.slots.register({
+       name: 'shell.overlay', id: 'workspace.row-toast', inject: rowToastInjected,
+       children: { 'workspace.toast': { kind: 'keyed', scope: 'root' } },
+@@ -442,7 +482,17 @@ export function apply(ctx: Context): void {
+  * bundles do not share error-class identity.
+  */
+ function activeSessionRefusal(reason: unknown): readonly SessionActivity[] | undefined {
+-  if (!(reason instanceof Error) || reason.name !== 'WorkspaceArchiveError') return undefined
+-  const { rpcError } = reason as WorkspaceArchiveError
+-  return rpcError.code === 'workspace/session-active' ? rpcError.details.activity : undefined
++  if (
++    typeof reason === 'object' &&
++    reason !== null &&
++    'name' in reason &&
++    (reason.name === 'WorkspaceArchiveError' || reason.name === 'WorkspaceTrashError') &&
++    'rpcError' in reason
++  ) {
++    const rpc = (reason as { rpcError: { code?: string; details?: { activity?: readonly SessionActivity[] } } }).rpcError
++    return rpc.code === 'workspace/session-active' && Array.isArray(rpc.details?.activity)
++      ? rpc.details.activity
++      : undefined
++  }
++  return undefined
+ }
+diff --git a/packages/client/ui-workspace/src/client/locales.ts b/packages/client/ui-workspace/src/client/locales.ts
+index bcdb69295..e2c03d117 100644
+--- a/packages/client/ui-workspace/src/client/locales.ts
++++ b/packages/client/ui-workspace/src/client/locales.ts
+@@ -68,6 +68,8 @@ export const zh = {
+   'menu.unarchiveSession': '取消归档',
+   'menu.pinSession': '置顶会话',
+   'menu.unpinSession': '取消置顶',
++  'menu.renameSession': '重命名',
++  'menu.trashSession': '移入回收站',
+   'menu.sessionId': '复制 Session ID',
+   'toast.sessionIdCopied': 'Session ID 已复制',
+   'toast.sessionIdCopyFailed': '复制失败，请重试',
+@@ -91,6 +93,25 @@ export const zh = {
+   'archive.confirm.listSeparator': '、',
+   'archive.confirm.action': '停止并归档',
+   'archive.confirm.pending': '正在停止并归档…',
++  'trash.title': '回收站',
++  'trash.emptyState': '回收站为空',
++  'trash.emptyAction': '清空回收站',
++  'trash.menu.restore': '恢复会话',
++  'trash.menu.permanentDelete': '彻底删除',
++  'trash.emptyConfirmTitle': '清空回收站？',
++  'trash.emptyConfirmDesc': '回收站中的所有对话记录将被永久抹除，该操作不可撤销。',
++  'trash.singleDeleteConfirmTitle': '彻底删除此会话？',
++  'trash.singleDeleteConfirmDesc': '“{title}”的对话历史与关联数据将从本地磁盘永久删除。',
++  'trash.restoreSuccess': '会话已恢复至原工作区',
++  'trash.deleteSuccess': '会话已彻底删除',
++  'trash.emptySuccess': '回收站已清空',
++  'trash.readOnlyBanner': '该会话已在回收站中，处于只读状态。若要继续对话，请先恢复。',
++  'trash.restoreAction': '恢复此会话',
++  'trash.confirm.title': '会话正在运行中，确认移入回收站？',
++  'trash.confirm.desc': '移入回收站将同时中止“{title}”中正在执行的后台活动。',
++  'trash.confirm.action': '终止并移入回收站',
++  'trash.confirm.pending': '正在终止并移入回收站…',
++  'toast.trashed': '会话已移入系统回收站',
+   'toast.archivedUndo': '撤销',
+   'toast.archivedOr': '或',
+   'toast.archivedFilter': '筛选已归档会话',
+@@ -107,6 +128,7 @@ export const zh = {
+   'actions.unarchive': '取消归档',
+   'actions.pin': '置顶会话',
+   'actions.unpin': '取消置顶',
++  'actions.trash': '移入回收站',
+   'actions.newSession': '新会话',
+   'actions.newSession.aria': '在“{name}”中新建会话',
+   'status.running': '进行中',
+@@ -203,6 +225,8 @@ export const en = {
+   'menu.unarchiveSession': 'Unarchive session',
+   'menu.pinSession': 'Pin session',
+   'menu.unpinSession': 'Unpin session',
++  'menu.renameSession': 'Rename',
++  'menu.trashSession': 'Move to Trash',
+   'menu.sessionId': 'Copy Session ID',
+   'toast.sessionIdCopied': 'Session ID copied',
+   'toast.sessionIdCopyFailed': 'Copy failed. Try again.',
+@@ -226,6 +250,25 @@ export const en = {
+   'archive.confirm.listSeparator': ', ',
+   'archive.confirm.action': 'Stop and archive',
+   'archive.confirm.pending': 'Stopping and archiving…',
++  'trash.title': 'Trash',
++  'trash.emptyState': 'Trash is empty',
++  'trash.emptyAction': 'Empty Trash',
++  'trash.menu.restore': 'Restore Session',
++  'trash.menu.permanentDelete': 'Delete Permanently',
++  'trash.emptyConfirmTitle': 'Empty Trash?',
++  'trash.emptyConfirmDesc': 'All transcripts in Trash will be permanently deleted. This cannot be undone.',
++  'trash.singleDeleteConfirmTitle': 'Delete Session Permanently?',
++  'trash.singleDeleteConfirmDesc': 'The transcript and associated data for “{title}” will be permanently deleted from local disk.',
++  'trash.restoreSuccess': 'Session restored to workspace',
++  'trash.deleteSuccess': 'Session permanently deleted',
++  'trash.emptySuccess': 'Trash emptied',
++  'trash.readOnlyBanner': 'This session is in Trash and is read-only. Restore it to continue the conversation.',
++  'trash.restoreAction': 'Restore Session',
++  'trash.confirm.title': 'Session is active. Move to Trash?',
++  'trash.confirm.desc': 'Moving to Trash will interrupt running activity in “{title}”.',
++  'trash.confirm.action': 'Stop and Move to Trash',
++  'trash.confirm.pending': 'Stopping and moving to Trash…',
++  'toast.trashed': 'Session moved to Recycle Bin',
+   'toast.archivedUndo': 'undo',
+   'toast.archivedOr': ' or ',
+   'toast.archivedFilter': 'filter archived sessions',
+@@ -242,6 +285,7 @@ export const en = {
+   'actions.unarchive': 'Unarchive',
+   'actions.pin': 'Pin',
+   'actions.unpin': 'Unpin',
++  'actions.trash': 'Move to Trash',
+   'actions.newSession': 'New session',
+   'actions.newSession.aria': 'New session in {name}',
+   'status.running': 'Running',
+@@ -401,6 +445,28 @@ export const ja = {
+   'time.months': '{n}か月',
+   'time.years': '{n}年',
+   'time.ago': '{t}前',
++  'menu.renameSession': '名前の変更',
++  'menu.trashSession': 'ゴミ箱へ移動',
++  'trash.title': 'ゴミ箱',
++  'trash.emptyState': 'ゴミ箱は空です',
++  'trash.emptyAction': 'ゴミ箱を空にする',
++  'trash.menu.restore': 'セッションを復元',
++  'trash.menu.permanentDelete': '完全に削除',
++  'trash.emptyConfirmTitle': 'ゴミ箱を空にしますか？',
++  'trash.emptyConfirmDesc': 'ゴミ箱内のすべての会話履歴が完全に削除されます。この操作は元に戻せません。',
++  'trash.singleDeleteConfirmTitle': 'このセッションを完全に削除しますか？',
++  'trash.singleDeleteConfirmDesc': '「{title}」の会話履歴と関連データはローカルディスクから完全に削除されます。',
++  'trash.restoreSuccess': 'セッションをワークスペースに復元しました',
++  'trash.deleteSuccess': 'セッションを完全に削除しました',
++  'trash.emptySuccess': 'ゴミ箱を空にしました',
++  'trash.readOnlyBanner': 'このセッションはゴミ箱にあり、読み取り専用です。会話を続けるには先に復元してください。',
++  'trash.restoreAction': 'このセッションを復元',
++  'trash.confirm.title': 'セッションが実行中です。ゴミ箱へ移動しますか？',
++  'trash.confirm.desc': 'ゴミ箱へ移動すると「{title}」で実行中のアクティビティが中断されます。',
++  'trash.confirm.action': '停止してゴミ箱へ移動',
++  'trash.confirm.pending': '停止してゴミ箱へ移動しています…',
++  'toast.trashed': 'セッションをゴミ箱へ移動しました',
++  'actions.trash': 'ゴミ箱へ移動',
+ } satisfies Record<keyof typeof en, string>
+ 
+ /** Spanish dictionary, checked against the English keys. */
+@@ -533,6 +599,28 @@ export const es = {
+   'time.months': '{n}mo',
+   'time.years': '{n}y',
+   'time.ago': 'Hace {t}',
++  'menu.renameSession': 'Renombrar',
++  'menu.trashSession': 'Mover a la papelera',
++  'trash.title': 'Papelera',
++  'trash.emptyState': 'La papelera está vacía',
++  'trash.emptyAction': 'Vaciar papelera',
++  'trash.menu.restore': 'Restaurar sesión',
++  'trash.menu.permanentDelete': 'Eliminar permanentemente',
++  'trash.emptyConfirmTitle': '¿Vaciar la papelera?',
++  'trash.emptyConfirmDesc': 'Todas las conversaciones de la papelera se eliminarán permanentemente. No se puede deshacer.',
++  'trash.singleDeleteConfirmTitle': '¿Eliminar la sesión permanentemente?',
++  'trash.singleDeleteConfirmDesc': 'El historial y los datos de «{title}» se eliminarán permanentemente del disco local.',
++  'trash.restoreSuccess': 'Sesión restaurada al espacio de trabajo',
++  'trash.deleteSuccess': 'Sesión eliminada permanentemente',
++  'trash.emptySuccess': 'Papelera vaciada',
++  'trash.readOnlyBanner': 'Esta sesión está en la papelera y es de solo lectura. Restáurala para continuar la conversación.',
++  'trash.restoreAction': 'Restaurar esta sesión',
++  'trash.confirm.title': 'La sesión está activa. ¿Mover a la papelera?',
++  'trash.confirm.desc': 'Mover a la papelera interrumpirá la actividad en curso de «{title}».',
++  'trash.confirm.action': 'Detener y mover a la papelera',
++  'trash.confirm.pending': 'Deteniendo y moviendo a la papelera…',
++  'toast.trashed': 'Sesión movida a la papelera',
++  'actions.trash': 'Mover a la papelera',
+ } satisfies Record<keyof typeof en, string>
+ 
+ /** French dictionary, checked against the English keys. */
+@@ -665,6 +753,28 @@ export const fr = {
+   'time.months': '{n}mo',
+   'time.years': '{n}y',
+   'time.ago': 'Il y a {t}',
++  'menu.renameSession': 'Renommer',
++  'menu.trashSession': 'Déplacer vers la corbeille',
++  'trash.title': 'Corbeille',
++  'trash.emptyState': 'La corbeille est vide',
++  'trash.emptyAction': 'Vider la corbeille',
++  'trash.menu.restore': 'Restaurer la session',
++  'trash.menu.permanentDelete': 'Supprimer définitivement',
++  'trash.emptyConfirmTitle': 'Vider la corbeille ?',
++  'trash.emptyConfirmDesc': 'Toutes les conversations de la corbeille seront définitivement supprimées. Action irréversible.',
++  'trash.singleDeleteConfirmTitle': 'Supprimer définitivement cette session ?',
++  'trash.singleDeleteConfirmDesc': 'L’historique et les données de « {title} » seront définitivement supprimés du disque local.',
++  'trash.restoreSuccess': "Session restaurée dans l'espace de travail",
++  'trash.deleteSuccess': 'Session supprimée définitivement',
++  'trash.emptySuccess': 'Corbeille vidée',
++  'trash.readOnlyBanner': 'Cette session est dans la corbeille et en lecture seule. Restaurez-la pour poursuivre la conversation.',
++  'trash.restoreAction': 'Restaurer cette session',
++  'trash.confirm.title': 'La session est active. La déplacer vers la corbeille ?',
++  'trash.confirm.desc': "Déplacer vers la corbeille interrompra l'activité en cours de « {title} ».",
++  'trash.confirm.action': 'Arrêter et déplacer vers la corbeille',
++  'trash.confirm.pending': 'Arrêt et déplacement vers la corbeille…',
++  'toast.trashed': 'Session déplacée vers la corbeille',
++  'actions.trash': 'Déplacer vers la corbeille',
+ } satisfies Record<keyof typeof en, string>
+ 
+ /** German dictionary, checked against the English keys. */
+@@ -797,6 +907,28 @@ export const de = {
+   'time.months': '{n}mo',
+   'time.years': '{n}y',
+   'time.ago': 'Vor {t}',
++  'menu.renameSession': 'Umbenennen',
++  'menu.trashSession': 'In den Papierkorb verschieben',
++  'trash.title': 'Papierkorb',
++  'trash.emptyState': 'Der Papierkorb ist leer',
++  'trash.emptyAction': 'Papierkorb leeren',
++  'trash.menu.restore': 'Sitzung wiederherstellen',
++  'trash.menu.permanentDelete': 'Endgültig löschen',
++  'trash.emptyConfirmTitle': 'Papierkorb leeren?',
++  'trash.emptyConfirmDesc': 'Alle Unterhaltungen im Papierkorb werden endgültig gelöscht. Dies kann nicht rückgängig gemacht werden.',
++  'trash.singleDeleteConfirmTitle': 'Sitzung endgültig löschen?',
++  'trash.singleDeleteConfirmDesc': 'Der Verlauf und die Daten von „{title}“ werden endgültig vom lokalen Datenträger gelöscht.',
++  'trash.restoreSuccess': 'Sitzung im Arbeitsbereich wiederhergestellt',
++  'trash.deleteSuccess': 'Sitzung endgültig gelöscht',
++  'trash.emptySuccess': 'Papierkorb geleert',
++  'trash.readOnlyBanner': 'Diese Sitzung befindet sich im Papierkorb und ist schreibgeschützt. Stellen Sie sie wieder her, um fortzufahren.',
++  'trash.restoreAction': 'Diese Sitzung wiederherstellen',
++  'trash.confirm.title': 'Sitzung ist aktiv. In den Papierkorb verschieben?',
++  'trash.confirm.desc': 'Beim Verschieben in den Papierkorb wird die laufende Aktivität in „{title}“ unterbrochen.',
++  'trash.confirm.action': 'Beenden und in den Papierkorb verschieben',
++  'trash.confirm.pending': 'Wird beendet und in den Papierkorb verschoben…',
++  'toast.trashed': 'Sitzung in den Papierkorb verschoben',
++  'actions.trash': 'In den Papierkorb verschieben',
+ } satisfies Record<keyof typeof en, string>
+ 
+ /** Russian dictionary, checked against the English keys. */
+@@ -929,6 +1061,28 @@ export const ru = {
+   'time.months': '{n}mo',
+   'time.years': '{n}y',
+   'time.ago': '{t} назад',
++  'menu.renameSession': 'Переименовать',
++  'menu.trashSession': 'Переместить в корзину',
++  'trash.title': 'Корзина',
++  'trash.emptyState': 'Корзина пуста',
++  'trash.emptyAction': 'Очистить корзину',
++  'trash.menu.restore': 'Восстановить сессию',
++  'trash.menu.permanentDelete': 'Удалить навсегда',
++  'trash.emptyConfirmTitle': 'Очистить корзину?',
++  'trash.emptyConfirmDesc': 'Все беседы в корзине будут удалены навсегда. Это действие необратимо.',
++  'trash.singleDeleteConfirmTitle': 'Удалить сессию навсегда?',
++  'trash.singleDeleteConfirmDesc': 'История и данные «{title}» будут безвозвратно удалены с локального диска.',
++  'trash.restoreSuccess': 'Сессия восстановлена в рабочем пространстве',
++  'trash.deleteSuccess': 'Сессия удалена навсегда',
++  'trash.emptySuccess': 'Корзина очищена',
++  'trash.readOnlyBanner': 'Эта сессия находится в корзине и доступна только для чтения. Восстановите её, чтобы продолжить беседу.',
++  'trash.restoreAction': 'Восстановить эту сессию',
++  'trash.confirm.title': 'Сессия активна. Переместить в корзину?',
++  'trash.confirm.desc': 'Перемещение в корзину прервёт выполнение активных задач в «{title}».',
++  'trash.confirm.action': 'Остановить и переместить в корзину',
++  'trash.confirm.pending': 'Остановка и перемещение в корзину…',
++  'toast.trashed': 'Сессия перемещена в корзину',
++  'actions.trash': 'Переместить в корзину',
+ } satisfies Record<keyof typeof en, string>
+ 
+ /** Portuguese dictionary, checked against the English keys. */
+@@ -1061,4 +1215,26 @@ export const pt = {
+   'time.months': '{n} mês',
+   'time.years': '{n}s',
+   'time.ago': '{t} atrás',
++  'menu.renameSession': 'Renomear',
++  'menu.trashSession': 'Mover para a lixeira',
++  'trash.title': 'Lixeira',
++  'trash.emptyState': 'A lixeira está vazia',
++  'trash.emptyAction': 'Esvaziar lixeira',
++  'trash.menu.restore': 'Restaurar sessão',
++  'trash.menu.permanentDelete': 'Excluir permanentemente',
++  'trash.emptyConfirmTitle': 'Esvaziar a lixeira?',
++  'trash.emptyConfirmDesc': 'Todas as conversas na lixeira serão excluídas permanentemente. Isso não pode ser desfeito.',
++  'trash.singleDeleteConfirmTitle': 'Excluir a sessão permanentemente?',
++  'trash.singleDeleteConfirmDesc': 'O histórico e os dados de “{title}” serão excluídos permanentemente do disco local.',
++  'trash.restoreSuccess': 'Sessão restaurada para o espaço de trabalho',
++  'trash.deleteSuccess': 'Sessão excluída permanentemente',
++  'trash.emptySuccess': 'Lixeira esvaziada',
++  'trash.readOnlyBanner': 'Esta sessão está na lixeira e é somente leitura. Restaure-a para continuar a conversa.',
++  'trash.restoreAction': 'Restaurar esta sessão',
++  'trash.confirm.title': 'A sessão está ativa. Mover para a lixeira?',
++  'trash.confirm.desc': 'Mover para a lixeira interromperá a atividade em execução em “{title}”.',
++  'trash.confirm.action': 'Parar e mover para a lixeira',
++  'trash.confirm.pending': 'Parando e movendo para a lixeira…',
++  'toast.trashed': 'Sessão movida para a lixeira',
++  'actions.trash': 'Mover para a lixeira',
+ } satisfies Record<keyof typeof en, string>
+diff --git a/packages/client/ui-workspace/src/client/navigation.ts b/packages/client/ui-workspace/src/client/navigation.ts
+index 42265f1af..c2c21989d 100644
+--- a/packages/client/ui-workspace/src/client/navigation.ts
++++ b/packages/client/ui-workspace/src/client/navigation.ts
+@@ -89,6 +89,12 @@ export interface UiWorkspace {
+    * whether existing text or attachments are kept, replaced, or followed by the prompt.
+    */
+   startSession(workspaceId?: WorkspaceId, options?: StartSessionOptions): void
++  /**
++   * Move a Session to Trash and clear it when it is the current selection.
++   * @param sessionId - Session to move to trash.
++   * @param options - `stopActivity` asks the Host to stop the Session's running work instead of refusing.
++   */
++  trashSession(sessionId: SessionId, options?: { readonly stopActivity?: boolean }): Promise<void>
+   /**
+    * Archive a Session and clear it when it is the current selection.
+    * @param sessionId - Session to archive.
+@@ -379,6 +385,17 @@ class UiWorkspaceService extends Service implements UiWorkspace {
+     throw new Error(message)
+   }
+ 
++  async trashSession(sessionId: SessionId, options: { readonly stopActivity?: boolean } = {}): Promise<void> {
++    if (typeof this.workspaces.trashSession === 'function') {
++      await this.workspaces.trashSession(sessionId, options)
++    }
++    if (this.mainReference?.sessionId === sessionId) this.clearMain()
++    if (typeof this.sessions.removeSession === 'function') {
++      this.sessions.removeSession(sessionId)
++    }
++    void this.sessions.refresh()
++  }
++
+   async archiveSession(sessionId: SessionId, options: { readonly stopActivity?: boolean } = {}): Promise<void> {
+     await this.workspaces.archiveSession(sessionId, options)
+     if (this.mainReference?.sessionId === sessionId) this.clearMain()
+diff --git a/packages/client/ui-workspace/src/client/rows/Rows.tsx b/packages/client/ui-workspace/src/client/rows/Rows.tsx
+index e2094eeab..aad56eb87 100644
+--- a/packages/client/ui-workspace/src/client/rows/Rows.tsx
++++ b/packages/client/ui-workspace/src/client/rows/Rows.tsx
+@@ -34,6 +34,14 @@ const DRAG_PREVIEW_PROPERTIES = [
+   '--dsh-sidebar-paint-inset',
+ ] as const
+ 
++/** Check whether keyboard focus is inside an input, textarea, or contenteditable target. */
++function isInputTarget(target: EventTarget | null): boolean {
++  if (!(target instanceof HTMLElement)) return false
++  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return true
++  if (target.isContentEditable || target.contentEditable === 'true') return true
++  return target.closest('[contenteditable]:not([contenteditable="false"])') !== null
++}
++
+ /** The standard locale seat, prop-passed from the browser root. */
+ type RowTranslate = WorkspaceBrowserProps['t']
+ 
+@@ -597,7 +605,7 @@ export function SearchResultItem({
+  * @returns the session row.
+  */
+ export function SessionNodeItem({
+-  node, currentId, now, onOpen, onRenameRequest, renderSlot, renderFactorySlot, useContextMenuTarget,
++  node, currentId, now, onOpen, onRenameRequest, onTrash, renderSlot, renderFactorySlot, useContextMenuTarget,
+   useContextMenu, onReveal, drag, home, useSessionAccess, t,
+ }: {
+   useContextMenu: WorkspaceBrowserProps['useContextMenu']
+@@ -609,6 +617,8 @@ export function SessionNodeItem({
+   onOpen: (id: SessionNode['id']) => void
+   /** Open the rename dialog from a title double-click (id + current title); see the function JSDoc for the press precondition. */
+   onRenameRequest: (id: SessionNode['id'], currentTitle: string) => void
++  /** Move a session to trash. */
++  onTrash?: ((id: SessionNode['id']) => void) | undefined
+   /** Scroll this row into view after search navigation, then acknowledge it. */
+   onReveal?: (() => void) | undefined
+   /** Present on reorderable-list rows so every row can remain a drop target. */
+@@ -664,16 +674,27 @@ export function SessionNodeItem({
+         drag?.marker === 'before' && css.dropBefore, drag?.marker === 'after' && css.dropAfter,
+       )}
+       role="treeitem"
++      tabIndex={0}
+       aria-selected={selected}
+       aria-description={row.archived ? t('toast.archivedNotOpenable') : undefined}
+-      tabIndex={0}
+ 
+       onClick={() => { onOpen(node.id) }}
+       {...getTriggerProps(row.blank ? undefined : { kind: 'session', value: { sessionId: node.id, displayTitle: row.title } }, { onKeyDown: (event) => {
+-        if (event.target !== event.currentTarget || (event.key !== 'Enter' && event.key !== ' ')) return
+-        if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
+-        event.preventDefault()
+-        onOpen(node.id)
++        if (event.target !== event.currentTarget) return
++        const plain = !(event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)
++        if (plain && (event.key === 'Enter' || event.key === ' ')) {
++          event.preventDefault()
++          onOpen(node.id)
++          return
++        }
++        if (isInputTarget(event.target)) return
++        if (event.key === 'Delete' || (event.key === 'Backspace' && (event.metaKey || event.ctrlKey))) {
++          if (!row.blank && onTrash !== undefined) {
++            event.preventDefault()
++            event.stopPropagation()
++            onTrash(node.id)
++          }
++        }
+       } })}
+       onPointerEnter={marquee.enter}
+       onPointerLeave={() => { if (!menuOpen) marquee.leave() }}
+diff --git a/packages/client/ui-workspace/src/client/rows/WorkspaceBrowser.tsx b/packages/client/ui-workspace/src/client/rows/WorkspaceBrowser.tsx
+index d852662c2..2d45481cf 100644
+--- a/packages/client/ui-workspace/src/client/rows/WorkspaceBrowser.tsx
++++ b/packages/client/ui-workspace/src/client/rows/WorkspaceBrowser.tsx
+@@ -254,7 +254,8 @@ type SessionTreeProps = Pick<
+   WorkspaceBrowserProps,
+   'useSessionStatus' | 'startSession' | 'open' | 'renderFactorySlot' | 'useContextMenuTarget' | 'useContextMenu'
+   | 'insertWorkspaceBefore' | 't' | 'usePanelInfo'
+-  | 'useSessionAccess' | 'useWorkspaceAccess'
++  | 'useRemoteAccess' | 'useSessionAccess' | 'useWorkspaceAccess'
++  | 'trashSession'
+ > & PropsRenderSlots<
+   | 'sidebar.workspaces.session.row.action'
+   | 'sidebar.session.row.trailing'
+@@ -316,6 +317,7 @@ function SessionTree({
+   rowState, onLeaveArchivedOnly,
+   workspaceReady, animationResetKey, usePanelInfo, useSessionAccess, useWorkspaceAccess,
+   onSessionRenameRequest,
++  trashSession,
+   renderSlot, renderFactorySlot, useContextMenuTarget, useContextMenu,
+   insertWorkspaceBefore,
+   nestWorkspaces, groupExpansion, setGroupExpanded,
+@@ -613,6 +615,7 @@ function SessionTree({
+               now={now}
+               onOpen={open}
+               onRenameRequest={onSessionRenameRequest}
++              onTrash={trashSession}
+               renderSlot={renderSlot}
+               renderFactorySlot={renderFactorySlot} useContextMenu={useContextMenu}
+               useContextMenuTarget={useContextMenuTarget}
+@@ -677,6 +680,7 @@ function SessionTree({
+ /** The flat "In one list" body: every session is one draggable top-level row. */
+ function FlatList({
+   list, sessionIds, rowState, onLeaveArchivedOnly, useSessionStatus, useSessionAccess, open, onSessionRenameRequest,
++  trashSession,
+   usePanelInfo, setSessionOrder, workspaceReady, animationResetKey,
+   revealSessionId, onSessionRevealed, renderSlot, renderFactorySlot, useContextMenuTarget, useContextMenu, home, t,
+ }: Pick<
+@@ -685,6 +689,7 @@ function FlatList({
+   | 'useSessionAccess'
+   | 'open'
+   | 'onSessionRenameRequest'
++  | 'trashSession'
+   | 'renderSlot'
+   | 'renderFactorySlot' | 'useContextMenuTarget' | 'useContextMenu'
+   | 'usePanelInfo'
+@@ -746,6 +751,7 @@ function FlatList({
+               now={now}
+               onOpen={open}
+               onRenameRequest={onSessionRenameRequest}
++              onTrash={trashSession}
+               renderSlot={renderSlot}
+               renderFactorySlot={renderFactorySlot} useContextMenu={useContextMenu}
+               useContextMenuTarget={useContextMenuTarget}
+@@ -912,6 +918,7 @@ export function WorkspaceBrowser({
+   useSessionStatus,
+   useSessionAccess,
+   useWorkspaceAccess,
++  useRemoteAccess,
+   useWorkspaces,
+   useStore,
+   actions,
+@@ -923,6 +930,7 @@ export function WorkspaceBrowser({
+   deleteWorkspace,
+   insertWorkspaceBefore,
+   unarchiveSession,
++  trashSession,
+   createWorkspace,
+   searchSessions,
+   searchResultLimit,
+@@ -1397,6 +1405,7 @@ export function WorkspaceBrowser({
+                 useSessionStatus={useSessionStatus}
+                 open={guardedOpen}
+                 onSessionRenameRequest={requestSessionRename}
++                trashSession={trashSession}
+                 renderSlot={renderSlot}
+                 renderFactorySlot={renderFactorySlot} useContextMenu={useContextMenu}
+                 useContextMenuTarget={useContextMenuTarget}
+@@ -1411,11 +1420,13 @@ export function WorkspaceBrowser({
+               <SessionTree
+                 useSessionAccess={useSessionAccess}
+                 useWorkspaceAccess={useWorkspaceAccess}
++                useRemoteAccess={useRemoteAccess}
+                 usePanelInfo={usePanelInfo}
+                 list={list}
+                 shortcuts={shortcuts}
+                 useSessionStatus={useSessionStatus}
+                 onSessionRenameRequest={requestSessionRename}
++                trashSession={trashSession}
+                 renderSlot={renderSlot}
+                 renderFactorySlot={renderFactorySlot} useContextMenu={useContextMenu}
+                 useContextMenuTarget={useContextMenuTarget}
+diff --git a/packages/client/ui-workspace/src/client/session-actions/ArchiveSession.tsx b/packages/client/ui-workspace/src/client/session-actions/ArchiveSession.tsx
+index fb7dacb17..9bedf14b9 100644
+--- a/packages/client/ui-workspace/src/client/session-actions/ArchiveSession.tsx
++++ b/packages/client/ui-workspace/src/client/session-actions/ArchiveSession.tsx
+@@ -1,6 +1,5 @@
+ /** Archive hover button and confirmation for stopping the Session’s running work. */
+ import { useState } from 'react'
+-import type { SessionActivity } from '@deepseek-ai/dsh-api-workspace-controller/client'
+ // Type-only: the family keys each provider merges; a key this program did not compile takes the generic line.
+ import type {} from '@deepseek-ai/dsh-agent/types'
+ import type {} from '@deepseek-ai/dsh-jobs/view'
+@@ -9,6 +8,7 @@ import type {} from '@deepseek-ai/dsh-subagent/client'
+ import {
+   Button, IconArchiveOutlineRegular, IconUnarchiveOutlineRegular, Modal, Tooltip,
+ } from '@deepseek-ai/dsh-client-ui-primitives'
++import { ActivityList } from './activity-line.ts'
+ import type {
+   ArchiveSessionInjected, SessionArchiveConfirmInjected, SessionArchiveConfirmProps, SessionArchiveConfirmRequest,
+   SessionRowActionProps,
+@@ -111,32 +111,11 @@ function ArchiveConfirmForm({ request, stopAndArchiveSession, onSettle, t }: {
+         </>
+       )}
+     >
+-      <ul className={browserCss.archiveActivity} aria-label={t('archive.confirm.activity')}>
+-        {request.activity.map((entry, index) => (
+-          <li key={`${entry.kind}-${String(index)}`}>{activityLine(entry, t)}</li>
+-        ))}
+-      </ul>
++      <ActivityList activity={request.activity} t={t} />
+       {archiving && <div className={browserCss.deleteStatus} role="status">{t('archive.confirm.pending')}</div>}
+       {error !== null && <div className={browserCss.renameError} role="alert">{error}</div>}
+     </Modal>
+   )
+ }
+ 
+-/**
+- * One family's line: its count and the items' labels (ids when a family
+- * carries no label). A family this dictionary does not know — a provider
+- * merged into the kind map — falls through to the generic line.
+- */
+-function activityLine(entry: SessionActivity, t: SessionArchiveConfirmProps['t']): string {
+-  const items = entry.items ?? []
+-  const n = items.length
+-  const names = items.map(item => item.label ?? item.id).join(t('archive.confirm.listSeparator'))
+-  const plural = n === 1 ? 'one' : 'other'
+-  switch (entry.kind) {
+-    case 'turn': return t('archive.confirm.turn')
+-    case 'subagent': return t(`archive.confirm.subagents.${plural}`, { n, names })
+-    case 'job': return t(`archive.confirm.jobs.${plural}`, { n, names })
+-    case 'schedule': return t(`archive.confirm.schedules.${plural}`, { n, names })
+-    default: return t(`archive.confirm.other.${plural}`, { kind: entry.kind, n })
+-  }
+-}
++
+diff --git a/packages/client/ui-workspace/src/client/session-actions/TrashSession.tsx b/packages/client/ui-workspace/src/client/session-actions/TrashSession.tsx
+new file mode 100644
+index 000000000..1ec9d485a
+--- /dev/null
++++ b/packages/client/ui-workspace/src/client/session-actions/TrashSession.tsx
+@@ -0,0 +1,121 @@
++/**
++ * The trash action: a `sidebar.workspaces.session.menu.item` row with danger style
++ * and trash icon over one injected behavior, plus the `shell.overlay` dialog that
++ * confirms stopping a Session's running work before moving it to trash.
++ */
++import { useState } from 'react'
++import type {} from '@deepseek-ai/dsh-agent/types'
++import type {} from '@deepseek-ai/dsh-jobs/view'
++import type {} from '@deepseek-ai/dsh-schedule/client'
++import type {} from '@deepseek-ai/dsh-subagent/client'
++import {
++  Button, IconTrashOutlineRegular, MenuItemButton, Modal,
++} from '@deepseek-ai/dsh-client-ui-primitives'
++import { ActivityList } from './activity-line.ts'
++import type {
++  SessionMenuItemProps, SessionTrashConfirmInjected, SessionTrashConfirmProps, SessionTrashConfirmRequest,
++  TrashSessionInjected,
++} from '../contract/slots.ts'
++import browserCss from '../rows/WorkspaceBrowser.module.css'
++
++/**
++ * Menu row (order 500): move to trash (Danger style).
++ * @param props - owner share, the trash share, and the menu open state.
++ * @returns the row.
++ */
++export function TrashSessionMenuItem({
++  sessionId, useMenuOpenState, trashSession, t,
++}: SessionMenuItemProps<TrashSessionInjected>) {
++  const [, setMenuOpen] = useMenuOpenState()
++  return (
++    <MenuItemButton
++      danger
++      separatorBefore
++      icon={<IconTrashOutlineRegular size={14} />}
++      onSelect={() => {
++        setMenuOpen(false)
++        trashSession(sessionId)
++      }}
++    >
++      {t('menu.trashSession')}
++    </MenuItemButton>
++  )
++}
++
++/**
++ * The `shell.overlay` entry: nothing while no confirmation is pending,
++ * otherwise one dialog per request (keyed by the Session). Confirming asks
++ * the Host to stop the listed work and move to trash; cancelling leaves the
++ * Session running and visible.
++ * @param props - the request hook, its settlement, the stop-and-trash hop, and the locale seat.
++ * @returns the open dialog, or null.
++ */
++export function SessionTrashConfirmDialog({
++  useTrashRequest, settleSessionTrash, stopAndTrashSession, t,
++}: SessionTrashConfirmProps) {
++  const request = useTrashRequest(pending => pending)
++  if (request === null) return null
++  return (
++    <TrashConfirmForm
++      key={request.sessionId}
++      request={request}
++      stopAndTrashSession={stopAndTrashSession}
++      onSettle={settleSessionTrash}
++      t={t}
++    />
++  )
++}
++
++/** One request's dialog: in-flight and error state die with it. */
++function TrashConfirmForm({ request, stopAndTrashSession, onSettle, t }: {
++  request: SessionTrashConfirmRequest
++  stopAndTrashSession: SessionTrashConfirmInjected['stopAndTrashSession']
++  onSettle: () => void
++  t: SessionTrashConfirmProps['t']
++}) {
++  const [trashing, setTrashing] = useState(false)
++  const [error, setError] = useState<string | null>(null)
++  const close = () => {
++    if (trashing) return
++    onSettle()
++  }
++  const confirm = () => {
++    setTrashing(true)
++    setError(null)
++    stopAndTrashSession(request.sessionId).then(() => {
++      setTrashing(false)
++      onSettle()
++    }).catch((reason: unknown) => {
++      setTrashing(false)
++      setError(reason instanceof Error ? reason.message : String(reason))
++    })
++  }
++  return (
++    <Modal
++      open
++      onClose={close}
++      closeLabel={t('close')}
++      title={t('trash.confirm.title')}
++      description={t('trash.confirm.desc', { title: request.displayTitle })}
++      footer={(
++        <>
++          <Button variant="outline" disabled={trashing} onClick={close}>{t('cancel')}</Button>
++          <Button
++            variant="outline"
++            className={browserCss.deleteAction}
++            disabled={trashing}
++            onClick={confirm}
++          >
++            {t('trash.confirm.action')}
++          </Button>
++        </>
++      )}
++    >
++      <ActivityList activity={request.activity} t={t} />
++      {trashing && <div className={browserCss.deleteStatus} role="status">{t('trash.confirm.pending')}</div>}
++      {error !== null && <div className={browserCss.renameError} role="alert">{error}</div>}
++    </Modal>
++  )
++}
++
++
+diff --git a/packages/client/ui-workspace/src/client/session-actions/activity-line.ts b/packages/client/ui-workspace/src/client/session-actions/activity-line.ts
+new file mode 100644
+index 000000000..e59df4009
+--- /dev/null
++++ b/packages/client/ui-workspace/src/client/session-actions/activity-line.ts
+@@ -0,0 +1,50 @@
++/**
++ * Shared active-work summary formatter and activity list for session confirmation dialogs.
++ * @module @deepseek-ai/dsh-client-ui-workspace/src/client/session-actions/activity-line
++ */
++
++import { createElement, type ReactNode } from 'react'
++import type { SessionActivity } from '@deepseek-ai/dsh-api-workspace-controller/client'
++import type { SessionArchiveConfirmProps } from '../contract/slots.ts'
++import browserCss from '../rows/WorkspaceBrowser.module.css'
++
++/**
++ * One family's line: its count and the items' labels (ids when a family
++ * carries no label). A family this dictionary does not know — a provider
++ * merged into the kind map — falls through to the generic line.
++ * @param entry - Session activity details reported by the host.
++ * @param t - Localized workspace dictionary function.
++ * @returns Human-readable activity line.
++ */
++export function activityLine(entry: SessionActivity, t: SessionArchiveConfirmProps['t']): string {
++  const items = entry.items ?? []
++  const n = items.length
++  const names = items.map(item => item.label ?? item.id).join(t('archive.confirm.listSeparator'))
++  const plural = n === 1 ? 'one' : 'other'
++  switch (entry.kind) {
++    case 'turn': return t('archive.confirm.turn')
++    case 'subagent': return t(`archive.confirm.subagents.${plural}`, { n, names })
++    case 'job': return t(`archive.confirm.jobs.${plural}`, { n, names })
++    case 'schedule': return t(`archive.confirm.schedules.${plural}`, { n, names })
++    default: return t(`archive.confirm.other.${plural}`, { kind: entry.kind, n })
++  }
++}
++
++/**
++ * Render the list of active tasks/jobs/subagents blocking a session archive or trash operation.
++ * @param props - Activity list items and localization helper.
++ * @returns An unstyled or styled list of activities.
++ */
++export function ActivityList({
++  activity,
++  t,
++}: {
++  activity: readonly SessionActivity[]
++  t: SessionArchiveConfirmProps['t']
++}): ReactNode {
++  return createElement(
++    'ul',
++    { className: browserCss.archiveActivity, 'aria-label': t('archive.confirm.activity') },
++    activity.map((entry, index) => createElement('li', { key: `${entry.kind}-${String(index)}` }, activityLine(entry, t))),
++  )
++}
+diff --git a/packages/client/ui-workspace/src/client/shortcuts.ts b/packages/client/ui-workspace/src/client/shortcuts.ts
+index 5fe67dd8c..70d4c49ba 100644
+--- a/packages/client/ui-workspace/src/client/shortcuts.ts
++++ b/packages/client/ui-workspace/src/client/shortcuts.ts
+@@ -1,6 +1,11 @@
+ /** Workspace command registration and browser-owned opening requests. */
+ import type { Context } from '@deepseek-ai/cordis'
+-import type { SessionForkError } from '@deepseek-ai/dsh-api-session-controller/client'
++import type { ISessions, SessionForkError, SessionSummary } from '@deepseek-ai/dsh-api-session-controller/client'
++import type {} from '@deepseek-ai/dsh-client-locale/client'
++import type {} from '@deepseek-ai/dsh-client-shortcuts/client'
++import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
++import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
++import type {} from '@deepseek-ai/dsh-client-ui-session/client'
+ import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
+ import type { ShortcutCommand, ShortcutCommandId } from '@deepseek-ai/dsh-client-shortcuts/client'
+ import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
+@@ -65,7 +70,8 @@ export function installWorkspaceShortcuts(
+   markSession: (sessionId: SessionId, unread: boolean) => void,
+ ): void {
+   const t = ctx.locale.bind('workspace')
+-  const current = () => Object.values(ctx.sessions.list.getSnapshot().byId)
++  const sessions = ctx.get('sessions') as ISessions
++  const current = (): SessionSummary | undefined => Object.values(sessions.list.getSnapshot().byId)
+     .find(row => (row.retainedBy.mainView ?? 0) > 0)
+   const addReason = () => ctx.slots.entries('sidebar.workspaces.directoryFlow').length === 0
+     ? t('shortcut.noPicker')
+diff --git a/packages/client/ui-workspace/src/client/toast/register.ts b/packages/client/ui-workspace/src/client/toast/register.ts
+index 3ba0eb141..3c40f4512 100644
+--- a/packages/client/ui-workspace/src/client/toast/register.ts
++++ b/packages/client/ui-workspace/src/client/toast/register.ts
+@@ -52,6 +52,12 @@ export function registerToasts(
+         display: (_notice, t) => ({ text: t('toast.unpinFailed'), tone: 'warning' }),
+       }),
+     }, ToastEntry<PropsRuntime<'workspace.toast', 'unpinFailed'>>)
++    yield ctx.slots.register({
++      name: 'workspace.toast', key: 'trashed', locale: 'workspace',
++      inject: (): ToastDisplayInjected<'trashed'> => ({
++        display: (_notice, t) => ({ text: t('toast.trashed'), tone: 'success' }),
++      }),
++    }, ToastEntry<PropsRuntime<'workspace.toast', 'trashed'>>)
+     yield ctx.slots.register({
+       name: 'workspace.toast', key: 'archivedNotOpenable', locale: 'workspace',
+       inject: (): ToastDisplayInjected<'archivedNotOpenable'> => ({
+diff --git a/packages/client/ui-workspace/tests/apply.client.spec.ts b/packages/client/ui-workspace/tests/apply.client.spec.ts
+index 15abc997d..e0743e19c 100644
+--- a/packages/client/ui-workspace/tests/apply.client.spec.ts
++++ b/packages/client/ui-workspace/tests/apply.client.spec.ts
+@@ -22,6 +22,7 @@ import {
+ } from '../src/client/contract/slots.ts'
+ import { WorkspaceBrowser } from '../src/client/rows/WorkspaceBrowser.tsx'
+ import { ArchiveSessionRowButton, SessionArchiveConfirmDialog } from '../src/client/session-actions/ArchiveSession.tsx'
++import { TrashSessionMenuItem, SessionTrashConfirmDialog } from '../src/client/session-actions/TrashSession.tsx'
+ import { PinSessionRowButton } from '../src/client/session-actions/PinSession.tsx'
+ import { SessionRenameDialog } from '../src/client/session-actions/RenameSession.tsx'
+ import { RowActionToast } from '../src/client/session-actions/RowActionToast.tsx'
+@@ -311,9 +312,9 @@ describe('ui-workspace apply', () => {
+     await Promise.resolve()
+     expect(after.slots.entries('conversation.hero.workspace')[0]!.component).toBe(WorkspacePicker)
+     // The row actions follow the browser's own declaration, whenever it lands.
+-    expect(after.slots.entries(MENU_ITEM)).toHaveLength(0)
++    expect(after.slots.entries(MENU_ITEM)).toHaveLength(1)
+     expect(after.slots.entries(ROW_ACTION)).toHaveLength(2)
+-    expect(after.slots.entries('shell.overlay')).toHaveLength(3)
++    expect(after.slots.entries('shell.overlay')).toHaveLength(4)
+   })
+ 
+   it('declares the two Session row lists and registers the shipped actions and overlay surfaces into them', async () => {
+@@ -331,7 +332,11 @@ describe('ui-workspace apply', () => {
+ 
+     const rows = (key: RowListName) => b.slots.entries(key)
+       .map(registration => [registration.options.id, registration.options.order, registration.component, registration.locale])
+-    expect(rows(MENU_ITEM)).toEqual([])
++    // The built-in menu actions moved to contextMenus; the trash row stays a
++    // legacy slot entry, rendered by SessionMenu inside the same menu.
++    expect(rows(MENU_ITEM)).toEqual([
++      ['trash', 500, TrashSessionMenuItem, 'workspace'],
++    ])
+     expect(rows(ROW_ACTION)).toEqual([
+       ['archive', 100, ArchiveSessionRowButton, 'workspace'],
+       ['pin', 200, PinSessionRowButton, 'workspace'],
+@@ -339,6 +344,7 @@ describe('ui-workspace apply', () => {
+     expect(rows('shell.overlay')).toEqual([
+       ['workspace.session-rename', undefined, SessionRenameDialog, 'workspace'],
+       ['workspace.session-archive', undefined, SessionArchiveConfirmDialog, 'workspace'],
++      ['workspace.session-trash', undefined, SessionTrashConfirmDialog, 'workspace'],
+       ['workspace.row-toast', undefined, RowActionToast, undefined],
+     ])
+     // Only archive notice entries share the browser's viewing store.
+@@ -349,7 +355,7 @@ describe('ui-workspace apply', () => {
+     expect(rowToastEntry.store).toBeUndefined()
+     expect(b.slots.entries('workspace.toast').map(row => row.options.key)).toEqual([
+       'readingFailed',
+-      'sessionIdCopied', 'sessionIdCopyFailed', 'pinFailed', 'unpinFailed', 'archivedNotOpenable',
++      'sessionIdCopied', 'sessionIdCopyFailed', 'pinFailed', 'unpinFailed', 'trashed', 'archivedNotOpenable',
+       'defaultWorkspaceFailed', 'shortcutForkFailed', 'createFailed', 'forkRequiresOpen', 'archived', 'stoppedAndArchived',
+     ])
+     for (const registration of b.slots.entries('workspace.toast')) {
+@@ -970,9 +976,9 @@ describe('ui-workspace apply', () => {
+     declare(b.slots, 'sidebar.workspaces', 'conversation.hero.workspace', 'conversation.empty.workspace', 'shell.overlay')
+     const fiber = b.ctx.plugin({ inject: [...inject], apply })
+     await fiber.await()
+-    expect(b.slots.entries(MENU_ITEM)).toHaveLength(0)
++    expect(b.slots.entries(MENU_ITEM)).toHaveLength(1)
+     expect(b.slots.entries(ROW_ACTION)).toHaveLength(2)
+-    expect(b.slots.entries('shell.overlay')).toHaveLength(3)
++    expect(b.slots.entries('shell.overlay')).toHaveLength(4)
+     await fiber.dispose()
+     expect(b.slots.entries('sidebar.workspaces')).toHaveLength(0)
+     expect(b.slots.entries('conversation.hero.workspace')).toHaveLength(0)
+diff --git a/packages/client/ui-workspace/tests/rename-assembly.client.spec.tsx b/packages/client/ui-workspace/tests/rename-assembly.client.spec.tsx
+index fedc10754..af897a7b0 100644
+--- a/packages/client/ui-workspace/tests/rename-assembly.client.spec.tsx
++++ b/packages/client/ui-workspace/tests/rename-assembly.client.spec.tsx
+@@ -104,7 +104,7 @@ describe('session rename through the assembled browser', () => {
+         ({ sessionId, displayTitle, useMenuOpenState }: PropsRuntime<'sidebar.workspaces.session.menu.item'>) => {
+           const [, setMenuOpen] = useMenuOpenState()
+           return (
+-            <MenuItemButton separatorBefore={order === 500} onSelect={() => {
++            <MenuItemButton separatorBefore={order === 600} onSelect={() => {
+               setMenuOpen(false)
+               selected(id, sessionId, displayTitle)
+             }}>
+@@ -114,6 +114,11 @@ describe('session rename through the assembled browser', () => {
+         },
+       )
+     }
++    // The built-in actions (pin/rename/fork/id) come from contextMenus; the
++    // trash row and plugin rows share the legacy slot list. At equal `order`
++    // the lower shadowing priority (the dynamic browser packages' -1) sorts
++    // first, so the plugin row lands between 复制 Session ID and the trash
++    // row; the first plugin row opens the plugin group with a hairline.
+     registerAction('export', 500, -1, 'Export action')
+     registerAction('last', 700, -2, 'Last action')
+     const view = runtime.renderRoot()
+@@ -123,11 +128,12 @@ describe('session rename through the assembled browser', () => {
+     fireEvent.click(trigger)
+     await view.findByRole('menuitem', { name: '置顶会话' })
+     expect(view.getAllByRole('menuitem').map(item => item.textContent)).toEqual([
+-      '置顶会话', '重命名', '标为未读', '分叉会话', '复制 Session ID', 'Export action', 'Last action', '归档会话',
++      '置顶会话', '重命名', '标为未读', '分叉会话', '复制 Session ID', 'Export action', '移入回收站', 'Last action', '归档会话',
+     ])
+     expect(view.getAllByRole('separator')).toHaveLength(3)
+     const last = view.getByRole('menuitem', { name: 'Last action' })
+     const exportRow = view.getByRole('menuitem', { name: 'Export action' })
++    const trashRow = view.getByRole('menuitem', { name: '移入回收站' })
+     trigger.focus()
+     fireEvent.keyDown(trigger, { key: 'End' })
+     const archive = view.getByRole('menuitem', { name: '归档会话' })
+@@ -135,6 +141,8 @@ describe('session rename through the assembled browser', () => {
+     fireEvent.keyDown(archive, { key: 'ArrowUp' })
+     expect(document.activeElement).toBe(last)
+     fireEvent.keyDown(document.activeElement!, { key: 'ArrowUp' })
++    expect(document.activeElement).toBe(trashRow)
++    fireEvent.keyDown(document.activeElement!, { key: 'ArrowUp' })
+     expect(document.activeElement).toBe(exportRow)
+     fireEvent.click(exportRow)
+     expect(selected).toHaveBeenCalledWith('export', SID, 'Persisted title')
+diff --git a/packages/client/ui-workspace/tests/rows.client.spec.tsx b/packages/client/ui-workspace/tests/rows.client.spec.tsx
+index ad2e5f248..ccf9d2938 100644
+--- a/packages/client/ui-workspace/tests/rows.client.spec.tsx
++++ b/packages/client/ui-workspace/tests/rows.client.spec.tsx
+@@ -1007,6 +1007,61 @@ describe('workspace browser rows', () => {
+     expect(renderFactorySlot).not.toHaveBeenCalled()
+   })
+ 
++  it('Delete key triggers onTrash when focused on session row, but preserves deletion inside input elements', () => {
++    const onTrash = vi.fn()
++    const node: SessionNode = {
++      id: sid('s-trash'), title: 'Trash Candidate', blank: false, running: false,
++      runningSubagentCount: 0, completed: false, failed: false, updatedAt: 0, pinned: false, archived: false,
++    }
++    render(<SessionNodeItem node={node} currentId={undefined} now={0} onOpen={vi.fn()} onTrash={onTrash} t={t} />)
++    const row = screen.getByRole('treeitem')
++
++    // 1. When focus is inside an input, Delete must NOT trigger onTrash
++    const input = document.createElement('input')
++    row.appendChild(input)
++    input.focus()
++    const inputDeleteEvent = createEvent.keyDown(input, { key: 'Delete' })
++    fireEvent(input, inputDeleteEvent)
++    expect(inputDeleteEvent.defaultPrevented).toBe(false)
++    expect(onTrash).not.toHaveBeenCalled()
++    row.removeChild(input)
++
++    // 2. When focus is inside a textarea, Delete must NOT trigger onTrash
++    const textarea = document.createElement('textarea')
++    row.appendChild(textarea)
++    textarea.focus()
++    const textareaDeleteEvent = createEvent.keyDown(textarea, { key: 'Delete' })
++    fireEvent(textarea, textareaDeleteEvent)
++    expect(textareaDeleteEvent.defaultPrevented).toBe(false)
++    expect(onTrash).not.toHaveBeenCalled()
++    row.removeChild(textarea)
++
++    // 3. When focus is inside a contenteditable element, Delete must NOT trigger onTrash
++    const editable = document.createElement('div')
++    editable.contentEditable = 'true'
++    row.appendChild(editable)
++    editable.focus()
++    const editableDeleteEvent = createEvent.keyDown(editable, { key: 'Delete' })
++    fireEvent(editable, editableDeleteEvent)
++    expect(editableDeleteEvent.defaultPrevented).toBe(false)
++    expect(onTrash).not.toHaveBeenCalled()
++    row.removeChild(editable)
++
++    // 4. When focused on the session row itself, Delete triggers onTrash
++    row.focus()
++    const rowDeleteEvent = createEvent.keyDown(row, { key: 'Delete' })
++    fireEvent(row, rowDeleteEvent)
++    expect(rowDeleteEvent.defaultPrevented).toBe(true)
++    expect(onTrash).toHaveBeenCalledWith(node.id)
++
++    // 5. Cmd+Backspace on macOS also triggers onTrash
++    onTrash.mockClear()
++    const macDeleteEvent = createEvent.keyDown(row, { key: 'Backspace', metaKey: true })
++    fireEvent(row, macDeleteEvent)
++    expect(macDeleteEvent.defaultPrevented).toBe(true)
++    expect(onTrash).toHaveBeenCalledWith(node.id)
++  })
++
+   it('renders the row action list inside the actions area after the menu trigger', () => {
+     const onOpen = vi.fn()
+     const onQuick = vi.fn()
+diff --git a/packages/client/ui-workspace/tests/session-actions.client.spec.tsx b/packages/client/ui-workspace/tests/session-actions.client.spec.tsx
+index 6cf2f7645..a93a34fbc 100644
+--- a/packages/client/ui-workspace/tests/session-actions.client.spec.tsx
++++ b/packages/client/ui-workspace/tests/session-actions.client.spec.tsx
+@@ -24,12 +24,13 @@ import type { ArchiveToastEntryProps } from '../src/client/contract/toast.ts'
+ import { en as commonEn } from '@deepseek-ai/dsh-client-locale/src/locales/en.ts'
+ import { zh as commonZh } from '@deepseek-ai/dsh-client-locale/src/locales/zh.ts'
+ import type {
+-  RowToast, RowToastState, SessionArchiveConfirmInjected, SessionArchiveConfirmRequest,
+-  SessionRenameDialogInjected, SessionRenameTarget,
++  MenuOpenState, RowToast, RowToastState, SessionArchiveConfirmInjected, SessionArchiveConfirmRequest,
++  SessionRenameDialogInjected, SessionRenameTarget, SessionTrashConfirmRequest,
+ } from '../src/client/contract/slots.ts'
+ import {
+   ArchiveSessionRowButton, SessionArchiveConfirmDialog,
+ } from '../src/client/session-actions/ArchiveSession.tsx'
++import { TrashSessionMenuItem, SessionTrashConfirmDialog } from '../src/client/session-actions/TrashSession.tsx'
+ import { PinSessionRowButton } from '../src/client/session-actions/PinSession.tsx'
+ import { SessionRenameDialog } from '../src/client/session-actions/RenameSession.tsx'
+ import { RowActionToast } from '../src/client/session-actions/RowActionToast.tsx'
+@@ -86,10 +87,16 @@ const standard: GlobalStandardProps = {
+ 
+ type ActionRowProps = PropsRuntime<'sidebar.workspaces.session.row.action'> & PropsLocale<'workspace'>
+ type OverlayProps = PropsRuntime<'shell.overlay'> & PropsLocale<'workspace'>
++type MenuRowProps = PropsRuntime<'sidebar.workspaces.session.menu.item'> & PropsLocale<'workspace'>
+ 
+ /** Owner share, standard seat, and locale seat of one hover button. */
+ const actionRow: ActionRowProps = { ...ROW, t, ...standard }
+ 
++/** Owner share, standard seat, locale seat, and the bound open-state hook of one menu row. */
++function menuRow(menu: MenuOpenState): MenuRowProps {
++  return { ...ROW, useMenuOpenState: () => menu, useShortcuts: hook([]), t, ...standard }
++}
++
+ /** Standard and locale seats of a `shell.overlay` entry (no owner share). */
+ const overlay: OverlayProps = { t, ...standard }
+ 
+@@ -709,4 +716,116 @@ describe('RowActionToast', () => {
+       vi.useRealTimers()
+     }
+   })
++
++  it('shows the trashed success notice in zh and en', async () => {
++    const zhSurface = await toastSurface()
++    zhSurface.notify({ kind: 'trashed', sessionId: sid('one') })
++    expect(screen.getByRole('alert').textContent).toBe('会话已移入系统回收站')
++    zhSurface.dismissToast()
++
++    const enSurface = await toastSurface({ archivedFilter: 'default' }, tEn)
++    enSurface.notify({ kind: 'trashed', sessionId: sid('one') })
++    expect(screen.getByRole('alert').textContent).toBe('Session moved to Recycle Bin')
++  })
++})
++describe('TrashSessionMenuItem', () => {
++  it('renders Danger style Move to Trash item with trash icon and calls trashSession', () => {
++    const setMenuOpen = vi.fn()
++    const trashSession = vi.fn()
++    const { rerender } = render(
++      <TrashSessionMenuItem
++        {...menuRow([true, setMenuOpen])}
++        trashSession={trashSession}
++      />,
++    )
++    const item = screen.getByRole('menuitem', { name: '移入回收站' })
++    expect(item).toBeTruthy()
++    expect(item.className).toContain('danger')
++    fireEvent.click(item)
++    expect(setMenuOpen).toHaveBeenCalledWith(false)
++    expect(trashSession).toHaveBeenCalledWith(ROW.sessionId)
++
++    // English locale
++    rerender(
++      <TrashSessionMenuItem
++        {...menuRow([true, setMenuOpen])}
++        t={tEn}
++        trashSession={trashSession}
++      />,
++    )
++    expect(screen.getByRole('menuitem', { name: 'Move to Trash' })).toBeTruthy()
++  })
++})
++
++describe('SessionTrashConfirmDialog', () => {
++  it('renders nothing when there is no pending request', () => {
++    render(
++      <SessionTrashConfirmDialog
++        {...standard}
++        t={t}
++        useTrashRequest={hook(null)}
++        settleSessionTrash={vi.fn()}
++        stopAndTrashSession={vi.fn(async () => {})}
++      />,
++    )
++    expect(screen.queryByRole('dialog')).toBeNull()
++  })
++
++  it('renders running activity and settles on cancel', () => {
++    const settle = vi.fn()
++    const stopAndTrash = vi.fn(async () => {})
++    const request: SessionTrashConfirmRequest = {
++      sessionId: ROW.sessionId,
++      displayTitle: 'Active Session',
++      activity: [
++        { kind: 'turn', items: [{ id: 'turn-1' }] },
++        { kind: 'job', items: [{ id: 'job-1', label: 'compile' }] },
++      ],
++    }
++    render(
++      <SessionTrashConfirmDialog
++        {...standard}
++        t={t}
++        useTrashRequest={hook(request)}
++        settleSessionTrash={settle}
++        stopAndTrashSession={stopAndTrash}
++      />,
++    )
++    expect(screen.getByRole('heading', { name: '会话正在运行中，确认移入回收站？' })).toBeTruthy()
++    expect(screen.getByText('移入回收站将同时中止“Active Session”中正在执行的后台活动。')).toBeTruthy()
++    expect(screen.getByText('进行中的回合')).toBeTruthy()
++    expect(screen.getByText('1 个后台任务：compile')).toBeTruthy()
++    fireEvent.click(screen.getByRole('button', { name: '取消' }))
++    expect(settle).toHaveBeenCalledOnce()
++    expect(stopAndTrash).not.toHaveBeenCalled()
++  })
++
++  it('confirms stop and trash, and shows errors on failure', async () => {
++    let rejectPromise!: (err: Error) => void
++    const stopAndTrash = vi.fn(() => new Promise<void>((_, reject) => { rejectPromise = reject }))
++    const settle = vi.fn()
++    const request: SessionTrashConfirmRequest = {
++      sessionId: ROW.sessionId,
++      displayTitle: 'Failing Session',
++      activity: [{ kind: 'turn', items: [{ id: 'turn-1' }] }],
++    }
++    render(
++      <SessionTrashConfirmDialog
++        {...standard}
++        t={t}
++        useTrashRequest={hook(request)}
++        settleSessionTrash={settle}
++        stopAndTrashSession={stopAndTrash}
++      />,
++    )
++    fireEvent.click(screen.getByRole('button', { name: '终止并移入回收站' }))
++    expect(stopAndTrash).toHaveBeenCalledWith(ROW.sessionId)
++    expect(screen.getByText('正在终止并移入回收站…')).toBeTruthy()
++
++    act(() => { rejectPromise(new Error('Stop failed')) })
++    await waitFor(() => {
++      expect(screen.getByRole('alert').textContent).toBe('Stop failed')
++    })
++    expect(settle).not.toHaveBeenCalled()
++  })
+ })
+diff --git a/packages/client/ui-workspace/tests/workspace-browser.client.spec.tsx b/packages/client/ui-workspace/tests/workspace-browser.client.spec.tsx
+index 8330aae4b..c17d3b194 100644
+--- a/packages/client/ui-workspace/tests/workspace-browser.client.spec.tsx
++++ b/packages/client/ui-workspace/tests/workspace-browser.client.spec.tsx
+@@ -149,6 +149,7 @@ function mount(overrides: Partial<WorkspaceBrowserProps> = {}) {
+     unarchiveSession: vi.fn(async () => {}),
+     insertWorkspaceBefore: vi.fn(async () => {}),
+     createWorkspace: vi.fn(async () => workspace('created', [])),
++    trashSession: vi.fn(),
+     useDirectoryFlow: bindSnapshotSelector({ getSnapshot: () => true, subscribe: () => () => {} }),
+     useHostInfo: selector => selector({ home: undefined, isLoopback: true }),
+     renderSlot: renderDirectoryFlowOnly,
+diff --git a/packages/client/ui-workspace/tests/workspaces-service.client.spec.ts b/packages/client/ui-workspace/tests/workspaces-service.client.spec.ts
+index 569625778..06991e294 100644
+--- a/packages/client/ui-workspace/tests/workspaces-service.client.spec.ts
++++ b/packages/client/ui-workspace/tests/workspaces-service.client.spec.ts
+@@ -163,7 +163,8 @@ class FakeSessions implements ISessions {
+   declare readonly using: ISessions['using']
+   declare readonly retainInfo: ISessions['retainInfo']
+   declare readonly searchResultLimit: ISessions['searchResultLimit']
+-  declare readonly refresh: ISessions['refresh']
++  readonly removeSession = vi.fn<NonNullable<ISessions['removeSession']>>()
++  readonly refresh = vi.fn<ISessions['refresh']>(() => Promise.resolve())
+   declare readonly search: ISessions['search']
+   declare readonly scope: ISessions['scope']
+   declare readonly scopeOf: ISessions['scopeOf']
+@@ -181,6 +182,7 @@ class FakeWorkspaces implements IWorkspaces {
+   readonly list: MutableSource<WorkspaceSnapshot>
+   readonly archiveCalls: SessionId[] = []
+   readonly unarchiveCalls: SessionId[] = []
++  readonly trashCalls: { sessionId: SessionId; options?: { readonly stopActivity?: boolean } | undefined }[] = []
+   onArchive: IWorkspaces['archiveSession'] = async (sessionId) => {
+     this.list.update(state => ({
+       ...state,
+@@ -235,6 +237,14 @@ class FakeWorkspaces implements IWorkspaces {
+       pinnedSessionIds: state.pinnedSessionIds.filter(id => id !== sessionId),
+     }))
+   }
++
++  async trashSession(sessionId: SessionId, options?: { readonly stopActivity?: boolean }): Promise<void> {
++    this.trashCalls.push({ sessionId, options })
++  }
++
++  async deleteSession(sessionId: SessionId, options?: { readonly stopActivity?: boolean }): Promise<void> {
++    await this.trashSession(sessionId, options)
++  }
+ }
+ 
+ const listing: DirectoryListing = {
+@@ -1514,6 +1524,19 @@ describe('UiWorkspaceService', () => {
+     expect(b.selectPanel).toHaveBeenCalledTimes(2)
+   })
+ 
++  it('clears main view when active session is moved to trash', async () => {
++    const b = bench()
++    b.uiWorkspace.openSession(sid('current'))
++
++    await b.uiWorkspace.trashSession(sid('current'))
++
++    expect(b.sessions.retained[0]!.release).toHaveBeenCalledOnce()
++    expect(b.selectPanel).toHaveBeenCalledTimes(2)
++    expect(b.workspaces.trashCalls).toEqual([{ sessionId: sid('current'), options: {} }])
++    expect(b.sessions.removeSession).toHaveBeenCalledWith(sid('current'))
++    expect(b.sessions.refresh).toHaveBeenCalledOnce()
++  })
++
+   it('forwards archive commands and preserves failures', async () => {
+     const idle = sid('idle')
+     const b = bench()
+diff --git a/packages/experimental/liveshare/src/endpoint-classification.ts b/packages/experimental/liveshare/src/endpoint-classification.ts
+index c486387b2..f95ddaaf0 100644
+--- a/packages/experimental/liveshare/src/endpoint-classification.ts
++++ b/packages/experimental/liveshare/src/endpoint-classification.ts
+@@ -130,11 +130,13 @@ export const VIEWER_ENDPOINT_CLASSES = {
+   'workspace/archiveSession': 'owner-only', // owner archives a Session
+   'workspace/create': 'owner-only', // owner creates a Workspace
+   'workspace/delete': 'owner-only', // owner deletes a Workspace
++  'workspace/deleteSession': 'owner-only', // owner deletes a Session
+   'workspace/initializeDefault': 'owner-only', // owner initializes the default Workspace
+   'workspace/insertBefore': 'owner-only', // owner reorders Workspaces
+   'workspace/insertSessionBefore': 'owner-only', // owner reorders Sessions
+   'workspace/pinSession': 'owner-only', // owner pins a Session
+   'workspace/rename': 'owner-only', // owner renames a Workspace
++  'workspace/trashSession': 'owner-only', // owner trashes a Session
+   'workspace/unarchiveSession': 'owner-only', // owner unarchives a Session
+   'workspace/unpinSession': 'owner-only', // owner unpins a Session
+   'workspaceFiles/changes': 'owner-only', // owner Workspace file access
+diff --git a/packages/llm/llm-pi-ai/tests/adapter.spec.ts b/packages/llm/llm-pi-ai/tests/adapter.spec.ts
+index 6d342f267..ee7443756 100644
+--- a/packages/llm/llm-pi-ai/tests/adapter.spec.ts
++++ b/packages/llm/llm-pi-ai/tests/adapter.spec.ts
+@@ -164,6 +164,41 @@ describe('PiAiAdapter provider routing', () => {
+     expect(server.headers[0]?.['user-agent']).toBe(userAgent())
+   })
+ 
++  it('stamps the session identity on OpenCode routes only', async () => {
++    const openCode = await mockServer([{ events: textEvents }])
++    const other = await mockServer([{ events: textEvents }])
++    const ctx = new Context()
++    await ctx.plugin(LlmRuntime)
++    ctx.llm.registerAdapter(['opencode-go', 'deepseek'], new PiAiAdapter({
++      profiles: () => resolveProfiles({
++        'opencode-go': { apiKeyEnv: 'PI_TEST_KEY', baseURL: openCode.url },
++        deepseek: { apiKeyEnv: 'PI_TEST_KEY', baseURL: other.url },
++      }),
++      resolveApiKey: () => Promise.resolve('test-key'),
++      auth: memoryAuth(),
++    }))
++
++    await assemble(ctx, {
++      provider: 'opencode-go',
++      model: 'glm-5.3',
++      messages: [],
++      sessionId: 'session-open' as never,
++    })
++    await assemble(ctx, {
++      provider: 'deepseek',
++      model: 'deepseek-v4-flash',
++      messages: [],
++      sessionId: 'session-other' as never,
++    })
++
++    // OpenCode's gateway rejects a request that carries no conversation identity.
++    expect(openCode.headers[0]?.['x-opencode-session']).toBe('session-open')
++    expect(openCode.headers[0]?.['x-deepseek-harness-session-id']).toBe('session-open')
++    // Other routes keep their wire shape: the stamp is OpenCode's contract.
++    expect(other.headers[0]?.['x-opencode-session']).toBeUndefined()
++    expect(other.headers[0]?.['x-deepseek-harness-session-id']).toBeUndefined()
++  })
++
+   it('forwards common stream options and profile reasoning', async () => {
+     const server = await mockServer([{ events: textEvents }])
+     const ctx = await harness(server.url, {
+diff --git a/packages/session/session-log-deepseek/README.i18n.yaml b/packages/session/session-log-deepseek/README.i18n.yaml
+index 3fec12ee5..a1eee2836 100644
+--- a/packages/session/session-log-deepseek/README.i18n.yaml
++++ b/packages/session/session-log-deepseek/README.i18n.yaml
+@@ -15,8 +15,8 @@
+   en: eb945093933ee19b
+   zh: 7a40fe2e98a491c5
+ /deepseek-ai-dsh-session-log-deepseek/configuration:
+-  en: 1b899e63d8039643
+-  zh: d489461bbb618b5d
++  en: 28759e72a70dec6d
++  zh: fbe6d2938475362a
+ /deepseek-ai-dsh-session-log-deepseek/request-field:
+   en: f11095717a9aec6f
+   zh: fb872499eea955be
+diff --git a/packages/session/session-log-deepseek/README.md b/packages/session/session-log-deepseek/README.md
+index f686732ba..4dcc401e3 100644
+--- a/packages/session/session-log-deepseek/README.md
++++ b/packages/session/session-log-deepseek/README.md
+@@ -29,6 +29,7 @@ Incremental canonical session-log upload for official DeepSeek LLM API requests.
+ | Key | Default | Meaning |
+ |---|---:|---|
+ | `enabled` | `true` | Send the `dsh_session_log` contribution. Changes apply to the next request; `false` stops Session-log upload. |
++| `allModelsEnabled` | `false` | Session-log upload preference when using any model. |
+ | `maxBytes` | 8 MiB | Largest serialized `dsh_session_log` field, in UTF-8 bytes, that one request carries. |
+ 
+ Shipped profiles mount the plugin, so the default configuration registers the request field and appends the acceptance watermark; `enabled: false` stops the contribution. The Web switch can override bundle defaults through the active profile; home patches and command-line overlays retain precedence and reject conflicting form writes.
+diff --git a/packages/session/session-log-deepseek/README.zh.md b/packages/session/session-log-deepseek/README.zh.md
+index a87e6b5df..28034beb4 100644
+--- a/packages/session/session-log-deepseek/README.zh.md
++++ b/packages/session/session-log-deepseek/README.zh.md
+@@ -29,6 +29,7 @@ kind: "package-reference"
+ | 配置键 | 默认值 | 含义 |
+ |---|---:|---|
+ | `enabled` | `true` | 发送 `dsh_session_log` 贡献。修改从下一次请求生效；设为 `false` 可停止会话日志上传。 |
++| `allModelsEnabled` | `false` | 在使用任何模型时上传会话日志偏好。 |
+ | `maxBytes` | 8 MiB | 单次请求携带的 `dsh_session_log` 字段序列化后的最大 UTF-8 字节数。 |
+ 
+ 随附 profile 会挂载该插件，因此默认配置会注册请求字段并追加接受水位；`enabled: false` 会停止贡献。Web 开关可通过当前 profile 覆盖组合包默认值；home patch 和命令行 overlay 保持更高优先级，会拒绝与其冲突的表单写入。
+diff --git a/packages/session/session-log-deepseek/src/index.ts b/packages/session/session-log-deepseek/src/index.ts
+index 20d5dcf13..4540f6aa0 100644
+--- a/packages/session/session-log-deepseek/src/index.ts
++++ b/packages/session/session-log-deepseek/src/index.ts
+@@ -47,6 +47,8 @@ export const inject = ['deepseekLlmApiExtensions', 'sessions']
+ export interface Config {
+   /** Contribute `dsh_session_log` to official DeepSeek requests. Defaults to `true`. */
+   enabled: Volatile<boolean>
++  /** Whether session-log upload preference is enabled across all models. Defaults to `false`. */
++  allModelsEnabled: Volatile<boolean>
+   /**
+    * Largest serialized `dsh_session_log` field, in UTF-8 bytes, that one request carries.
+    * A request uploads the longest pending event prefix that fits; later requests continue
+@@ -58,6 +60,7 @@ export interface Config {
+ /** Validated Session-log request contribution configuration. */
+ export const Config = z.object({
+   enabled: z.boolean().default(true).volatile(),
++  allModelsEnabled: z.boolean().default(false).volatile(),
+   maxBytes: z.number().step(1).min(1).default(8 * 1024 * 1024),
+ })
+ 
+diff --git a/packages/session/session-log-deepseek/tests/config.spec.ts b/packages/session/session-log-deepseek/tests/config.spec.ts
+index a6b7a5cbc..cfc3f5353 100644
+--- a/packages/session/session-log-deepseek/tests/config.spec.ts
++++ b/packages/session/session-log-deepseek/tests/config.spec.ts
+@@ -23,6 +23,9 @@ describe('session-log upload configuration', () => {
+       expect(Config({}).enabled.get()).toBe(enabled)
+       expect(Config({ enabled: true }).enabled.get()).toBe(true)
+       expect(Config({ enabled: false }).enabled.get()).toBe(false)
++      expect(Config({}).allModelsEnabled.get()).toBe(false)
++      expect(Config({ allModelsEnabled: true }).allModelsEnabled.get()).toBe(true)
++      expect(Config({ allModelsEnabled: false }).allModelsEnabled.get()).toBe(false)
+     } finally {
+       vi.unstubAllEnvs()
+       vi.resetModules()
+diff --git a/packages/test-support/client-runtime/src/workspaces.ts b/packages/test-support/client-runtime/src/workspaces.ts
+index 67f182cf6..bc773d9b0 100644
+--- a/packages/test-support/client-runtime/src/workspaces.ts
++++ b/packages/test-support/client-runtime/src/workspaces.ts
+@@ -171,6 +171,44 @@ export class TestWorkspaces implements IWorkspaces {
+     })
+   }
+ 
++  /**
++   * Move a session to trash (recorded). The default removes the id from
++   * archive and pin sets and any workspace session list.
++   * @param sessionId - session to trash.
++   * @param options - running-activity options.
++   */
++  async trashSession(sessionId: SessionId, options?: { readonly stopActivity?: boolean }): Promise<void> {
++    this.calls.push({ method: 'trashSession', args: [sessionId, options] })
++    const stub = this.stubs.get('trashSession')
++    if (stub !== undefined) {
++      await (stub(sessionId, options) as Promise<void>)
++      return
++    }
++    await this.update((draft) => {
++      draft.archivedSessionIds = draft.archivedSessionIds.filter(id => id !== sessionId)
++      draft.pinnedSessionIds = draft.pinnedSessionIds.filter(id => id !== sessionId)
++      draft.items = draft.items.map(ws => ({
++        ...ws,
++        sessionIds: ws.sessionIds.filter(id => id !== sessionId),
++      }))
++    })
++  }
++
++  /**
++   * Delete a session durably (recorded).
++   * @param sessionId - session to delete.
++   * @param options - running-activity options.
++   */
++  async deleteSession(sessionId: SessionId, options?: { readonly stopActivity?: boolean }): Promise<void> {
++    this.calls.push({ method: 'deleteSession', args: [sessionId, options] })
++    const stub = this.stubs.get('deleteSession')
++    if (stub !== undefined) {
++      await (stub(sessionId, options) as Promise<void>)
++      return
++    }
++    await this.trashSession(sessionId, options)
++  }
++
+   /**
+    * Pin a session (recorded). The default mirrors the production face's
+    * observable effect: the id leads the list state's pin set.
+diff --git a/packages/workspace/workspace/src/entity.ts b/packages/workspace/workspace/src/entity.ts
+index 0d687e8c9..360e99de7 100644
+--- a/packages/workspace/workspace/src/entity.ts
++++ b/packages/workspace/workspace/src/entity.ts
+@@ -12,7 +12,7 @@ import { stat } from 'node:fs/promises'
+ import type { SessionHeader, SessionId } from '@deepseek-ai/dsh-session'
+ import type { KvTable } from '@deepseek-ai/dsh-storage-domain'
+ import type { WorkspaceRecord } from './spec.ts'
+-import type { Workspace, WorkspaceId } from './types.ts'
++import type { TrashSessionOptions, Workspace, WorkspaceId } from './types.ts'
+ import { realpathNormalize } from './paths.ts'
+ 
+ /** An insertSessionBefore request named a session or anchor not on the account (storage failures stay plain errors). */
+@@ -61,6 +61,13 @@ export interface WorkspaceEntityHost {
+    * @param path - Canonical existing directory from the immutable header cwd.
+    */
+   rememberSessionPath(id: SessionId, path: string): void
++
++  /**
++   * Move one session to OS trash or delete it durably.
++   * @param id - The session to trash.
++   * @param options - Whether running work is stopped instead of refusing.
++   */
++  trashSession?(id: SessionId, options?: TrashSessionOptions): Promise<void>
+ }
+ 
+ /** Chain-slot abort sentinel thrown by the update fn when the record needs no change; only `mutate` observes it. */
+@@ -178,6 +185,18 @@ export class WorkspaceEntity implements Workspace {
+       : record)
+   }
+ 
++  async trashSession(sessionId: SessionId, options?: TrashSessionOptions): Promise<void> {
++    if (this.host.trashSession) {
++      await this.host.trashSession(sessionId, options)
++    } else {
++      await this.detachSession(sessionId)
++    }
++  }
++
++  async deleteSession(sessionId: SessionId, options?: TrashSessionOptions): Promise<void> {
++    await this.trashSession(sessionId, options)
++  }
++
+   async status(): Promise<'ok' | 'missing-dir'> {
+     try {
+       return (await stat(this.record.path)).isDirectory() ? 'ok' : 'missing-dir'
+diff --git a/packages/workspace/workspace/src/index.ts b/packages/workspace/workspace/src/index.ts
+index 1210cae33..1f7482f0b 100644
+--- a/packages/workspace/workspace/src/index.ts
++++ b/packages/workspace/workspace/src/index.ts
+@@ -8,6 +8,7 @@
+ import { randomUUID } from 'node:crypto'
+ import { brandString } from '@deepseek-ai/dsh-brand'
+ import { mkdir, stat } from 'node:fs/promises'
++import { dirname } from 'node:path'
+ import { Context, Service } from '@deepseek-ai/cordis'
+ import type { SessionHeader, SessionId } from '@deepseek-ai/dsh-session'
+ import type {} from '@deepseek-ai/dsh-session-persistence'
+@@ -17,16 +18,18 @@ import type { WorkspaceEntityHost } from './entity.ts'
+ 
+ export { WorkspaceMoveInvalidError } from './entity.ts'
+ import { defaultWorkspaceTitle, fullyQualifiedWorkspacePath, realpathNormalize } from './paths.ts'
++import { resolveSessionDir, safelyTrashOrRemove } from './session-trash.ts'
+ import { workspaceDomainSpec } from './spec.ts'
+ import type { WorkspaceDomainState, WorkspaceRecord } from './spec.ts'
+-import type { SessionActivity, Workspace, WorkspaceId as WorkspaceIdBrand } from './types.ts'
++import type { SessionActivity, TrashSessionOptions, Workspace, WorkspaceId as WorkspaceIdBrand } from './types.ts'
+ 
+ export type {
+-  SessionActivity, SessionActivityItem, SessionActivityKind, SessionActivityKindMap, Workspace,
++  SessionActivity, SessionActivityItem, SessionActivityKind, SessionActivityKindMap, TrashSessionOptions, Workspace,
+ } from './types.ts'
+ export { workspaceDomainState, workspaceRecord, workspaceDomainSpec } from './spec.ts'
+ export type { WorkspaceDomainState, WorkspaceRecord } from './spec.ts'
+ export { realpathNormalize } from './paths.ts'
++export { encodeSegment, projectKey, resolveSessionDir, safelyTrashOrRemove } from './session-trash.ts'
+ 
+ /** Identifies one workspace record (see `src/types.ts` for the brand rationale). */
+ export type WorkspaceId = WorkspaceIdBrand
+@@ -41,7 +44,7 @@ export function WorkspaceId(id: string): WorkspaceId {
+ }
+ 
+ /**
+- * An archiveSession or pinSession request named a session neither live nor in
++ * An archiveSession, pinSession, or trashSession request named a session neither live nor in
+  * session persistence — a definite miss only; storage faults propagate as
+  * themselves.
+  */
+@@ -50,7 +53,7 @@ export class WorkspaceUnknownSessionError extends Error {
+    * @param sessionId - The unknown session id.
+    * @param verb - The registry operation that named the session.
+    */
+-  constructor(readonly sessionId: SessionId, verb: 'archive' | 'pin') {
++  constructor(readonly sessionId: SessionId, verb: 'archive' | 'pin' | 'trash' | 'delete') {
+     super(`cannot ${verb} session '${sessionId}': live sessions and session persistence hold no such session`)
+     this.name = 'WorkspaceUnknownSessionError'
+   }
+@@ -100,6 +103,13 @@ export interface SessionActivityRequest {
+   readonly sessionId: SessionId
+ }
+ 
++/** The session a trash or delete request is removing from storage and workspaces. */
++export interface SessionDeleteRequest {
++  readonly sessionId: SessionId
++  readonly header?: SessionHeader | undefined
++  readonly path?: string | undefined
++}
++
+ /** Caller choices for {@link WorkspaceRegistry.archiveSession}. */
+ export interface ArchiveSessionOptions {
+   /**
+@@ -162,6 +172,13 @@ declare module '@deepseek-ai/cordis' {
+      * @mode parallel
+      */
+     'workspace/session-unarchiving'(request: SessionActivityRequest): Promise<void> | void
++    /**
++     * Notify that a session has been trashed/deleted so physical persistence,
++     * projection caches, and external resources can complete cleanup.
++     * @param request - the deleted session identity and location.
++     * @mode parallel
++     */
++    'workspace/session-delete'(request: SessionDeleteRequest): Promise<void> | void
+   }
+ }
+ 
+@@ -206,6 +223,7 @@ export class WorkspaceRegistry extends Service {
+       this.missingSessionPaths.delete(id)
+       this.invalidSessionPaths.delete(id)
+     },
++    trashSession: (id, options) => this.trashSession(id, options),
+   }
+ 
+   constructor(ctx: Context) {
+@@ -488,6 +506,165 @@ export class WorkspaceRegistry extends Service {
+     })
+   }
+ 
++  /**
++   * Move one session to the OS trash or delete it durably. The session must exist
++   * (live or in session persistence).
++   *
++   * Without `stopActivity` the session must also be inactive: the
++   * `workspace/session-activity` waterfall is asked once, and any reported
++   * activity rejects with {@link WorkspaceActiveSessionError} before anything
++   * is removed or written. With `stopActivity`, running activities are stopped
++   * via `workspace/session-stop`.
++   *
++   * Trashing:
++   * 1. Removes the session from `pinnedSessionIds` and `archivedSessionIds` in the registry state;
++   * 2. Detaches the session from all workspace accounts that hold it and updates their records;
++   * 3. Moves the underlying session directory to OS Recycle Bin (or permanently removes it);
++   * 4. Cleans internal registry caches, session projection cache, and notifies listeners via
++   *    `workspace/session-delete`.
++   *
++   * @param sessionId - The session to trash.
++   * @param options - Whether running work is stopped instead of refusing.
++   * @returns resolution after durability, physical cleanup, and notification.
++   */
++  trashSession(sessionId: SessionId, options: TrashSessionOptions = {}): Promise<void> {
++    return this.enqueueOperation(async () => {
++      if (!(await this.sessionKnown(sessionId))) {
++        throw new WorkspaceUnknownSessionError(sessionId, 'trash')
++      }
++      if (options.stopActivity !== true) {
++        const activity = await this.ctx.waterfall(
++          'workspace/session-activity', { sessionId }, () => Promise.resolve([]),
++        )
++        if (activity.length > 0) throw new WorkspaceActiveSessionError(sessionId, activity)
++      }
++      if (options.stopActivity === true) {
++        await this.stopSessionActivity(sessionId)
++      }
++
++      let sessionHeader: SessionHeader | undefined
++      try {
++        sessionHeader = await this.readSessionHeader(sessionId)
++      } catch {
++        sessionHeader = this.headers.get(sessionId)
++      }
++
++      const state = this.requireState()
++      let nextPinned = state.pinnedSessionIds
++      let nextArchived = state.archivedSessionIds
++      let stateChanged = false
++      if (nextPinned.includes(sessionId)) {
++        nextPinned = nextPinned.filter(id => id !== sessionId)
++        stateChanged = true
++      }
++      if (nextArchived.includes(sessionId)) {
++        nextArchived = nextArchived.filter(id => id !== sessionId)
++        stateChanged = true
++      }
++      if (stateChanged) {
++        await this.setState({
++          ...state,
++          pinnedSessionIds: nextPinned,
++          archivedSessionIds: nextArchived,
++        })
++      }
++
++      const table = this.requireTable()
++      for (const [workspaceId, record] of table.entries()) {
++        if (record.sessionIds.includes(sessionId)) {
++          const entity = this.entities.get(workspaceId)
++          if (entity !== undefined) {
++            await entity.detachSession(sessionId)
++          } else {
++            await table.update(workspaceId, current => ({
++              ...current,
++              sessionIds: current.sessionIds.filter(id => id !== sessionId),
++              updatedAt: new Date().toISOString(),
++            }))
++          }
++        }
++      }
++
++      this.headers.delete(sessionId)
++      this.sessionPaths.delete(sessionId)
++      this.missingSessionPaths.delete(sessionId)
++      this.invalidSessionPaths.delete(sessionId)
++
++      let targetPath: string | undefined
++      const persistence = this.ctx.get('sessionPersistence') as {
++        root?: string
++        locate?: (meta: SessionHeader) => { path?: string }
++        deleteSession?: (id: SessionId) => Promise<void>
++        coldLogMemo?: Map<SessionId, unknown>
++        migrationPreparations?: Map<SessionId, unknown>
++      } | undefined
++
++      if (persistence !== undefined) {
++        if (typeof persistence.locate === 'function' && sessionHeader !== undefined) {
++          try {
++            const loc = persistence.locate(sessionHeader)
++            if (loc.path) targetPath = dirname(loc.path)
++          } catch {
++            // locate may throw on unsupported/missing
++          }
++        }
++        if (targetPath === undefined && typeof persistence.root === 'string') {
++          targetPath = resolveSessionDir(persistence.root, sessionHeader?.cwd, sessionId)
++        }
++      }
++
++      if (targetPath !== undefined) {
++        await safelyTrashOrRemove(targetPath)
++      }
++
++      if (typeof persistence?.deleteSession === 'function') {
++        try {
++          await persistence.deleteSession(sessionId)
++        } catch (error) {
++          this.ctx.logger.warn(`workspace: persistence deleteSession failed for '${sessionId}': ${String(error)}`)
++        }
++      }
++      persistence?.coldLogMemo?.delete(sessionId)
++      persistence?.migrationPreparations?.delete(sessionId)
++
++      const cache = this.ctx.get('sessionProjectionCache') as {
++        delete?: (id: SessionId) => Promise<void>
++        table?: { delete: (id: SessionId) => Promise<void> }
++      } | undefined
++      if (cache !== undefined) {
++        try {
++          if (typeof cache.delete === 'function') {
++            await cache.delete(sessionId)
++          } else if (cache.table && typeof cache.table.delete === 'function') {
++            await cache.table.delete(sessionId)
++          }
++        } catch (error) {
++          this.ctx.logger.warn(`workspace: clearing projection cache for '${sessionId}' failed: ${String(error)}`)
++        }
++      }
++
++      try {
++        await this.ctx.parallel('workspace/session-delete', {
++          sessionId,
++          header: sessionHeader,
++          path: targetPath,
++        })
++      } catch (error) {
++        this.ctx.logger.warn(`workspace: session-delete listener failed for '${sessionId}': ${String(error)}`)
++      }
++    })
++  }
++
++  /**
++   * Delete one session durably. Alias for {@link trashSession}.
++   * @param sessionId - The session to delete.
++   * @param options - Whether running work is stopped instead of refusing.
++   * @returns resolution after durability, physical cleanup, and notification.
++   */
++  deleteSession(sessionId: SessionId, options: TrashSessionOptions = {}): Promise<void> {
++    return this.trashSession(sessionId, options)
++  }
++
+   /**
+    * Whether a session is live, header-indexed, or present in a fresh
+    * persistence listing. Only a definite miss returns false — a failing
+diff --git a/packages/workspace/workspace/src/session-trash.ts b/packages/workspace/workspace/src/session-trash.ts
+new file mode 100644
+index 000000000..40a35d1ee
+--- /dev/null
++++ b/packages/workspace/workspace/src/session-trash.ts
+@@ -0,0 +1,126 @@
++/**
++ * Physical session cleanup and OS recycle bin integration.
++ * @module @deepseek-ai/dsh-workspace/src/session-trash
++ */
++
++import { execFile } from 'node:child_process'
++import { rm, stat } from 'node:fs/promises'
++import { join } from 'node:path'
++import type { SessionId } from '@deepseek-ai/dsh-session'
++
++/**
++ * Encode an arbitrary session id into a filesystem-safe single path segment.
++ * @param raw - The session id to encode.
++ * @returns Escaped path segment.
++ */
++export function encodeSegment(raw: string): string {
++  if (raw.length === 0) throw new Error('cannot encode an empty path segment')
++  if (raw === '.') return '~002E'
++  if (raw === '..') return '~002E~002E'
++  return raw.replace(/[^A-Za-z0-9._-]/g, ch => `~${ch.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')}`)
++}
++
++/**
++ * Build the readable directory key for a project path.
++ * @param cwd - The session's project directory.
++ * @returns A single filesystem-safe project directory name.
++ */
++export function projectKey(cwd: string): string {
++  if (cwd.length === 0) throw new Error('cannot encode an empty project path')
++  const readable = cwd
++    .replace(/[/\\:]+/g, '-')
++    .replace(/[^A-Za-z0-9._-]/g, ch => `~${ch.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')}`)
++  const slug = readable.replace(/^-+/, '') || 'root'
++  return `--${slug.slice(0, 251)}--`
++}
++
++/**
++ * Resolve the on-disk directory owned by one session.
++ * @param root - The session storage root directory.
++ * @param cwd - The session's project directory (cwd).
++ * @param id - The session id.
++ * @returns The absolute or relative session directory path.
++ */
++export function resolveSessionDir(root: string, cwd: string | undefined, id: SessionId | string): string {
++  const project = cwd === undefined ? '_no-cwd' : projectKey(cwd)
++  return join(root, project, encodeSegment(String(id)))
++}
++
++/**
++ * Move a target file or directory to the OS Recycle Bin / Trash.
++ * Supports:
++ * 1. Windows: PowerShell Microsoft.VisualBasic.FileIO.FileSystem (SendToRecycleBin)
++ * 2. macOS: Finder AppleScript / trash CLI
++ * 3. Linux: gio trash
++ * 4. Fallback: fs.rm
++ * @param targetPath - Path to remove or trash.
++ * @returns Whether the path was removed or trashed (false if it did not exist).
++ */
++export async function safelyTrashOrRemove(targetPath: string): Promise<boolean> {
++  try {
++    await stat(targetPath)
++  } catch (error) {
++    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
++      return false
++    }
++  }
++
++  // 1. Windows: PowerShell SendToRecycleBin
++  if (process.platform === 'win32') {
++    try {
++      const escaped = targetPath.replace(/'/g, "''")
++      const psCommand = `Add-Type -AssemblyName Microsoft.VisualBasic; if (Test-Path -LiteralPath '${escaped}' -PathType Container) { [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory('${escaped}', 'OnlyErrorDialogs', 'SendToRecycleBin') } elseif (Test-Path -LiteralPath '${escaped}') { [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile('${escaped}', 'OnlyErrorDialogs', 'SendToRecycleBin') }`
++      await new Promise<void>((resolve, reject) => {
++        execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', psCommand], (err) => {
++          if (err) reject(new Error(err.message))
++          else resolve()
++        })
++      })
++      return true
++    } catch {
++      // Fallback below
++    }
++  }
++
++  // 2. macOS: osascript Finder delete
++  if (process.platform === 'darwin') {
++    try {
++      const escaped = targetPath.replace(/["\\]/g, '\\$&')
++      await new Promise<void>((resolve, reject) => {
++        execFile('osascript', ['-e', `tell application "Finder" to delete POSIX file "${escaped}"`], (err) => {
++          if (err) reject(new Error(err.message))
++          else resolve()
++        })
++      })
++      return true
++    } catch {
++      // Fallback below
++    }
++  }
++
++  // 3. Linux: gio trash
++  if (process.platform === 'linux') {
++    try {
++      await new Promise<void>((resolve, reject) => {
++        execFile('gio', ['trash', targetPath], (err) => {
++          if (err) reject(new Error(err.message))
++          else resolve()
++        })
++      })
++      return true
++    } catch {
++      // Fallback below
++    }
++  }
++
++  // 4. Ultimate fallback: fs.rm
++  try {
++    await rm(targetPath, { recursive: true, force: true })
++    return true
++  } catch (error) {
++    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
++      return false
++    }
++    throw error
++  }
++}
+diff --git a/packages/workspace/workspace/src/types.ts b/packages/workspace/workspace/src/types.ts
+index 1b09bef96..069d362a1 100644
+--- a/packages/workspace/workspace/src/types.ts
++++ b/packages/workspace/workspace/src/types.ts
+@@ -59,6 +59,15 @@ export interface SessionActivity {
+   readonly items?: readonly SessionActivityItem[]
+ }
+ 
++/** Options for trashing/deleting a session from Workspace grouping surfaces and storage. */
++export interface TrashSessionOptions {
++  /**
++   * Ask the composed providers to stop the session's running work instead of
++   * refusing the deletion because of it.
++   */
++  readonly stopActivity?: boolean
++}
++
+ /**
+  * One workspace: a stable id over an existing directory, a display title, and
+  * an ordered candidate account of sessions. Membership validates header cwd
+@@ -143,6 +152,22 @@ export interface Workspace {
+    */
+   detachSession(sessionId: SessionId): Promise<void>
+ 
++  /**
++   * Remove a session from this workspace and move it to OS trash / delete it.
++   * @param sessionId - The session to trash.
++   * @param options - Whether running work is stopped instead of refusing.
++   * @returns resolution after durability and physical cleanup.
++   */
++  trashSession(sessionId: SessionId, options?: TrashSessionOptions): Promise<void>
++
++  /**
++   * Delete one session durably. Alias for {@link trashSession}.
++   * @param sessionId - The session to delete.
++   * @param options - Whether running work is stopped instead of refusing.
++   * @returns resolution after durability and physical cleanup.
++   */
++  deleteSession(sessionId: SessionId, options?: TrashSessionOptions): Promise<void>
++
+   /**
+    * Live directory check, uncached: whether {@link path} currently exists and
+    * is a directory. A missing directory never mutates the record — the
+diff --git a/packages/workspace/workspace/tests/workspace.spec.ts b/packages/workspace/workspace/tests/workspace.spec.ts
+index fcaf99d91..cf629e8fc 100644
+--- a/packages/workspace/workspace/tests/workspace.spec.ts
++++ b/packages/workspace/workspace/tests/workspace.spec.ts
+@@ -1,7 +1,7 @@
+ import { brandString } from '@deepseek-ai/dsh-brand'
+ import type { z } from 'zod'
+ import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+-import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises'
++import { mkdir, mkdtemp, realpath, rm, stat, symlink, writeFile } from 'node:fs/promises'
+ import { tmpdir } from 'node:os'
+ import { basename, join, relative } from 'node:path'
+ import { Context } from '@deepseek-ai/cordis'
+@@ -1383,6 +1383,134 @@ describe('registry-global session unpin', () => {
+   })
+ })
+ 
++describe('registry-global session trash and delete', () => {
++  it('refuses an unknown session before asking activity or mutating storage', async () => {
++    const dir = await makeDir('trash-unknown')
++    const result = await harness({ sessions: [header('known', dir, 100)] })
++    const asked: SessionId[] = []
++    result.ctx.on('workspace/session-activity', ({ sessionId }, next) => {
++      asked.push(sessionId)
++      return next()
++    })
++
++    await expect(result.registry.trashSession(brandString<SessionId>('ghost')))
++      .rejects.toThrow(/cannot trash session 'ghost'/)
++    expect(asked).toEqual([])
++  })
++
++  it('refuses an active session when stopActivity is not true', async () => {
++    const dir = await makeDir('trash-active')
++    const result = await harness({ sessions: [header('busy', dir, 100)] })
++    result.ctx.on('workspace/session-activity', async ({ sessionId }, next) => {
++      const rest = await next()
++      return sessionId === 'busy'
++        ? [{ kind: 'probe' }, ...rest]
++        : rest
++    })
++
++    await expect(result.registry.trashSession(brandString<SessionId>('busy'))).rejects.toMatchObject({
++      name: 'WorkspaceActiveSessionError',
++      sessionId: 'busy',
++      activity: [{ kind: 'probe' }],
++    })
++    const workspace = result.registry.list()[0]!
++    expect(workspace.sessionIds).toContain('busy')
++  })
++
++  it('with stopActivity, stops activity, detaches from workspace, unpins, cleans projection cache, deletes directory, and emits event', async () => {
++    const dir = await makeDir('trash-full')
++    const sessionRoot = await makeDir('session-root')
++    const sid = brandString<SessionId>('session-to-trash')
++    const result = await harness({ sessions: [header('session-to-trash', dir, 100)] })
++
++    // Set up session directory on disk under sessionRoot
++    const targetSessionDir = join(sessionRoot, `--${dir.replace(/[/\\:]+/g, '-').replace(/^-+/, '')}--`, 'session-to-trash')
++    await mkdir(targetSessionDir, { recursive: true })
++    await writeFile(join(targetSessionDir, 'session.jsonl'), '{"data":1}\n')
++
++    // Attach persistence root and cache
++    const persistenceMock = result.ctx.get('sessionPersistence') as { root?: string; coldLogMemo?: Map<unknown, unknown> }
++    persistenceMock.root = sessionRoot
++    persistenceMock.coldLogMemo = new Map([[sid, {}]])
++
++    const deletedCacheIds: string[] = []
++    result.ctx.provide('sessionProjectionCache', {
++      table: {
++        delete: vi.fn(async (id: SessionId) => { deletedCacheIds.push(String(id)) }),
++      },
++    } as never)
++
++    const order: string[] = []
++    result.ctx.on('workspace/session-activity', async ({ sessionId }, next) => {
++      order.push(`activity:${sessionId}`)
++      return [{ kind: 'probe' }, ...(await next())]
++    })
++    result.ctx.on('workspace/session-stop', ({ sessionId }) => { order.push(`stop:${sessionId}`) })
++    const deletedEvents: SessionId[] = []
++    result.ctx.on('workspace/session-delete', ({ sessionId }) => {
++      deletedEvents.push(sessionId)
++      order.push(`delete-event:${sessionId}`)
++    })
++
++    const workspace = result.registry.list()[0]!
++    await result.registry.pinSession(sid)
++    expect(result.registry.pinnedSessionIds).toContain('session-to-trash')
++    expect(workspace.sessionIds).toContain('session-to-trash')
++
++    await result.registry.trashSession(sid, { stopActivity: true })
++
++    // Verify removed from workspace sessionIds and pinnedSessionIds
++    expect(workspace.sessionIds).not.toContain('session-to-trash')
++    expect(result.registry.pinnedSessionIds).not.toContain('session-to-trash')
++    expect(storedState(result.pool).pinnedSessionIds).not.toContain('session-to-trash')
++
++    // Verify activity stopped and delete-event emitted
++    expect(order).toEqual(['stop:session-to-trash', 'delete-event:session-to-trash'])
++    expect(deletedEvents).toEqual([sid])
++
++    // Verify projection cache and persistence coldLogMemo cleared
++    expect(deletedCacheIds).toEqual(['session-to-trash'])
++    expect(persistenceMock.coldLogMemo.has(sid)).toBe(false)
++
++    // Verify physical directory was removed
++    await expect(stat(targetSessionDir)).rejects.toThrow()
++  })
++
++  it('deleteSession is an alias for trashSession', async () => {
++    const dir = await makeDir('delete-alias')
++    const sid = brandString<SessionId>('delete-me')
++    const result = await harness({ sessions: [header('delete-me', dir, 100)] })
++    const deletedEvents: SessionId[] = []
++    result.ctx.on('workspace/session-delete', ({ sessionId }) => { deletedEvents.push(sessionId) })
++
++    const workspace = result.registry.list()[0]!
++    expect(workspace.sessionIds).toContain('delete-me')
++
++    await result.registry.deleteSession(sid)
++    expect(workspace.sessionIds).not.toContain('delete-me')
++    expect(deletedEvents).toEqual([sid])
++  })
++
++  it('entity workspace.trashSession and workspace.deleteSession delegate to registry', async () => {
++    const dir = await makeDir('entity-trash')
++    const sid = brandString<SessionId>('via-entity')
++    const result = await harness({ sessions: [header('via-entity', dir, 100)] })
++    const workspace = result.registry.list()[0]!
++    expect(workspace.sessionIds).toContain('via-entity')
++
++    await workspace.trashSession(sid)
++    expect(workspace.sessionIds).not.toContain('via-entity')
++
++    // Calling deleteSession on entity as well
++    const sid2 = brandString<SessionId>('via-entity-2')
++    result.setSessions([header('via-entity-2', dir, 200)])
++    await workspace.attachSession(sid2)
++    expect(workspace.sessionIds).toContain('via-entity-2')
++    await workspace.deleteSession(sid2)
++    expect(workspace.sessionIds).not.toContain('via-entity-2')
++  })
++})
++
+ describe('first-use Workspace preparation', () => {
+   const contexts: Context[] = []
+ 

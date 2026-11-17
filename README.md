@@ -38,7 +38,7 @@ desktop/main.js（壳托管模式）──────┘         │
 - `packages/`：60 余个插件化子包（Cordis 架构），核心如 `llm`（含 pi-ai 适配器，OpenCode Go 走这里）、`session`、`core`、`settings`、`preset`、`skill`、`web` 等，全清单见 `packages/README.zh.md`。
 - `docs/`、`benchmarks/`、`python/`、`native/` 等官方内容；开发规范见 `source/AGENTS.md`。
 
-**`source/` 内有两处不受 git 管理的本地改动**，更新时必须保住（见「本地改动与更新须知」）。
+**`source/` 内存在多处不受 git 管理的本地改动**（session 补丁、liveshare 端点表、会话回收站、session-log 全模型上传开关等，全景 = `Dependency/patches/local-features-overlay.patch` 的 63 文件清单 + llm-pi-ai/src 补丁），更新时必须保住（见「本地改动与更新须知」#1/#6）。
 
 ### `desktop/` — OrcaMind Electron 桌面壳
 
@@ -112,6 +112,7 @@ desktop/main.js（壳托管模式）──────┘         │
 | `Figure/` | 生图落盘目录：dsh-image-mcp 三工具的默认/指定输出位（`DSH-Images/` 等子目录由工具按需创建），产物随用随生成，2026-11-17 时为空 |
 | `Workflows/` | 图像工作流留存（`moss-image/`、`qwen-image/`，ComfyUI 调试期产物） |
 | `Reports/` | 独立诊断报告与调试产物：`qoder-no-response-diagnosis.md`（2026-10-25 选型期）、`预设约束互博成因与治理方案-20261110.md`（治理前成因调查，已补实施状态）、`预设约束互博治理后复查-20261110.md`（治理后第二轮复查，含 P0–P2 修复清单）、`预设约束复查-子代理报告/`（4 份分层精读全文）、`预设约束复查-修复脚本-20261110/`（用户授权全量修复后的脚本 / 精确替换日志 / 校验输出归档）；2026-11-08 的 2 份 `dump-config-*.json` 与 2 个 `.mjs` 一次性调试脚本已于 2026-11-14 清理 |
+| `.gitignore` / `.gitattributes` | 入库范围规则（source、Dependency 大部、三方插件、node_modules/dist、凭据不入库；`patches/`+`scripts/` 例外放行）与行尾规则（`*.patch binary` 防 autocrlf 把补丁改写成 CRLF） |
 
 ## 启动 / 更新脚本（工作区根目录）
 
@@ -140,14 +141,18 @@ desktop/main.js（壳托管模式）──────┘         │
 
 ## 文档索引
 
-工作区有两处文档库，按用途分工，新增文档请归入对应位置并在下表登记：
+工作区有三处文档库（`docs/`、`Plugins/docs/`、`Reports/`），按用途分工，新增文档请归入对应位置并在下表登记：
 
 | 文档 | 位置 | 内容 |
 | --- | --- | --- |
-| `Ops与Billion-Context配置安装指南.md` | `docs/` | dsh-ops 与 billion-context 的安装、`cordis.patch.yml` 配置模板（已与 dsh-ops 0.3.1 / billion-context 0.1.201 实际行对齐）、junction 重定向做法、自动更新修复、高频报错排查 |
+| `Ops与Billion-Context配置安装指南.md` | `docs/` | dsh-ops 与 billion-context 的安装、`cordis.patch.yml` 配置模板（已与 dsh-ops 0.3.1 / billion-context 0.1.201 实际行对齐）、junction 重定向做法、自动更新修复、高频报错排查。**⚠️ 内容停在 0.3.1 时代**：0.5.0 起七行组件制已改单行 `dsh-ops` 配置，模板须自行换算，升级史见 Plugins 表 dsh-ops 行 |
+| `Ops与Billion-Context技术架构与排坑指南.md` | `docs/` | 2026-10-20：Ops 与 DSH 原生环境的核心分工、读写/终端行为边界深剖 + Billion-Context×Antigravity/Gemini 兼容性全景与修复路线（0.3.1/0.0.5 时代产物；其二三章与下方专项指南同题，同日产出、互为详略） |
+| `Billion-Context与Antigravity-Gemini兼容性专项分析与修复指南.md` | `docs/` | 2026-10-20 专项：10-19 Gemini 调用瘫痪全链路复盘（Google 空帧 → bili 503 → TRANSPORT）、compress/acp_status 404 根因（会话生命周期绑定 + 透传副作用）、修复方案论证 |
+| `billion-context-guide.md` | `docs/` | Billion-Context (ACP) 核心机制缺陷深度剖析与避坑指南（v0.1.200~0.1.203+）：growthFloor 数学坍塌致上下文锁死 10% 以下、KV cache 归零与耗时暴增、`neverPreserveRecentTools` 工具黑名单、思考断裂归因等；基于 9.5MB 会话日志与内核源码 |
 | `ProvidersHub与ZCodeCliProxy接入指南.md` | `docs/` | ZCode / Trae / Qoder 额度双轨接入（2026-10-25）：Provider 轨 dsh-providers-hub（17 家 + 聚合路由 + 签到 + 8326 网关）与委托轨 dsh-zcode-cli-proxy（Start Plan + ZCode 原生 agent，yolo 风险提示）、登录/验证流程、npm 同名包投毒警告、回滚与选型记录 |
 | `MagiCrew国际站WAF封锁调查报告-20261106.md` | `docs/` | magicrew 国际站「签到/余额 405 双灭」全程调查（11-05~11-06）：referer 缺失修复（cherry-pick PR #176）与阿里云 ESA WAF 三连跳时间线、13 项实测矩阵（curl/Node 全模拟/**真实 Chrome 带凭据也 405**，主站与国内站对照）、阻断页特征、出口 IP 拉黑 vs 站点事故的判别实验与恢复清单、一行自查命令 |
 | `SenseNova模型使用指南.docx` | `docs/` | 商汤 SenseNova Token Plan 公测通道使用指南（五个模型怎么选、思考强度下拉怎么调、429 报错怎么处理；2026-11-17 自主目录移入） |
+| `sensenova-report.md` | `docs/` | 2026-10-23 SenseNova Token Plan API 能力调研（信源分级标注）：端点、OpenAI/Anthropic 双协议支持矩阵、额度池等——上方 docx 的调研底稿 |
 | `预设约束互博成因与治理方案-20261110.md` | `Reports/` | 预设使用时「左右脑互博」消耗变多的成因调查（2026-11-10，**治理前 6178 行版**）：DSH 源码层无指令优先级机制（纯 order 排序 + join）、11-07 VN 改造删掉用户指令逃生阀并全量绝对化、77 处重复硬约束与 5 类逻辑矛盾、运行时宪法 + 消除矛盾 + 结构性减重三层治理方案 A/B/C（B6 已于复查后补做、C3 Host 物理门禁仍未实现，见复查报告 §9 修复实施状态） |
 | `预设约束互博治理后复查-20261110.md` | `Reports/` | 治理后（**5699 行版**）第二轮全量复查（2026-11-10）：20 个 preset / 164 份 SKILL.md / 7 份文档，4 个子代理分层精读 + 机械全量扫描；结论为「宪法段自洽、但 VN7 阶段 SKILL 仍有 6+ 组运行时真矛盾（anchors 四节两套定义、核查范围互斥、10 处末位 ask 收尾残留等）、大规模整块复制、两份历史文档仍以现在时下命令」，含 P0–P2 修复优先级与 **§9 修复实施状态（用户授权后已全部落地）** |
 | `skills/_SYNC-POLICY.md` | `Plugins/dsh-user-presets/skills/` | 同源副本同步政策（2026-11-10 复查后建立）：登记 6 组逐字节相同 / 派生 SKILL.md 与 7 份宪法段，说明 Loader 每 preset 独立挂载、不能删单侧，给出改前查表 / 改后 md5 校验守则；末尾标注 `prompt-writing/` 孤儿树的文档库定位 |

@@ -1,5 +1,5 @@
 diff --git a/packages/llm/llm-pi-ai/src/adapter.ts b/packages/llm/llm-pi-ai/src/adapter.ts
-index 89b9edff2..1588374f6 100644
+index 89b9edff2c..1588374f6f 100644
 --- a/packages/llm/llm-pi-ai/src/adapter.ts
 +++ b/packages/llm/llm-pi-ai/src/adapter.ts
 @@ -274,6 +274,28 @@ function requestHeaders(

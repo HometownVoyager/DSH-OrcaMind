@@ -1,7 +1,7 @@
 {
   "name": "@dsh-external/dsh-auto-continue",
-  "version": "0.1.0",
-  "description": "网络类失败自动续跑：turn/end error 命中网络特征时代发 Continue. 兜底，带连续上限与冷却防循环",
+  "version": "0.1.1",
+  "description": "网络类失败/额度截断/工具参数坏 JSON 自动续跑：turn/end error 命中特征时代发 Continue. 兜底，带连续上限与冷却防循环",
   "private": true,
   "type": "module",
   "main": "./lib/index.js",

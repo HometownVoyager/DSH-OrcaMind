@@ -3,10 +3,11 @@
 网络类失败与请求截断自动续跑插件。当一轮以 `turn/end` `reason.kind=error` 收尾、且失败属于
 网络类（错误码 `TRANSPORT` / `TIMEOUT`，或消息命中 `fetch failed` / `terminated` /
 `ECONNRESET` 等特征）或单次请求预算/额度耗尽（如 WorkBuddy Global 的 DeepSeek V4.1 Flash
-因预算不足报「当前请求的额度已用尽」截断）时，自动向同一会话代发一条 `Continue.`
+因预算不足报「当前请求的额度已用尽」截断）或模型把工具调用参数写成非法 JSON
+（providers-hub 归码 `TOOL_ARGS_INVALID`）时，自动向同一会话代发一条 `Continue.`
 （`agent.followup`，与 Web 客户端发送同一条服务端路径）。
 
-兜底覆盖三类 dsh 内置 llm-retry 管不到的场景：
+兜底覆盖四类 dsh 内置 llm-retry 管不到的场景：
 
 1. 请求层重试穷尽仍失败（VPN 断连超出重试窗口）——antigravity 适配器已把网络
    错误归码 `TRANSPORT` 并把重试上限提到 10 次（约 2 分钟），仍撑不过去时由本
@@ -14,7 +15,11 @@
 2. 非 antigravity 适配器（如 pi-ai 系直连）抛出的未归码网络错误——它们被宿主
    归码 `UNKNOWN`，不进重试，直接失败；
 3. **单次请求预算/额度用尽**（如 WorkBuddy Global 中 DeepSeek V4.1 Flash 报「当前请求的额度已用尽」截断）：
-   自动代发 `Continue.` 无缝接力继续完成任务，避免用户反复手动点击。
+   自动代发 `Continue.` 无缝接力继续完成任务，避免用户反复手动点击；
+4. **工具参数非法 JSON**（providers-hub SSE 层归码 `TOOL_ARGS_INVALID`，硬失败不进
+   底层重试）：它是**单次采样病理**——providers-hub 判「不可重试」针对的是底层
+   **同请求**白退避（输出形态大概率原样复现），而本插件的 `Continue.` 是重新
+   驱动一轮＝换一次采样，偶发场景能自愈；连续写坏由 `maxAutoContinues` 收口。
 
 ## 防循环护栏
 
@@ -35,6 +40,7 @@
 | `minGapMs` | `20000` | 两次续跑最小间隔 |
 | `includeSubagents` | `false` | 子代理会话是否也续跑 |
 | `includeRequestQuota` | `true` | 单次请求额度/预算耗尽截断（「当前请求的额度已用尽」）是否自动续跑 |
+| `includeToolArgsInvalid` | `true` | 工具参数非法 JSON（`TOOL_ARGS_INVALID`）是否重采样续跑 |
 | `includeModelBusy` | `true` | 上游 model_busy（14003）是否续跑 |
 | `includeUnknownModel` | `true` | 目录瞬时为空（UNKNOWN_MODEL）是否续跑 |
 | `unknownModelDelayMs` | `5000` | UNKNOWN_MODEL 续跑前的等待 |
@@ -48,6 +54,9 @@
 2. **单次请求预算/额度耗尽**（`REQUEST_QUOTA`）：命中「当前请求的额度已用尽」或单次请求预算耗尽截断，
    且未包含长期频率限制。
    → **立即续跑**代发 `Continue.` 接力完成。
+2.5. **工具参数非法 JSON**（`TOOL_ARGS_INVALID`，2026-11-20 扩展）：providers-hub 的
+   `toolArgsInvalidFailure` 归码，事件 `code` 判定为主、文案特征「工具参数不是合法 JSON」兜底。
+   → **立即续跑**代发 `Continue.`（重采样）。
 3. **上游 429 与频率限流**：宿主统一归码 `QUOTA`。
    - `model_busy`（业务码 14003，"This model is currently saturated"）：上游拥塞，冷却约 1 分钟 → **立即续跑**。
    - `soft_rate`（业务码 6004，文案「将在 … 重置」）：从文案里解出重置时刻。

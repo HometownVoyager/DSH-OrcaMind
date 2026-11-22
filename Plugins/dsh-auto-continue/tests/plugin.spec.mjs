@@ -16,6 +16,7 @@ const cases = []
 const test = (name, fn) => cases.push([name, fn])
 const options = {
   includeRequestQuota: true,
+  includeToolArgsInvalid: true,
   includeModelBusy: true,
   includeUnknownModel: true,
   unknownModelDelayMs: 5000,
@@ -74,6 +75,30 @@ test('6004 限流且重置点超过容忍窗则跳过', () => {
   const v = classify({ code: 'QUOTA', message: text, options })
   assert.equal(v.action, 'skip')
   assert.match(v.why, /距重置/)
+})
+
+test('TOOL_ARGS_INVALID 裸码立即续跑', () => {
+  const v = classify({
+    code: 'TOOL_ARGS_INVALID',
+    message: '模型生成的工具参数不是合法 JSON（ops_glob，40 字符），本次调用已丢弃。这不是输出 token 上限，也不是网络中断 —— 直接重试即可；若连续出现，建议更换模型或缩小该次调用的跨度（例如上下文压缩的 startId–endId 区间）。',
+    options,
+  })
+  assert.equal(v.action, 'now')
+  assert.match(v.why, /工具参数/)
+})
+
+test('工具参数坏 JSON 文案特征兜底命中（code 缺失时）', () => {
+  const v = classify({
+    code: '',
+    message: '模型生成的工具参数不是合法 JSON（ops_glob，40 字符），本次调用已丢弃。',
+    options,
+  })
+  assert.equal(v.action, 'now')
+})
+
+test('关闭 includeToolArgsInvalid 后 TOOL_ARGS_INVALID 不再续跑', () => {
+  const v = classify({ code: 'TOOL_ARGS_INVALID', message: '', options: { ...options, includeToolArgsInvalid: false } })
+  assert.equal(v.action, 'skip')
 })
 
 test('UNKNOWN_MODEL 延迟续跑', () => {

@@ -5,12 +5,17 @@
  * fetch failed / terminated / ECONNRESET 等特征）或单次请求预算/额度耗尽（如
  * WorkBuddy Global 的 DeepSeek V4.1 Flash 报「当前请求的额度已用尽」截断）时，
  * 自动向同一会话代发一条 "Continue."（agent.followup，与 Web 客户端发送走
- * 同一条服务端路径）。兜底覆盖三类场景：
+ * 同一条服务端路径）。兜底覆盖四类场景：
  *   1. 请求层重试穷尽仍失败（VPN 断连超出重试窗口，llm-retry 已放弃）；
  *   2. 非 antigravity 适配器（如 pi-ai 系直连）抛出的未归码网络错误——它们
  *      被宿主归码 UNKNOWN，根本不进重试；
  *   3. 单次请求 Token / 预算耗尽导致回合截断（报「当前请求的额度已用尽」），
- *      无需用户手动点「继续」，自动代发 Continue. 无缝接力完成任务。
+ *      无需用户手动点「继续」，自动代发 Continue. 无缝接力完成任务；
+ *   4. 模型偶发把工具调用参数写成非法 JSON（providers-hub 归码
+ *      TOOL_ARGS_INVALID，硬失败不给底层重试）。它是**单次采样病理**——
+ *      providers-hub 判「不可重试」针对的是底层**同请求**白退避（输出形态
+ *      大概率原样复现），而本插件的 Continue 是**重新驱动一轮**＝换一次采样，
+ *      偶发场景大概率就好。连续写坏由 maxAutoContinues 护栏收口，不会烧额度。
  *
  * 防循环护栏：
  * - 同一会话连续自动续跑 maxAutoContinues 次后停手，直到出现一次非 error
@@ -68,6 +73,18 @@ const ERROR_PATTERN = /fetch failed|terminated|network error|socket hang up|othe
 const REQUEST_QUOTA_PATTERN = /当前请求的额度已用尽|本轮运行失败.*额度已用尽|本轮运行失败.*当前请求|request.*quota|quota[_-]?exceeded|out of budget|insufficient (?:quota|budget|credits)|budget.*exceeded/i
 
 /**
+ * 模型把工具调用参数写坏（providers-hub SSE 层归码 TOOL_ARGS_INVALID，硬失败）。
+ *
+ * 事件里的 `code` 就是这个码（会话日志实锤：finish reason
+ * `{kind:'error', failure:{code:'TOOL_ARGS_INVALID', message:'模型生成的工具参数
+ * 不是合法 JSON（…）…'}}`）。`code` 判定为主，`message` 文案特征兜底——万一
+ * 宿主把 code 层剥掉了，文案还在。文案只由 providers-hub `toolArgsInvalidFailure`
+ * 生成，特征短语唯一，不会误伤其它失败。
+ */
+const TOOL_ARGS_INVALID_CODE = 'TOOL_ARGS_INVALID'
+const TOOL_ARGS_INVALID_PATTERN = /工具参数不是合法 JSON/
+
+/**
  * WorkBuddy 上游 429 的两种子型（实测日志）。
  *
  * `code` 在宿主侧归一为 QUOTA，所以只能从消息正文分辨：
@@ -98,6 +115,8 @@ const RESET_TOLERANCE_MS = 10 * 60 * 1000
  *    命中方式是消息正文命中特征，或宿主归码本身就是 QUOTA / ACCOUNT_QUOTA
  *    ——「本轮运行失败 当前请求的额度已用尽」是客户端展示文案，
  *    不会出现在 error.message 里，只靠文案匹配会漏掉这一类。
+ * 2.5. TOOL_ARGS_INVALID：模型偶发把工具参数写成非法 JSON，立即续跑接力
+ *    （单次采样病理，重驱动一轮＝换采样；连续写坏由外层护栏收口）。
  * 3. 429 / QUOTA：区分 model_busy（瞬时拥塞续跑）、带重置时间的频率限制（按需等待）、无时间戳长限流（跳过）。
  * 4. 纯网络类：TRANSPORT/TIMEOUT 与 undici 瞬态网络错误立即续跑。
  */
@@ -113,6 +132,16 @@ export function classify ({ code, message, options }) {
   if (REQUEST_QUOTA_PATTERN.test(message)) {
     if (!options.includeRequestQuota) return { action: 'skip', why: '单次请求额度用尽续跑已关闭' }
     return { action: 'now', why: '当前请求额度已用尽（自动 Continue 接力）' }
+  }
+
+  // 2.5) 模型偶发把工具调用参数写坏（providers-hub 的 TOOL_ARGS_INVALID）：
+  //      providers-hub 刻意不给底层重试（同请求退避会复现同一坏输出），但
+  //      本插件代发的 Continue 是重新驱动一轮＝换一次采样，偶发场景能自愈。
+  //      连续写坏时 maxAutoContinues（默认 2）会停手，对应文案里
+  //      「若连续出现，建议更换模型」的人工处置线。
+  if (code === TOOL_ARGS_INVALID_CODE || TOOL_ARGS_INVALID_PATTERN.test(message)) {
+    if (!options.includeToolArgsInvalid) return { action: 'skip', why: '工具参数坏 JSON 续跑已关闭' }
+    return { action: 'now', why: '工具参数非法 JSON（TOOL_ARGS_INVALID，重采样续跑）' }
   }
 
   // 3) WorkBuddy 与各类 Provider 的 QUOTA / 429：宿主统一归码 QUOTA 或 ACCOUNT_QUOTA。
@@ -181,6 +210,8 @@ export function apply(ctx, config = {}) {
     debugLog: config.debugLog === true,
     /** WorkBuddy Global 等「当前请求的额度已用尽」截断是否自动续跑。 */
     includeRequestQuota: config.includeRequestQuota !== false,
+    /** 模型把工具参数写成非法 JSON（TOOL_ARGS_INVALID）是否重采样续跑。 */
+    includeToolArgsInvalid: config.includeToolArgsInvalid !== false,
     /** WorkBuddy model_busy(14003) 这类瞬时 429 是否续跑。 */
     includeModelBusy: config.includeModelBusy !== false,
     /** 目录瞬时为空（UNKNOWN_MODEL）是否续跑；插件侧已在定时重拉目录。 */
@@ -236,7 +267,7 @@ export function apply(ctx, config = {}) {
     return true
   }
 
-  audit(`插件加载 enabled=${options.enabled} maxAutoContinues=${options.maxAutoContinues} minGapMs=${options.minGapMs} requestQuota=${options.includeRequestQuota} subagents=${options.includeSubagents}`)
+  audit(`插件加载 enabled=${options.enabled} maxAutoContinues=${options.maxAutoContinues} minGapMs=${options.minGapMs} requestQuota=${options.includeRequestQuota} toolArgsInvalid=${options.includeToolArgsInvalid} subagents=${options.includeSubagents}`)
 
   ctx.on('session/event', (session, event) => {
     try {

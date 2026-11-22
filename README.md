@@ -53,7 +53,9 @@ desktop/main.js（壳托管模式）──────┘         │
 
 ### `Plugins/` — 插件（自研 + 第三方）
 
-装卸方法见 `Plugins/docs/插件装卸使用指南.md`，开发见 `Plugins/docs/插件开发指南.md`：
+装卸方法见 `Plugins/docs/插件装卸使用指南.md`，开发见 `Plugins/docs/插件开发指南.md`。
+
+**独立发布仓（2026-11-22 起）**：上表自研插件已各自导出为 GitHub 独立公开仓（一插件一仓，均带自用声明、BSD-3-Clause LICENSE 与 `.gitignore`；`node_modules`/`*.local.json`/`*.bak-*` 不入库）——[`dsh-auto-continue`](https://github.com/HometownVoyager/dsh-auto-continue)、[`dsh-desktop-notifier`](https://github.com/HometownVoyager/dsh-desktop-notifier)、[`dsh-image-mcp`](https://github.com/HometownVoyager/dsh-image-mcp)、[`dsh-tool-gate`](https://github.com/HometownVoyager/dsh-tool-gate)、[`dsh-office-editor`](https://github.com/HometownVoyager/dsh-office-editor)、[`dsh-office-reader`](https://github.com/HometownVoyager/dsh-office-reader)、[`dsh-pdf-editor`](https://github.com/HometownVoyager/dsh-pdf-editor)、[`dsh-pdf-reader`](https://github.com/HometownVoyager/dsh-pdf-reader)、[`dsh-user-presets`](https://github.com/HometownVoyager/dsh-user-presets)、[`dsh-step-fpga`](https://github.com/HometownVoyager/dsh-step-fpga)；[`dsh-antigravity`](https://github.com/HometownVoyager/dsh-antigravity) 为 fork 上游 `LiZhenNet/dsh-antigravity`（本地补丁在 `local-patches` 分支）。**工作区 `Plugins/<目录>` 仍是运行时真源**（profile `link:` / 宿主层挂载指向这里），发布仓是导出副本：插件有改动时从工作区重新导出推送，勿反向覆盖工作区。
 
 | 插件 | 用途 |
 | --- | --- |

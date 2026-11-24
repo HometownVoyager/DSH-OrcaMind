@@ -1,8 +1,7 @@
-#> 本地功能叠加补丁（source 未提交改动的兜底备份，2026-11-19 自 2e39e70496 = v0.2.2-rc.5 导出）
+#> 本地功能叠加补丁（source 未提交改动的兜底备份，2026-11-24 自 4b399c39a6 = v0.2.3-alpha.2 导出）
 #> 内容: 会话回收站(trash) + session-log 全模型上传开关 + desktop 壳接线 + liveshare 端点表 + acp model-control 等
 #> 重放: git -C source apply ../Dependency/patches/local-features-overlay.patch
 #> 与 opencode-session-fix.patch 互补: 该补丁覆盖 packages/llm/llm-pi-ai/src，本补丁 = 其余全部本地改动
-
 diff --git a/apps/desktop/src/ipc.ts b/apps/desktop/src/ipc.ts
 index 83ebe7415a..e6f3d4682b 100644
 --- a/apps/desktop/src/ipc.ts
@@ -24,10 +23,10 @@ index 83ebe7415a..e6f3d4682b 100644
      readonly channels: DesktopChannelBridge
      status(): Promise<DesktopUpdatePresentation>
 diff --git a/apps/desktop/src/locale.ts b/apps/desktop/src/locale.ts
-index 3e2db64e24..cb36916893 100644
+index ea261784b1..929a1ab5f4 100644
 --- a/apps/desktop/src/locale.ts
 +++ b/apps/desktop/src/locale.ts
-@@ -58,6 +58,9 @@ export const en = {
+@@ -59,6 +59,9 @@ export const en = {
    copy: 'Copy',
    paste: 'Paste',
    selectAll: 'Select All',
@@ -37,7 +36,7 @@ index 3e2db64e24..cb36916893 100644
    startupFailed: 'DeepSeek Harness is unavailable',
    fatalSummary: 'The application could not start or stopped unexpectedly.',
    startupAddressInUse: 'Another DSH instance (such as dsh web or the desktop app) is running. They cannot start at the same time. Quit the other running DSH instance, then restart.',
-@@ -253,6 +256,9 @@ export const zh = {
+@@ -255,6 +258,9 @@ export const zh = {
    copy: '复制',
    paste: '粘贴',
    selectAll: '全选',
@@ -47,7 +46,7 @@ index 3e2db64e24..cb36916893 100644
    startupFailed: 'DeepSeek Harness 无法使用',
    fatalSummary: '应用无法启动或已意外停止。',
    startupAddressInUse: '有其他正在运行的 DSH（如其他 dsh web、桌面端），无法同时启动，请退出其他正在运行的 DSH 后重启。',
-@@ -578,6 +584,9 @@ export const ja = {
+@@ -581,6 +587,9 @@ export const ja = {
    mandatoryCopyFailed: 'リンクをコピーできませんでした。以下から選択してコピーしてください。',
    mandatoryAddress: 'ダウンロードリンク',
    mandatoryNotification: 'アプリに戻り、インストールと再起動を確認してください。',
@@ -57,7 +56,7 @@ index 3e2db64e24..cb36916893 100644
  } satisfies Record<keyof typeof en, string>
  
  /** Spanish dictionary, checked against the English keys. */
-@@ -771,6 +780,9 @@ export const es = {
+@@ -775,6 +784,9 @@ export const es = {
    mandatoryCopyFailed: 'No se pudo copiar el enlace. Selecciónelo y cópielo a continuación.',
    mandatoryAddress: 'Enlace de descarga',
    mandatoryNotification: 'Regrese a la aplicación para confirmar la instalación y reiniciar.',
@@ -67,7 +66,7 @@ index 3e2db64e24..cb36916893 100644
  } satisfies DesktopMessages
  
  /** French dictionary, checked against the English keys. */
-@@ -964,6 +976,9 @@ export const fr = {
+@@ -969,6 +981,9 @@ export const fr = {
    mandatoryCopyFailed: 'Impossible de copier le lien. Sélectionnez-le et copiez-le ci-dessous.',
    mandatoryAddress: 'Lien de téléchargement',
    mandatoryNotification: "Revenez à l'application pour confirmer l'installation et redémarrer.",
@@ -77,7 +76,7 @@ index 3e2db64e24..cb36916893 100644
  } satisfies DesktopMessages
  
  /** German dictionary, checked against the English keys. */
-@@ -1157,6 +1172,9 @@ export const de = {
+@@ -1163,6 +1178,9 @@ export const de = {
    mandatoryCopyFailed: 'Der Link konnte nicht kopiert werden. Wählen Sie es aus und kopieren Sie es unten.',
    mandatoryAddress: 'Download-Link',
    mandatoryNotification: 'Kehren Sie zur Anwendung zurück, um die Installation zu bestätigen und neu zu starten.',
@@ -87,7 +86,7 @@ index 3e2db64e24..cb36916893 100644
  } satisfies DesktopMessages
  
  /** Russian dictionary, checked against the English keys. */
-@@ -1350,6 +1368,9 @@ export const ru = {
+@@ -1357,6 +1375,9 @@ export const ru = {
    mandatoryCopyFailed: 'Не удалось скопировать ссылку. Выделите и скопируйте его ниже.',
    mandatoryAddress: 'Ссылка для скачивания',
    mandatoryNotification: 'Вернитесь в приложение, чтобы подтвердить установку и перезапустить.',
@@ -97,7 +96,7 @@ index 3e2db64e24..cb36916893 100644
  } satisfies DesktopMessages
  
  /** Portuguese dictionary, checked against the English keys. */
-@@ -1543,6 +1564,9 @@ export const pt = {
+@@ -1551,6 +1572,9 @@ export const pt = {
    mandatoryCopyFailed: 'Não foi possível copiar o link. Selecione e copie abaixo.',
    mandatoryAddress: 'Link de download',
    mandatoryNotification: 'Retorne ao aplicativo para confirmar a instalação e reinicie.',
@@ -108,7 +107,7 @@ index 3e2db64e24..cb36916893 100644
  
  const dictionaries = { en, zh, ja, es, fr, de, ru, pt }
 diff --git a/apps/desktop/src/main.ts b/apps/desktop/src/main.ts
-index 9232710910..48077f3d90 100644
+index 291ed08476..beb8628d17 100644
 --- a/apps/desktop/src/main.ts
 +++ b/apps/desktop/src/main.ts
 @@ -261,6 +261,44 @@ function platformLoginUrl(authorizeUrl: string): string {
@@ -223,7 +222,7 @@ index 9232710910..48077f3d90 100644
      }
    })
    window.webContents.on('will-navigate', (event, url) => {
-@@ -962,6 +1029,13 @@ async function main(): Promise<void> {
+@@ -968,6 +1035,13 @@ async function main(): Promise<void> {
      assertProductSender(event)
      await openUpdatePrompt()
    })
@@ -237,7 +236,7 @@ index 9232710910..48077f3d90 100644
  
    let configurationPrompt: Promise<void> | undefined
    const showConfigurationError = (): Promise<void> => {
-@@ -1293,9 +1367,8 @@ async function main(): Promise<void> {
+@@ -1302,9 +1376,8 @@ async function main(): Promise<void> {
          { type: 'separator' },
          editItem(currentDesktopLocale().messages.selectAll, 'A', ['control'], 'Ctrl+A'),
        ]
@@ -261,10 +260,10 @@ index 6b4e989614..6c1099cc23 100644
        closeWindow: revision => ipcRenderer.invoke(DESKTOP_IPC.shortcutsCloseWindow, revision) as Promise<void>,
        subscribe: (listener) => {
 diff --git a/apps/desktop/tests/main-startup.spec.ts b/apps/desktop/tests/main-startup.spec.ts
-index c20ea6e900..0461d369b3 100644
+index e689f3e672..5b0ff2579c 100644
 --- a/apps/desktop/tests/main-startup.spec.ts
 +++ b/apps/desktop/tests/main-startup.spec.ts
-@@ -74,6 +74,8 @@ const harness = await vi.hoisted(async () => {
+@@ -75,6 +75,8 @@ const harness = await vi.hoisted(async () => {
    const updateCheck = vi.fn(async (_manual?: boolean): Promise<DesktopUpdateState> => updateState)
    const updateDownload = vi.fn(async (_version: string, _revision?: number): Promise<DesktopUpdateState> => updateState)
    const updateInstall = vi.fn(async (_version: string, _revision?: number): Promise<DesktopUpdateState> => updateState)
@@ -273,7 +272,7 @@ index c20ea6e900..0461d369b3 100644
    const popup = vi.fn<(options: { window: FakeWindow; x?: number; y?: number; callback?: () => void }) => void>()
    const menuBuilder = vi.fn<(template: MenuItemConstructorOptions[]) => { popup: typeof popup }>(() => ({ popup }))
    const menu = Object.assign(menuBuilder, { buildFromTemplate: menuBuilder, setApplicationMenu: vi.fn() })
-@@ -94,6 +96,7 @@ const harness = await vi.hoisted(async () => {
+@@ -95,6 +97,7 @@ const harness = await vi.hoisted(async () => {
        setIgnoreMenuShortcuts: vi.fn(),
        focus: vi.fn(),
        sendInputEvent: vi.fn(),
@@ -281,7 +280,7 @@ index c20ea6e900..0461d369b3 100644
        send: vi.fn((channel: string, state: { policy?: { blocking: boolean } }) => {
          if (channel === 'dsh-desktop:mandatory-state' && state.policy?.blocking) policyBlocked.resolve()
        }),
-@@ -249,6 +252,8 @@ const harness = await vi.hoisted(async () => {
+@@ -254,6 +257,8 @@ const harness = await vi.hoisted(async () => {
      dialog: { showOpenDialog: vi.fn(), showErrorBox: vi.fn(), showMessageBox: vi.fn() },
      openExternal: vi.fn(async () => {}),
      showItemInFolder: vi.fn(),
@@ -290,7 +289,7 @@ index c20ea6e900..0461d369b3 100644
      protocolHandle: vi.fn<(scheme: string, handler: (request: Request) => Response | Promise<Response>) => void>(),
      applyRelease: vi.fn(() => { preparing.resolve(); return prepared.promise }),
      disableAllPlugins: vi.fn(async () => {
-@@ -289,6 +294,8 @@ const harness = await vi.hoisted(async () => {
+@@ -294,6 +299,8 @@ const harness = await vi.hoisted(async () => {
        updateInstall.mockReset().mockImplementation(async () => updateState)
        nativeTheme.removeAllListeners()
        nativeTheme.themeSource = 'system'; nativeTheme.shouldUseDarkColors = false
@@ -299,7 +298,7 @@ index c20ea6e900..0461d369b3 100644
        preparing = deferred(); prepared = deferred(); hostStarted = deferred()
        navigated = deferred(); dialogShown = deferred(); quitCompleted = deferred()
        policyBlocked = deferred()
-@@ -315,7 +322,8 @@ vi.mock('electron', () => ({
+@@ -320,7 +327,8 @@ vi.mock('electron', () => ({
    BrowserWindow: harness.FakeWindow,
    WebContentsView: harness.FakeView,
    dialog: harness.dialog,
@@ -309,7 +308,7 @@ index c20ea6e900..0461d369b3 100644
    nativeTheme: harness.nativeTheme,
    ipcMain: {
      on: harness.ipcOn,
-@@ -1340,6 +1348,10 @@ describe('desktop main startup', () => {
+@@ -1346,6 +1354,10 @@ describe('desktop main startup', () => {
      listener(event, 'en', '#1b1b1c', '#f9fafb')
      window.webContents.emit('context-menu', {}, { isEditable: false, selectionText: 'text', editFlags: { canCopy: true } })
      expect(harness.menu.buildFromTemplate).toHaveBeenLastCalledWith([{ role: 'copy', enabled: true, label: 'Copy', accelerator: '' }])
@@ -320,7 +319,7 @@ index c20ea6e900..0461d369b3 100644
      window.setTitleBarOverlay.mockClear()
      listener(event, 'en', 'url(file:///bad)', '#fff')
      expect(window.setTitleBarOverlay).not.toHaveBeenCalled()
-@@ -1574,7 +1586,7 @@ describe('desktop main startup', () => {
+@@ -1647,7 +1659,7 @@ describe('desktop main startup', () => {
      await import('../src/main.ts')
      await harness.preparing.promise
      const window = harness.windows[0]!
@@ -329,7 +328,7 @@ index c20ea6e900..0461d369b3 100644
      harness.menu.mockClear()
  
      window.webContents.emit('context-menu', {}, { isEditable: true, selectionText: 'text', editFlags })
-@@ -1582,7 +1594,8 @@ describe('desktop main startup', () => {
+@@ -1655,7 +1667,8 @@ describe('desktop main startup', () => {
        { role: 'undo', enabled: true, accelerator: '' }, { role: 'redo', enabled: false, accelerator: '' },
        { type: 'separator', accelerator: '' },
        { role: 'cut', enabled: true, accelerator: '' }, { role: 'copy', enabled: true, accelerator: '' },
@@ -339,7 +338,7 @@ index c20ea6e900..0461d369b3 100644
        { role: 'selectAll', enabled: true, accelerator: '' },
      ])
      expect(harness.popup).toHaveBeenCalledWith({ window })
-@@ -1595,6 +1608,112 @@ describe('desktop main startup', () => {
+@@ -1668,6 +1681,112 @@ describe('desktop main startup', () => {
      expect(harness.menu).not.toHaveBeenCalled()
    })
  
@@ -1628,10 +1627,10 @@ index 4ddc52d85e..2fe0f24954 100644
    expect(set).not.toHaveBeenCalled()
  })
 diff --git a/packages/client/ui-workspace/src/client/contract/slots.ts b/packages/client/ui-workspace/src/client/contract/slots.ts
-index bb704633b9..fe413f26fc 100644
+index 282091a96e..b91a6e7ce0 100644
 --- a/packages/client/ui-workspace/src/client/contract/slots.ts
 +++ b/packages/client/ui-workspace/src/client/contract/slots.ts
-@@ -329,6 +329,8 @@ export type WorkspaceBrowserInjected = {
+@@ -335,6 +335,8 @@ export type WorkspaceBrowserInjected = {
    unarchiveSession: (sessionId: SessionId) => Promise<void>
    /** Adopt a picked host directory as a real Workspace before targeting a Session. */
    createWorkspace: (input: { path: string }) => Promise<WorkspaceView>
@@ -1640,7 +1639,7 @@ index bb704633b9..fe413f26fc 100644
  }
  
  /** The browser's declared viewing store handle, shared with the row actions that write view state. */
-@@ -351,6 +353,7 @@ export type RowToast =
+@@ -357,6 +359,7 @@ export type RowToast =
    | { kind: 'archived'; sessionId: SessionId; message?: string; tone?: 'success' | 'warning' }
    | { kind: 'stoppedAndArchived'; sessionId: SessionId; message?: string; tone?: 'success' | 'warning' }
    | { kind: 'readingFailed' }
@@ -1648,7 +1647,7 @@ index bb704633b9..fe413f26fc 100644
    | { kind: 'sessionIdCopied' }
    | { kind: 'sessionIdCopyFailed' }
    | { kind: 'pinFailed' }
-@@ -443,6 +446,43 @@ export interface SessionArchiveConfirmInjected {
+@@ -449,6 +452,43 @@ export interface SessionArchiveConfirmInjected {
    stopAndArchiveSession: (sessionId: SessionId) => Promise<void>
  }
  
@@ -1692,7 +1691,7 @@ index bb704633b9..fe413f26fc 100644
  /** Fork action share. */
  export interface ForkSessionInjected {
    /** Fork a Session at its last completed turn; the child arrives through the Host list. */
-@@ -515,6 +555,13 @@ export type SessionArchiveConfirmProps =
+@@ -521,6 +561,13 @@ export type SessionArchiveConfirmProps =
    & Omit<SessionArchiveConfirmInjected, 'hooks'>
    & PropsHooks<SessionArchiveConfirmInjected['hooks']>
  
@@ -1707,7 +1706,7 @@ index bb704633b9..fe413f26fc 100644
  export type RowToastProps =
    PropsRuntime<'shell.overlay'>
 diff --git a/packages/client/ui-workspace/src/client/index.ts b/packages/client/ui-workspace/src/client/index.ts
-index 84554ac66b..45d06a3d2c 100644
+index 1c38a6652d..98d5724cc0 100644
 --- a/packages/client/ui-workspace/src/client/index.ts
 +++ b/packages/client/ui-workspace/src/client/index.ts
 @@ -25,7 +25,7 @@ import type { WorkspaceNavigationConfig } from '../types.ts'
@@ -1738,7 +1737,7 @@ index 84554ac66b..45d06a3d2c 100644
  import { PinSessionRowButton } from './session-actions/PinSession.tsx'
 @@ -69,6 +72,7 @@ export type {
    DirectoryFlowOwnerProps, DirectoryFlowSlotName, DirectoryPickingHooks, DirectoryPickingInjected,
-   MenuOpenState, RowToast, SessionRenameTarget, SessionRowOwnerProps, UseMenuOpenState, WorkspaceBrowserInjected,
+   MenuOpenState, RowToast, SessionDragType, SessionRenameTarget, SessionRowOwnerProps, UseMenuOpenState, WorkspaceBrowserInjected,
    SessionRowScheduleOwnerProps,
 +  SessionTrashConfirmProps, SessionTrashConfirmRequest, TrashSessionInjected,
    WorkspaceBrowserProps,
@@ -1843,10 +1842,10 @@ index 84554ac66b..45d06a3d2c 100644
 +  return undefined
  }
 diff --git a/packages/client/ui-workspace/src/client/locales.ts b/packages/client/ui-workspace/src/client/locales.ts
-index bcdb692951..e2c03d117a 100644
+index 2316ef503b..e679f58ee5 100644
 --- a/packages/client/ui-workspace/src/client/locales.ts
 +++ b/packages/client/ui-workspace/src/client/locales.ts
-@@ -68,6 +68,8 @@ export const zh = {
+@@ -70,6 +70,8 @@ export const zh = {
    'menu.unarchiveSession': '取消归档',
    'menu.pinSession': '置顶会话',
    'menu.unpinSession': '取消置顶',
@@ -1855,7 +1854,7 @@ index bcdb692951..e2c03d117a 100644
    'menu.sessionId': '复制 Session ID',
    'toast.sessionIdCopied': 'Session ID 已复制',
    'toast.sessionIdCopyFailed': '复制失败，请重试',
-@@ -91,6 +93,25 @@ export const zh = {
+@@ -93,6 +95,25 @@ export const zh = {
    'archive.confirm.listSeparator': '、',
    'archive.confirm.action': '停止并归档',
    'archive.confirm.pending': '正在停止并归档…',
@@ -1881,7 +1880,7 @@ index bcdb692951..e2c03d117a 100644
    'toast.archivedUndo': '撤销',
    'toast.archivedOr': '或',
    'toast.archivedFilter': '筛选已归档会话',
-@@ -107,6 +128,7 @@ export const zh = {
+@@ -109,6 +130,7 @@ export const zh = {
    'actions.unarchive': '取消归档',
    'actions.pin': '置顶会话',
    'actions.unpin': '取消置顶',
@@ -1889,7 +1888,7 @@ index bcdb692951..e2c03d117a 100644
    'actions.newSession': '新会话',
    'actions.newSession.aria': '在“{name}”中新建会话',
    'status.running': '进行中',
-@@ -203,6 +225,8 @@ export const en = {
+@@ -207,6 +229,8 @@ export const en = {
    'menu.unarchiveSession': 'Unarchive session',
    'menu.pinSession': 'Pin session',
    'menu.unpinSession': 'Unpin session',
@@ -1898,7 +1897,7 @@ index bcdb692951..e2c03d117a 100644
    'menu.sessionId': 'Copy Session ID',
    'toast.sessionIdCopied': 'Session ID copied',
    'toast.sessionIdCopyFailed': 'Copy failed. Try again.',
-@@ -226,6 +250,25 @@ export const en = {
+@@ -230,6 +254,25 @@ export const en = {
    'archive.confirm.listSeparator': ', ',
    'archive.confirm.action': 'Stop and archive',
    'archive.confirm.pending': 'Stopping and archiving…',
@@ -1924,7 +1923,7 @@ index bcdb692951..e2c03d117a 100644
    'toast.archivedUndo': 'undo',
    'toast.archivedOr': ' or ',
    'toast.archivedFilter': 'filter archived sessions',
-@@ -242,6 +285,7 @@ export const en = {
+@@ -246,6 +289,7 @@ export const en = {
    'actions.unarchive': 'Unarchive',
    'actions.pin': 'Pin',
    'actions.unpin': 'Unpin',
@@ -1932,7 +1931,7 @@ index bcdb692951..e2c03d117a 100644
    'actions.newSession': 'New session',
    'actions.newSession.aria': 'New session in {name}',
    'status.running': 'Running',
-@@ -401,6 +445,28 @@ export const ja = {
+@@ -407,6 +451,28 @@ export const ja = {
    'time.months': '{n}か月',
    'time.years': '{n}年',
    'time.ago': '{t}前',
@@ -1961,7 +1960,7 @@ index bcdb692951..e2c03d117a 100644
  } satisfies Record<keyof typeof en, string>
  
  /** Spanish dictionary, checked against the English keys. */
-@@ -533,6 +599,28 @@ export const es = {
+@@ -541,6 +607,28 @@ export const es = {
    'time.months': '{n}mo',
    'time.years': '{n}y',
    'time.ago': 'Hace {t}',
@@ -1990,7 +1989,7 @@ index bcdb692951..e2c03d117a 100644
  } satisfies Record<keyof typeof en, string>
  
  /** French dictionary, checked against the English keys. */
-@@ -665,6 +753,28 @@ export const fr = {
+@@ -675,6 +763,28 @@ export const fr = {
    'time.months': '{n}mo',
    'time.years': '{n}y',
    'time.ago': 'Il y a {t}',
@@ -2019,7 +2018,7 @@ index bcdb692951..e2c03d117a 100644
  } satisfies Record<keyof typeof en, string>
  
  /** German dictionary, checked against the English keys. */
-@@ -797,6 +907,28 @@ export const de = {
+@@ -809,6 +919,28 @@ export const de = {
    'time.months': '{n}mo',
    'time.years': '{n}y',
    'time.ago': 'Vor {t}',
@@ -2048,7 +2047,7 @@ index bcdb692951..e2c03d117a 100644
  } satisfies Record<keyof typeof en, string>
  
  /** Russian dictionary, checked against the English keys. */
-@@ -929,6 +1061,28 @@ export const ru = {
+@@ -943,6 +1075,28 @@ export const ru = {
    'time.months': '{n}mo',
    'time.years': '{n}y',
    'time.ago': '{t} назад',
@@ -2077,7 +2076,7 @@ index bcdb692951..e2c03d117a 100644
  } satisfies Record<keyof typeof en, string>
  
  /** Portuguese dictionary, checked against the English keys. */
-@@ -1061,4 +1215,26 @@ export const pt = {
+@@ -1077,4 +1231,26 @@ export const pt = {
    'time.months': '{n} mês',
    'time.years': '{n}s',
    'time.ago': '{t} atrás',
@@ -2140,12 +2139,12 @@ index 9a5aec0e2f..df5710d6e8 100644
      await this.workspaces.archiveSession(sessionId, options)
      if (this.mainReference?.sessionId === sessionId) this.clearMain()
 diff --git a/packages/client/ui-workspace/src/client/rows/Rows.tsx b/packages/client/ui-workspace/src/client/rows/Rows.tsx
-index 628f409158..09521d7795 100644
+index b62bf3a09b..0112c94ee8 100644
 --- a/packages/client/ui-workspace/src/client/rows/Rows.tsx
 +++ b/packages/client/ui-workspace/src/client/rows/Rows.tsx
-@@ -33,6 +33,14 @@ const DRAG_PREVIEW_PROPERTIES = [
-   '--dsh-sidebar-paint-inset',
- ] as const
+@@ -36,6 +36,14 @@ const DRAG_PREVIEW_PROPERTIES = [
+ /** Drag data type carrying a dragged Session row's id. */
+ const SESSION_DRAG_TYPE: SessionDragType = 'application/x-dsh-session'
  
 +/** Check whether keyboard focus is inside an input, textarea, or contenteditable target. */
 +function isInputTarget(target: EventTarget | null): boolean {
@@ -2158,7 +2157,7 @@ index 628f409158..09521d7795 100644
  /** The standard locale seat, prop-passed from the browser root. */
  type RowTranslate = WorkspaceBrowserProps['t']
  
-@@ -504,7 +512,7 @@ export function SearchResultItem({
+@@ -511,7 +519,7 @@ export function SearchResultItem({
   * @returns the session row.
   */
  export function SessionNodeItem({
@@ -2167,7 +2166,7 @@ index 628f409158..09521d7795 100644
    useContextMenu, onReveal, drag, home, useSessionAccess, t,
  }: {
    useContextMenu: WorkspaceBrowserProps['useContextMenu']
-@@ -516,6 +524,8 @@ export function SessionNodeItem({
+@@ -523,6 +531,8 @@ export function SessionNodeItem({
    onOpen: (id: SessionNode['id']) => void
    /** Open the rename dialog from a title double-click (id + current title); see the function JSDoc for the press precondition. */
    onRenameRequest: (id: SessionNode['id'], currentTitle: string) => void
@@ -2176,7 +2175,7 @@ index 628f409158..09521d7795 100644
    /** Scroll this row into view after search navigation, then acknowledge it. */
    onReveal?: (() => void) | undefined
    /** Present on reorderable-list rows so every row can remain a drop target. */
-@@ -567,16 +577,27 @@ export function SessionNodeItem({
+@@ -575,16 +585,27 @@ export function SessionNodeItem({
          drag?.marker === 'before' && css.dropBefore, drag?.marker === 'after' && css.dropAfter,
        )}
        role="treeitem"
@@ -2210,7 +2209,7 @@ index 628f409158..09521d7795 100644
        onPointerEnter={marquee.onPointerEnter}
        onPointerLeave={marquee.onPointerLeave}
 diff --git a/packages/client/ui-workspace/src/client/rows/WorkspaceBrowser.tsx b/packages/client/ui-workspace/src/client/rows/WorkspaceBrowser.tsx
-index d852662c21..2d45481cf2 100644
+index c1555c682a..f4b5dc1d5c 100644
 --- a/packages/client/ui-workspace/src/client/rows/WorkspaceBrowser.tsx
 +++ b/packages/client/ui-workspace/src/client/rows/WorkspaceBrowser.tsx
 @@ -254,7 +254,8 @@ type SessionTreeProps = Pick<
@@ -2697,10 +2696,10 @@ index 4b29c52a91..5d6bf5c723 100644
      fireEvent.click(exportRow)
      expect(selected).toHaveBeenCalledWith('export', SID, 'Persisted title')
 diff --git a/packages/client/ui-workspace/tests/rows.client.spec.tsx b/packages/client/ui-workspace/tests/rows.client.spec.tsx
-index ffe540d6e5..11e8557794 100644
+index 1fb0cd4893..962ad6353e 100644
 --- a/packages/client/ui-workspace/tests/rows.client.spec.tsx
 +++ b/packages/client/ui-workspace/tests/rows.client.spec.tsx
-@@ -914,6 +914,61 @@ describe('workspace browser rows', () => {
+@@ -926,6 +926,61 @@ describe('workspace browser rows', () => {
      expect(renderFactorySlot).not.toHaveBeenCalled()
    })
  
@@ -2917,10 +2916,10 @@ index 6cf2f7645b..a93a34fbc1 100644
 +  })
  })
 diff --git a/packages/client/ui-workspace/tests/workspace-browser.client.spec.tsx b/packages/client/ui-workspace/tests/workspace-browser.client.spec.tsx
-index 8330aae4bc..c17d3b194b 100644
+index 499c48fc38..b997a979d0 100644
 --- a/packages/client/ui-workspace/tests/workspace-browser.client.spec.tsx
 +++ b/packages/client/ui-workspace/tests/workspace-browser.client.spec.tsx
-@@ -149,6 +149,7 @@ function mount(overrides: Partial<WorkspaceBrowserProps> = {}) {
+@@ -154,6 +154,7 @@ function mount(overrides: Partial<WorkspaceBrowserProps> = {}) {
      unarchiveSession: vi.fn(async () => {}),
      insertWorkspaceBefore: vi.fn(async () => {}),
      createWorkspace: vi.fn(async () => workspace('created', [])),
@@ -2986,7 +2985,7 @@ index c6ea80ed44..648a061066 100644
      const idle = sid('idle')
      const b = bench()
 diff --git a/packages/experimental/liveshare/src/endpoint-classification.ts b/packages/experimental/liveshare/src/endpoint-classification.ts
-index 6a1f62f889..90785d5648 100644
+index 1242197b3b..aaf3ddf432 100644
 --- a/packages/experimental/liveshare/src/endpoint-classification.ts
 +++ b/packages/experimental/liveshare/src/endpoint-classification.ts
 @@ -149,11 +149,13 @@ export const VIEWER_ENDPOINT_CLASSES = {
@@ -3004,7 +3003,7 @@ index 6a1f62f889..90785d5648 100644
    'workspace/unpinSession': 'owner-only', // owner unpins a Session
    'workspaceFiles/changes': 'owner-only', // owner Workspace file access
 diff --git a/packages/llm/llm-pi-ai/tests/adapter.spec.ts b/packages/llm/llm-pi-ai/tests/adapter.spec.ts
-index b0785b5f3e..7e7317dfb9 100644
+index 66638a1ef9..463bbe93da 100644
 --- a/packages/llm/llm-pi-ai/tests/adapter.spec.ts
 +++ b/packages/llm/llm-pi-ai/tests/adapter.spec.ts
 @@ -164,6 +164,41 @@ describe('PiAiAdapter provider routing', () => {

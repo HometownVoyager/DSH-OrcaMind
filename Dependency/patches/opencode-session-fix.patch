@@ -1,8 +1,8 @@
 diff --git a/packages/llm/llm-pi-ai/src/adapter.ts b/packages/llm/llm-pi-ai/src/adapter.ts
-index 89b9edff2c..1588374f6f 100644
+index e456b89db9..1684aeaec1 100644
 --- a/packages/llm/llm-pi-ai/src/adapter.ts
 +++ b/packages/llm/llm-pi-ai/src/adapter.ts
-@@ -274,6 +274,28 @@ function requestHeaders(
+@@ -275,6 +275,28 @@ function requestHeaders(
    }
  }
  
@@ -31,7 +31,7 @@ index 89b9edff2c..1588374f6f 100644
  /**
   * pi-ai-backed multi-provider adapter. Each operation reads the current
   * profiles, so a configuration change reaches the next request without a
-@@ -472,13 +494,19 @@ export class PiAiAdapter extends LlmAdapter {
+@@ -470,13 +492,19 @@ export class PiAiAdapter extends LlmAdapter {
        const { context, digest } = bindThinkingToPrefix(converted, model.api, prefixDigests, manualThinking, (count) => {
          this.config.onThinkingOmitted?.({ provider: options.provider, model: options.model, count })
        })

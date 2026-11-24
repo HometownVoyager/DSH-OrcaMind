@@ -69,16 +69,27 @@ const SCOPES = [
 
 // OAuth client 凭据不再内嵌（2026-11-17）：读本目录 oauth-client.local.json（不入库），
 // env（antigravityEnv）仍优先。缺文件且无 env 时为空串，token 刷新会显式失败。
-const DEFAULT_CLIENT_ID = oauthClientLocal("clientId");
-const DEFAULT_CLIENT_SECRET = oauthClientLocal("clientSecret");
+// 加固：在读取时即做去空白与格式校验；任何来源给出的空/非法 client_id 都不会
+// 被发往 Google（否则 Google 会回 400 invalid_request: Could not determine client ID）。
+const oauthClientLocalState = { clientId: "", clientSecret: "", error: "" };
+try {
+  // 修复：原实现用 "./oauth-client.local.json" 相对 lib/index.js 解析，
+  // 实际找到的是 lib/oauth-client.local.json（不存在）→ 静默吞掉 ENOENT →
+  // clientId="" → Google 返回 400 "Could not determine client ID from request"。
+  // 配置文件在插件根目录，必须向上一级。
+  const raw = readFileSync(fileURLToPath(new URL("../oauth-client.local.json", import.meta.url)), "utf8");
+  const parsed = JSON.parse(raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw); // 容忍 UTF-8 BOM
+  oauthClientLocalState.clientId = typeof parsed.clientId === "string" ? parsed.clientId.trim() : "";
+  oauthClientLocalState.clientSecret =
+    typeof parsed.clientSecret === "string" ? parsed.clientSecret.trim() : "";
+} catch (error) {
+  oauthClientLocalState.error = error instanceof Error ? error.message : String(error);
+}
+const DEFAULT_CLIENT_ID = oauthClientLocalState.clientId;
+const DEFAULT_CLIENT_SECRET = oauthClientLocalState.clientSecret;
 
 function oauthClientLocal(key) {
-  try {
-    const raw = readFileSync(fileURLToPath(new URL("./oauth-client.local.json", import.meta.url)), "utf8");
-    return JSON.parse(raw)[key] || "";
-  } catch {
-    return "";
-  }
+  return oauthClientLocalState[key] || "";
 }
 
 const ANTIGRAVITY_SYSTEM_INSTRUCTION =
@@ -716,7 +727,7 @@ function setLastError(error) {
 }
 
 export function getAntigravityDiagnostics() {
-  return { ...diagnostics };
+  return { ...diagnostics, oauthClient: oauthClientDiagnostics() };
 }
 
 function assertSafeApiBaseUrl(raw) {
@@ -776,12 +787,57 @@ function redirectUri() {
   return `http://localhost:${callbackPort()}${REDIRECT_PATH}`;
 }
 
+function requireOAuthSetting(value, label) {
+  const trimmed = typeof value === "string" ? value.trim() : "";
+  if (!trimmed) {
+    throw new Error(
+      `Antigravity OAuth ${label} 未配置。请检查插件目录的 oauth-client.local.json 或环境变量 ANTIGRAVITY_${label}。` +
+        (oauthClientLocalState.error ? ` (本地文件读取失败: ${oauthClientLocalState.error})` : ""),
+    );
+  }
+  return trimmed;
+}
+
+// client_id 必须形如 <数字>.apps.googleusercontent.com。
+// 脏值/空白值若被发出去，Google 只会回含糊的 400 invalid_request，
+// 因此在这里提前、明确地失败。
 function clientId() {
-  return antigravityEnv("CLIENT_ID") || DEFAULT_CLIENT_ID;
+  const id = requireOAuthSetting(
+    antigravityEnv("CLIENT_ID") || DEFAULT_CLIENT_ID,
+    "CLIENT_ID",
+  );
+  if (!/^\d+-[a-z0-9]+\.apps\.googleusercontent\.com$/i.test(id)) {
+    throw new Error(`Antigravity OAuth CLIENT_ID 格式非法（长度 ${id.length}），已拒绝发送。`);
+  }
+  return id;
 }
 
 function clientSecret() {
-  return antigravityEnv("CLIENT_SECRET") || DEFAULT_CLIENT_SECRET;
+  return requireOAuthSetting(
+    antigravityEnv("CLIENT_SECRET") || DEFAULT_CLIENT_SECRET,
+    "CLIENT_SECRET",
+  );
+}
+
+// 只读诊断：仅暴露客户端 ID 的长度与是否配置，绝不打印 secret 或完整 ID/token。
+function oauthClientDiagnostics() {
+  let id = "";
+  let secretOk = false;
+  let error = "";
+  try {
+    id = clientId();
+    secretOk = clientSecret().length > 0;
+  } catch (e) {
+    error = e instanceof Error ? e.message : String(e);
+  }
+  return {
+    configured: !!id,
+    clientIdLength: id.length,
+    clientIdPrefix: id.slice(0, 12),
+    clientSecretConfigured: secretOk,
+    localFileError: oauthClientLocalState.error || undefined,
+    error: error || undefined,
+  };
 }
 
 function defaultUserAgent() {
@@ -2863,11 +2919,18 @@ async function exchangeOAuthCode(code, verifier, callbackUrl) {
 
 export async function beginWebLogin(store) {
   if (webLoginFlow?.status === "pending") {
-    return {
-      status: webLoginFlow.status,
-      authUrl: webLoginFlow.authUrl,
-      startedAt: webLoginFlow.startedAt,
-    };
+    // 加固：旧登录流程可能缓存了 client_id 为空的坏 URL（会稳定复现 400）。
+    // 复用前校验；若 URL 无效，丢弃旧流程并重新发起。
+    const cachedId = new URL(webLoginFlow.authUrl).searchParams.get("client_id") || "";
+    if (/^\d+-[a-z0-9]+\.apps\.googleusercontent\.com$/i.test(cachedId)) {
+      return {
+        status: webLoginFlow.status,
+        authUrl: webLoginFlow.authUrl,
+        startedAt: webLoginFlow.startedAt,
+      };
+    }
+    webLoginFlow.status = "error";
+    webLoginFlow.error = "丢弃了 client_id 缺失/非法的旧登录流程，已重新生成授权 URL。";
   }
 
   const { verifier, challenge } = generatePKCE();
@@ -2890,6 +2953,7 @@ export async function beginWebLogin(store) {
     authUrl: `${AUTH_URL}?${authParams.toString()}`,
     startedAt: Date.now(),
     error: "",
+    clientIdPrefix: clientId().slice(0, 12), // 仅前缀，供诊断
   };
   webLoginFlow = flow;
 
@@ -2927,6 +2991,7 @@ export function getWebLoginStatus() {
     completedAt: webLoginFlow.completedAt,
     email: webLoginFlow.email,
     error: webLoginFlow.error,
+    clientIdPrefix: webLoginFlow.clientIdPrefix, // 仅前缀，供诊断确认登录 URL 使用的是哪个 client
   };
 }
 
@@ -3416,6 +3481,9 @@ function doctorText() {
     `lastProjectId=${current.projectId || "none"}`,
     `lastError=${current.error ? redactSecrets(current.error) : "none"}`,
     `credentialPath=${credentialPath()}`,
+    `oauthClientConfigured=${oauthClientDiagnostics().configured}`,
+    `oauthClientIdLength=${oauthClientDiagnostics().clientIdLength}`,
+    `oauthClientIdPrefix=${oauthClientDiagnostics().clientIdPrefix || "none"}`,
     "transport=native-cloud-code-assist-sse",
     "runtimeCli=not-used",
     "commands=/antigravity-login /antigravity-quota /antigravity-doctor /antigravity-logout",

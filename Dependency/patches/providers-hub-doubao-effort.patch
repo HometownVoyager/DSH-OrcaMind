@@ -1,0 +1,122 @@
+diff --git a/src/doubao-upstream.ts b/src/doubao-upstream.ts
+index 2ec8035c..5489810f 100644
+--- a/src/doubao-upstream.ts
++++ b/src/doubao-upstream.ts
+@@ -350,7 +350,9 @@ export function doubaoRemoteModels(payload: unknown): readonly DoubaoRemoteModel
+     readonly reasoning: DoubaoRemoteModel['reasoning']
+   }
+   const found = new Map<string, Appearance[]>()
+-  const visit = (node: unknown, menuMode?: DoubaoModeId, reasoningEnabled = false): void => {
++  // undefined = 上游没下发标志（2026-11-25 起的新形态）；true/false = 上游显式声明。
++  // 两者必须分开，否则「缺席」会被当成「显式关闭」，模型自带的档位就被吞掉。
++  const visit = (node: unknown, menuMode?: DoubaoModeId, reasoningEnabled?: boolean): void => {
+     if (Array.isArray(node)) {
+       for (const item of node) visit(item, menuMode, reasoningEnabled)
+       return
+@@ -358,7 +360,16 @@ export function doubaoRemoteModels(payload: unknown): readonly DoubaoRemoteModel
+     if (typeof node !== 'object' || node === null) return
+     const record = node as Record<string, unknown>
+     const mode = doubaoModeId(record.mode_id) ?? menuMode
+-    const enabled = typeof record.show_reasoning_effort === 'boolean' ? record.show_reasoning_effort : reasoningEnabled
++    // 2026-11-25 协议漂移：上游不再在菜单节点逐条下发 `show_reasoning_effort`，
++    // 但模型节点自身的 `reasoning_effort_config.option_list` 仍在（且正是网页端
++    // 「推理强度」选择器的数据源，真机 brief_list 实测 12 个模型带档位）。
++    // 判据：模型节点自己显式 false → 关；否则模型自带 option_list → 开；
++    // 只有既无本节点标志、又无 option_list 时，才沿用菜单继承值。
++    const efforts = doubaoReasoningEfforts(record.reasoning_effort_config)
++    const ownFlag = record.show_reasoning_effort
++    const enabled = typeof ownFlag === 'boolean'
++      ? ownFlag
++      : (efforts !== undefined ? true : (reasoningEnabled ?? false))
+     const key = record.model_item_key
+     if ((typeof key === 'string' || typeof key === 'number') && key !== '') {
+       const id = String(key)
+@@ -368,7 +379,7 @@ export function doubaoRemoteModels(payload: unknown): readonly DoubaoRemoteModel
+         tags: doubaoTagList(record.tag_list),
+         menuMode: mode,
+         defaultMode: doubaoModeId(record.default_mode),
+-        reasoning: enabled ? doubaoReasoningEfforts(record.reasoning_effort_config) : undefined,
++        reasoning: enabled ? efforts : undefined,
+       })
+       found.set(id, rows)
+     }
+@@ -385,9 +396,12 @@ export function doubaoRemoteModels(payload: unknown): readonly DoubaoRemoteModel
+     // Prefer an unambiguous default present in the menu. On conflict, avoid task billing if chat exists.
+     const modeId = preferred !== undefined && modes.has(preferred) ? preferred : modes.has('1') || !modes.has('3') ? '1' : '3'
+     const chosen = candidates.filter((row) => modeOf(row) === modeId)
+-    const reasoning = chosen[0]?.reasoning
+-    // Conflicting descriptions of the same route are not a reliable capability declaration.
+-    const sameEfforts = reasoning !== undefined && chosen.every((row) => JSON.stringify(row.reasoning) === JSON.stringify(reasoning))
++    // 同一模型在目录里可能出现多次（menu_conf / menu_conf_v2 / support_models）：
++    // 有的节点带 option_list、有的只带名字。取第一份**明确声明**的档位为准，
++    // 没声明的节点不构成冲突（2026-11-25 起 support_models 节点不带档位）。
++    const reasoning = chosen.find((row) => row.reasoning !== undefined)?.reasoning
++    const sameEfforts = reasoning !== undefined && chosen.every((row) =>
++      row.reasoning === undefined || JSON.stringify(row.reasoning) === JSON.stringify(reasoning))
+     const display = [...chosen, ...rows]
+     return {
+       key,
+diff --git a/tests/unit/doubao-protocol.spec.ts b/tests/unit/doubao-protocol.spec.ts
+index be13b11f..4cd5a73e 100644
+--- a/tests/unit/doubao-protocol.spec.ts
++++ b/tests/unit/doubao-protocol.spec.ts
+@@ -68,7 +68,7 @@ describe('doubao model catalog parsing', () => {
+     expect(models[1].tags).toEqual(['0.65x'])
+   })
+ 
+-  it('uses reasoning levels only from a model-menu mode that enables them', () => {
++  it('uses reasoning levels from a model that declares them; menu flag suppresses only undecorated models', () => {
+     const item = {
+       model_item_key: 'flash', name: 'Flash', default_mode: 3,
+       reasoning_effort_config: { option_list: [{ level: 3, name: '低' }, { level: 7, name: '最高' }] },
+@@ -79,14 +79,49 @@ describe('doubao model catalog parsing', () => {
+     ] } } } }] } })
+     expect(models).toHaveLength(1)
+     expect(models[0].reasoning?.efforts).toEqual([{ id: '3', name: '低' }, { id: '7', name: '最高' }])
+-    const disabled = doubaoRemoteModels({ data: { entry_list: [{ active_switch_conf: {
++    // A chat-mode menu with false still exposes a model that itself declares efforts.
++    const decorated = doubaoRemoteModels({ data: { entry_list: [{ active_switch_conf: {
+       menu_conf_v2: { mode_list: { item_list: [{
+         mode_id: '1', show_reasoning_effort: false, model_list: { item_list: [item] },
+       }] } },
+     } }] } })
++    expect(decorated[0].reasoning?.efforts).toEqual([{ id: '3', name: '低' }, { id: '7', name: '最高' }])
++    // A model with no own config stays suppressed by an explicit menu false.
++    const plain = { model_item_key: 'plain', name: 'Plain', default_mode: 1 }
++    const disabled = doubaoRemoteModels({ data: { entry_list: [{ active_switch_conf: {
++      menu_conf_v2: { mode_list: { item_list: [{
++        mode_id: '1', show_reasoning_effort: false, model_list: { item_list: [plain] },
++      }] } },
++    } }] } })
+     expect(disabled[0].reasoning).toBeUndefined()
+   })
+ 
++  it('keeps model-declared efforts when show_reasoning_effort is absent (2026-11-25 brief_list)', () => {
++    // 真机 2026-11-25：菜单节点不再逐条下发 show_reasoning_effort，
++    // 但每个模型自带 reasoning_effort_config.option_list（网页端「推理强度」同款）。
++    const model = { model_item_key: 'person-glm-5-4', name: 'GLM 5.4', default_mode: 3,
++      reasoning_effort_config: { default_level: 3, option_list: [
++        { level: 3, name: '低' }, { level: 5, name: '高' }, { level: 7, name: '最高' },
++      ] } }
++    const parsed = doubaoRemoteModels({ mode_list: { item_list: [
++      { mode_id: '3', model_list: { item_list: [model] } },
++    ] } })
++    expect(parsed[0].reasoning?.efforts).toEqual([
++      { id: '3', name: '低' }, { id: '5', name: '高' }, { id: '7', name: '最高' },
++    ])
++    // A menu-level false suppresses only models that do NOT declare their own efforts.
++    const noConfig = { model_item_key: 'x', name: 'X', default_mode: 3 }
++    const suppressed = doubaoRemoteModels({ mode_list: { item_list: [
++      { mode_id: '3', show_reasoning_effort: false, model_list: { item_list: [noConfig] } },
++    ] } })
++    expect(suppressed[0].reasoning).toBeUndefined()
++    // An explicit false on the MODEL node itself still wins over its own option_list.
++    const modelOff = doubaoRemoteModels({ mode_list: { item_list: [
++      { mode_id: '3', model_list: { item_list: [{ ...model, show_reasoning_effort: false }] } },
++    ] } })
++    expect(modelOff[0].reasoning).toBeUndefined()
++  })
++
+   it('does not transfer task efforts to a default chat route, regardless of menu order', () => {
+     const model = { model_item_key: 'shared', name: 'Shared', default_mode: 1 }
+     const chat = { mode_id: '1', show_reasoning_effort: false, model_list: { item_list: [model] } }

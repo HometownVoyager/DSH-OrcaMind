@@ -18,12 +18,6 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM ---- 零 Token 同步 OpenCode Go 模型目录（尽力而为）----
-if exist "Dependency\scripts\sync-opencode-go-models.mjs" (
-    echo [sync] OpenCode Go models...
-    node "Dependency\scripts\sync-opencode-go-models.mjs" --quiet
-)
-
 REM ---- 已在监听就只开浏览器 ----
 netstat -ano | findstr LISTENING | findstr /c:":%PORT% " >nul 2>nul
 if not errorlevel 1 (

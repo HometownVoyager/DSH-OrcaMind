@@ -2,41 +2,141 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' 'self'; script-src 'unsafe-inline' 'self'; img-src 'self' data:" />
   <title>OrcaMind</title>
-  <style>
-    body {
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: #0e1b3d;
-      color: #dbe4ff;
-      font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
-    }
-    .spinner {
-      width: 44px;
-      height: 44px;
-      border: 4px solid rgba(255, 255, 255, 0.15);
-      border-top-color: #5b8cff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 20px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    p { margin: 4px 0; font-size: 14px; opacity: 0.85; }
-  </style>
+  <link rel="stylesheet" href="shell-theme.css" />
 </head>
 <body>
-  <div class="spinner"></div>
-  <p id="msg">正在启动…</p>
-  <p>首次启动可能需要在后台安装依赖，请耐心等待</p>
+  <div class="shell-scene">
+    <div class="shell-grid"></div>
+    <div class="shell-scan"></div>
+
+    <div class="shell-mark" aria-hidden="true">
+      <svg class="shell-whale" viewBox="0 0 256 256" aria-hidden="true">
+        <path fill="currentColor" fill-rule="evenodd" d="M177 35L181 36L184 46L189 51L199 55L205 60L208 69L220 62L240 60L251 50L255 51L256 53L254 70L248 82L236 93L224 98L215 99L213 123L205 148L194 167L179 183L180 186L202 194L203 200L199 204L187 206L170 205L158 202L150 209L133 217L112 221L89 221L62 214L36 198L22 184L10 166L4 151L0 131L0 112L3 97L9 83L18 70L30 59L47 50L73 46L97 48L99 46L118 40L134 40L137 43L133 45L127 53L129 61L142 70L146 75L148 75L171 99L180 105L188 107L192 95L177 81L171 66L171 47L177 35ZM30 101L21 102L17 105L17 116L20 131L32 159L51 181L68 192L84 194L89 190L89 188L84 181L83 172L88 170L99 175L129 197L141 200L155 200L155 198L150 196L135 182L107 142L87 122L63 108L47 103L30 101ZM138 109L133 112L133 116L141 117L146 120L146 132L148 137L155 143L162 144L168 142L170 140L170 136L160 120L148 110L138 109ZM137 122L134 124L134 127L140 128L141 124L137 122Z"/>
+      </svg>
+    </div>
+
+    <div class="shell-content">
+      <p class="shell-eyebrow" id="eyebrow">DEEPSEEK HARNESS ORCAMIND</p>
+      <h1 class="shell-title" id="title">正在唤醒 OrcaMind</h1>
+
+      <div class="shell-progress">
+        <div class="shell-progress-head">
+          <span class="shell-progress-action" id="status">
+            <span class="dot"></span><span id="stage">正在探测本地服务…</span>
+          </span>
+          <span class="pct" id="pct">0%</span>
+        </div>
+        <div class="shell-bar"><i id="bar"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="shell-i18n.client.js"></script>
   <script>
-    const params = new URLSearchParams(location.search);
-    const msg = params.get('msg');
-    if (msg) document.getElementById('msg').textContent = msg;
+    'use strict';
+    var state = { value: 0, shown: 0, raf: null };
+
+    function render() {
+      // Smoothly chase the target value without ever going backwards.
+      var diff = state.value - state.shown;
+      if (Math.abs(diff) > 0.2) {
+        state.shown += diff * 0.12;
+      } else {
+        state.shown = state.value;
+      }
+      var pct = Math.max(0, Math.min(100, state.shown));
+      document.getElementById('bar').style.width = pct + '%';
+      document.getElementById('pct').textContent = Math.round(pct) + '%';
+      if (state.shown !== state.value) {
+        state.raf = requestAnimationFrame(render);
+      } else {
+        state.raf = null;
+      }
+    }
+
+    function setProgress(value) {
+      var v = Math.max(0, Math.min(100, Number(value) || 0));
+      state.value = Math.max(state.value, v); // never regress
+      if (!state.raf) state.raf = requestAnimationFrame(render);
+    }
+
+    var currentLocale = 'zh';
+
+    function applyStrings(locale) {
+      var s = window.shellI18n && window.shellI18n.forLocale(locale);
+      if (!s) return;
+      var nextLocale = locale === 'en' ? 'en' : 'zh';
+      var localeChanged = nextLocale !== currentLocale;
+      currentLocale = nextLocale;
+      document.documentElement.lang = nextLocale === 'en' ? 'en' : 'zh-CN';
+      document.getElementById('eyebrow').textContent = s['loading.eyebrow'];
+      document.getElementById('title').textContent = s['loading.title'];
+      var stage = document.getElementById('stage');
+      // Only re-render the stage when the language actually changes. Startup
+      // states always carry `locale`, so touching the text on every event made
+      // the current status flicker back to the generic stage label.
+      if (localeChanged || !stage.dataset.raw) {
+        stage.textContent = s[stage.dataset.raw || 'loading.stage.checking'];
+      }
+    }
+
+    function setStage(key, text, active) {
+      var stage = document.getElementById('stage');
+      stage.dataset.raw = key;
+      stage.dataset.active = active ? '1' : '';
+      // Fall back to the localized string when the main process sends no text,
+      // so the "what am I doing right now" line is never empty.
+      var fallback = '';
+      if (window.shellI18n) {
+        var s = window.shellI18n.forLocale(currentLocale);
+        fallback = s['loading.stage.' + key + 'ing'] || s['loading.stage.' + key] || '';
+      }
+      stage.textContent = text || fallback || stage.textContent;
+    }
+
+    function setReady(locale) {
+      var s = window.shellI18n && window.shellI18n.forLocale(locale);
+      document.getElementById('status').classList.add('is-ready');
+      document.getElementById('stage').textContent = s ? s['loading.ready'] : 'Ready — opening workspace…';
+      setProgress(100);
+    }
+
+    var initial = new URLSearchParams(location.search);
+    var initialLocale = initial.get('locale') || 'zh';
+    document.body.setAttribute('data-ds-dark-theme', initial.get('theme') === 'dark' ? '' : 'not-dark');
+    if (initial.get('theme') !== 'dark') document.body.removeAttribute('data-ds-dark-theme');
+    applyStrings(initialLocale);
+
+    function handleState(state) {
+      if (!state) return;
+      if (state.theme) {
+        if (state.theme === 'dark') document.body.setAttribute('data-ds-dark-theme', '');
+        else document.body.removeAttribute('data-ds-dark-theme');
+      }
+      if (state.locale) applyStrings(state.locale);
+      if (state.stageKey && window.shellI18n) {
+        var s = window.shellI18n.forLocale(state.locale || initialLocale);
+        setStage(state.stageKey, state.stageText || s['loading.stage.' + state.stageKey + 'ing'] || '', state.stageKey === 'load');
+      }
+      if (state.progress != null) setProgress(state.progress);
+      if (state.ready) setReady(state.locale || initialLocale);
+    }
+
+    window.shellLoading = {
+      setProgress: setProgress,
+      setStage: setStage,
+      setLocale: applyStrings,
+      setTheme: function (theme) {
+        if (theme === 'dark') document.body.setAttribute('data-ds-dark-theme', '');
+        else document.body.removeAttribute('data-ds-dark-theme');
+      },
+      setReady: setReady,
+    };
+
+    if (window.desktop && window.desktop.onShellState) window.desktop.onShellState(handleState);
+    if (window.desktop && window.desktop.loadingReady) window.desktop.loadingReady();
   </script>
 </body>
 </html>

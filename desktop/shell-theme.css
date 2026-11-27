@@ -1,0 +1,450 @@
+/* OrcaMind shell-owned pages (loading / error).
+   Colors mirror DSH's design tokens (design-platform.css): neutral-bluish
+   light/dark surfaces, deepseek blue accent, subtle elevation strokes. */
+
+:root {
+  --shell-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --shell-code: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas,
+    'Liberation Mono', Menlo, Courier, 'PingFang SC', 'Microsoft YaHei';
+
+  --shell-bg: #f9fafb;
+  --shell-bg-grad-1: rgba(65, 118, 230, 0.06);
+  --shell-bg-grad-2: rgba(147, 197, 253, 0.04);
+  --shell-grid: rgba(15, 15, 15, 0.035);
+  --shell-grid-major: rgba(15, 15, 15, 0.055);
+  --shell-ink: #0f0f12;
+  --shell-ink-secondary: #3c3c3d;
+  --shell-ink-tertiary: #81858f;
+  --shell-accent: #4176e6;
+  --shell-accent-soft: rgba(65, 118, 230, 0.12);
+  --shell-accent-glow: rgba(65, 118, 230, 0.30);
+  --shell-surface: rgba(255, 255, 255, 0.94);
+  --shell-stroke: rgba(0, 0, 0, 0.10);
+  --shell-track: rgba(65, 118, 230, 0.10);
+  --shell-track-soft: rgba(15, 15, 15, 0.06);
+  --shell-danger: #d93025;
+  --shell-danger-soft: rgba(217, 48, 37, 0.08);
+  --shell-danger-track: rgba(217, 48, 37, 0.22);
+  --shell-danger-glow: rgba(217, 48, 37, 0.35);
+  --shell-elevation: 0 12px 40px rgba(15, 15, 15, 0.08), 0 2px 8px rgba(15, 15, 15, 0.04);
+}
+
+body[data-ds-dark-theme] {
+  --shell-bg: #151517;
+  --shell-bg-grad-1: rgba(65, 118, 230, 0.10);
+  --shell-bg-grad-2: rgba(86, 134, 254, 0.06);
+  --shell-grid: rgba(255, 255, 255, 0.035);
+  --shell-grid-major: rgba(255, 255, 255, 0.06);
+  --shell-ink: #f4f6f9;
+  --shell-ink-secondary: #b7bcc6;
+  --shell-ink-tertiary: #81858f;
+  --shell-accent: #7aaaff;
+  --shell-accent-soft: rgba(122, 170, 255, 0.16);
+  --shell-accent-glow: rgba(122, 170, 255, 0.45);
+  --shell-surface: rgba(27, 27, 28, 0.95);
+  --shell-stroke: rgba(255, 255, 255, 0.12);
+  --shell-track: rgba(122, 170, 255, 0.16);
+  --shell-track-soft: rgba(255, 255, 255, 0.06);
+  --shell-danger: #f26a5e;
+  --shell-danger-soft: rgba(242, 106, 94, 0.10);
+  --shell-danger-track: rgba(242, 106, 94, 0.26);
+  --shell-danger-glow: rgba(242, 106, 94, 0.40);
+  --shell-elevation: 0 12px 40px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--shell-bg);
+  color: var(--shell-ink);
+  font-family: var(--shell-font);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  transition: background-color 220ms ease, color 220ms ease;
+}
+
+.shell-scene {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  isolation: isolate;
+}
+
+.shell-scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(60% 55% at 50% 42%, var(--shell-bg-grad-1) 0%, transparent 70%),
+    radial-gradient(45% 45% at 78% 80%, var(--shell-bg-grad-2) 0%, transparent 70%);
+}
+
+.shell-grid {
+  position: absolute;
+  inset: -40%;
+  z-index: -1;
+  background-image:
+    linear-gradient(var(--shell-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--shell-grid) 1px, transparent 1px),
+    linear-gradient(var(--shell-grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--shell-grid-major) 1px, transparent 1px);
+  background-size: 28px 28px, 28px 28px, 140px 140px, 140px 140px;
+  transform: perspective(700px) rotateX(58deg) translateY(28%) scale(1.5);
+  transform-origin: center bottom;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 30%, #000 78%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 30%, #000 78%, transparent 100%);
+  /* 性能：原来的 grid-drift 动画改的是 background-position（paint 属性），
+     在 inset:-40% + scale(1.5) 约 270% 视口大小、又带 mask 的图层上每帧重绘，
+     是启动页风扇峰值的主要来源。启动页只停留数秒，网格改为静态；
+     若要恢复漂移，请用一个包装元素做 translate3d（合成器友好），不要动 background-position。 */
+  animation: none;
+}
+
+.shell-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* 固定在文档顶部，位移交给 transform（合成器），
+     不再像原来那样每帧改 top 触发 layout + paint。 */
+  top: 0;
+  height: 1px;
+  z-index: -1;
+  background: linear-gradient(90deg, transparent, var(--shell-accent-soft), transparent);
+  opacity: 0.7;
+  will-change: transform, opacity;
+  animation: scan 6s ease-in-out infinite;
+}
+
+@keyframes scan {
+  0%, 100% { transform: translateY(12vh); opacity: 0; }
+  15% { opacity: 0.55; }
+  85% { opacity: 0.55; }
+  50% { transform: translateY(88vh); }
+}
+
+.shell-mark {
+  position: relative;
+  width: 188px;
+  height: 188px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 28px;
+}
+
+.shell-mark::after {
+  content: '';
+  position: absolute;
+  inset: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--shell-accent-soft) 0%, transparent 68%);
+  opacity: 0.8;
+  animation: breathe 3.2s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(0.92); opacity: 0.55; }
+  50% { transform: scale(1.06); opacity: 0.9; }
+}
+
+.shell-whale {
+  position: relative;
+  z-index: 2;
+  width: 116px;
+  height: 116px;
+  color: var(--shell-ink);
+  opacity: 0.92;
+  animation: whale-float 4.5s ease-in-out infinite;
+}
+
+@keyframes whale-float {
+  0%, 100% { transform: translateY(2px); }
+  50% { transform: translateY(-4px); }
+}
+
+.shell-content {
+  width: min(520px, 82vw);
+  text-align: center;
+}
+
+.shell-eyebrow {
+  margin: 0 0 10px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  color: var(--shell-ink-tertiary);
+  font-family: var(--shell-code);
+}
+
+.shell-title {
+  margin: 0;
+  font-size: 23px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+}
+
+.shell-progress {
+  margin-top: 26px;
+}
+
+.shell-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.shell-progress-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--shell-ink-secondary);
+}
+
+.shell-progress-action .dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--shell-accent);
+  box-shadow: 0 0 0 0 var(--shell-accent-glow);
+  animation: pulse-dot 1.8s ease-out infinite;
+}
+
+.shell-progress-action.is-ready .dot {
+  animation: none;
+  box-shadow: 0 0 0 4px var(--shell-accent-soft);
+}
+
+@keyframes pulse-dot {
+  0% { box-shadow: 0 0 0 0 var(--shell-accent-glow); }
+  70% { box-shadow: 0 0 0 7px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.shell-progress-head .pct {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--shell-accent);
+  font-family: var(--shell-code);
+}
+
+.shell-bar {
+  position: relative;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--shell-track-soft);
+  overflow: hidden;
+}
+
+.shell-bar > i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--shell-accent), var(--shell-accent-soft));
+  transition: width 240ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shell-card {
+  width: min(560px, 86vw);
+  padding: 30px 34px;
+  border-radius: 14px;
+  background: var(--shell-surface);
+  border: 1px solid var(--shell-stroke);
+  box-shadow: var(--shell-elevation);
+  /* 性能：错误页可能长时间停留，blur(20px) 要对其下方仍在动的图层持续重采样。
+     去掉 backdrop-filter，改用更高不透明度的背景保证可读性。
+     注意 prefers-reduced-motion 并不会禁用 backdrop-filter，必须单独处理。 */
+  backdrop-filter: none;
+}
+
+.shell-card h1 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--shell-danger);
+}
+
+.shell-card pre {
+  margin: 0 0 18px;
+  font-family: var(--shell-code);
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--shell-ink-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.shell-card .hint {
+  margin: -6px 0 20px;
+  font-size: 12px;
+  color: var(--shell-ink-tertiary);
+}
+
+.shell-actions { display: flex; gap: 12px; }
+
+.shell-actions button {
+  flex: 1;
+  padding: 10px 0;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  font-family: var(--shell-font);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  background: var(--shell-accent);
+  color: #fff;
+  transition: filter 160ms ease, background 160ms ease;
+}
+
+.shell-actions button.ghost {
+  background: transparent;
+  color: var(--shell-ink-secondary);
+  border-color: var(--shell-stroke);
+}
+
+.shell-actions button:hover { filter: brightness(1.08); }
+.shell-actions button:active { transform: translateY(1px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .shell-grid, .shell-scan,
+  .shell-mark::after, .shell-whale, .shell-progress-action .dot {
+    animation: none !important;
+  }
+}
+
+/* ---------- 错误态：与启动页同一套视觉语言 ---------- */
+
+.shell-scene--error::before {
+  background:
+    radial-gradient(60% 55% at 50% 42%, var(--shell-danger-soft) 0%, transparent 70%),
+    radial-gradient(45% 45% at 78% 80%, var(--shell-accent-soft) 0%, transparent 70%);
+}
+
+.shell-scene--error .shell-scan {
+  background: linear-gradient(90deg, transparent, var(--shell-danger-soft), transparent);
+}
+
+.shell-mark--error {
+  margin-bottom: 22px;
+}
+
+.shell-mark--error::after {
+  background: radial-gradient(circle, var(--shell-danger-soft) 0%, transparent 68%);
+}
+
+.shell-mark--error .shell-whale {
+  color: var(--shell-ink);
+  opacity: 0.55;
+  filter: grayscale(0.55);
+}
+
+/* 汗滴：挂在鲸头上方偏左（画面中间偏上），随鲸鱼轻微漂浮 */
+.shell-sweat {
+  position: absolute;
+  z-index: 3;
+  left: 90px;
+  top: 48px;
+  width: 25px;
+  height: 33px;
+  color: var(--shell-accent);
+  filter: drop-shadow(0 2px 5px var(--shell-accent-glow));
+  transform-origin: 50% 85%;
+  animation: sweat-wobble 2.6s ease-in-out infinite;
+}
+
+@keyframes sweat-wobble {
+  0%, 100% { transform: rotate(-9deg) translateY(0); opacity: 0.92; }
+  50% { transform: rotate(-2deg) translateY(2px); opacity: 1; }
+}
+
+.shell-badge {
+  position: absolute;
+  right: 24px;
+  bottom: 26px;
+  z-index: 3;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--shell-danger);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+  font-family: var(--shell-code);
+  box-shadow: 0 0 0 4px var(--shell-bg), 0 4px 14px var(--shell-danger-glow);
+  animation: badge-pop 420ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes badge-pop {
+  from { transform: scale(0.4); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.shell-title--error {
+  color: var(--shell-danger);
+}
+
+.shell-card--error {
+  width: 100%;
+  margin-top: 20px;
+  text-align: left;
+  padding: 22px 24px;
+  border-radius: 12px;
+}
+
+.shell-card-label {
+  margin: 0 0 10px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--shell-ink-tertiary);
+  font-family: var(--shell-code);
+}
+
+.shell-card-msg {
+  margin: 0 0 16px !important;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--shell-track-soft);
+  border-left: 2px solid var(--shell-danger);
+  font-family: var(--shell-code) !important;
+  font-size: 12px !important;
+  line-height: 1.7 !important;
+  color: var(--shell-ink-secondary) !important;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 30vh;
+  overflow: auto;
+  user-select: text;
+}
+
+.shell-card--error .hint {
+  margin: -4px 0 18px;
+  font-size: 12px;
+  color: var(--shell-ink-tertiary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell-badge, .shell-sweat { animation: none !important; }
+}

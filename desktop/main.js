@@ -18,18 +18,22 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const ttsService = require('./tts-service');
+const { t: i18nT } = require('./shell-i18n');
 
 let currentTtsSettings = null; // 语音朗读设置（语速/音色），在 app.whenReady 后从 userData 读取并在使用时记忆留存
 
 const APP_TITLE = 'OrcaMind';
 const DEFAULT_PORT = 3080;
-const BOOT_TIMEOUT_MS = 60000; // 服务启动最长等待
-const POLL_INTERVAL_MS = 500;
+// 实测本机冷启动（启动服务 → 后端就绪）通常 9–12 秒，最慢样本 28 秒，
+// 因此超时不宜低于 45s；轮询改为指数退避，避免后端启动失败时刷 2Hz 探测。
+const BOOT_TIMEOUT_MS = 45000; // 服务启动最长等待
+const POLL_START_MS = 250;
+const POLL_MAX_MS = 2000;
 
 // ---------- 配置 ----------
 
 // 读取 exe 旁（打包后）或 desktop/ 下（开发）的 desktop.config.json，再叠加环境变量。
-// 可用字段：{ "DSH_ROOT": "D:/Tools/DeepSeek Harness", "port": 3080 }
+// 可用字段：{ "DSH_ROOT": "D:/Tools/DeepSeek Harness", "port": 3080, "gpuMode": "auto" }
 function loadConfig() {
   const candidates = [
     path.join(path.dirname(process.execPath), 'desktop.config.json'),
@@ -48,11 +52,127 @@ function loadConfig() {
     host: '127.0.0.1',
     port: Number.isInteger(port) ? port : DEFAULT_PORT,
     root: process.env.DSH_ROOT || cfg.DSH_ROOT || null,
+    gpuMode: process.env.DSH_GPU_MODE || cfg.gpuMode || 'auto',
   };
 }
 
 const config = loadConfig();
+
+// ---------- GPU 策略（必须在 app.whenReady() 之前应用） ----------
+// auto     缺省：不加任何开关，保持 Chromium 原行为（对照组）；
+// software 强制 SwiftShader 软件渲染，适合虚拟机 / RDP / 旧驱动导致 GPU 进程异常的环境；
+// disabled 调用 disableHardwareAcceleration()，完全关闭硬件加速。
+// 注意：dist 里的 vk_swiftshader.dll 是每个 Electron 应用都自带的标准文件，
+// 不代表壳主动启用了软件渲染；这里提供的是「检测 + 可切换」的缓解手段。
+const GPU_MODE = ['auto', 'software', 'disabled'].includes(config.gpuMode) ? config.gpuMode : 'auto';
+if (GPU_MODE === 'software') {
+  app.commandLine.appendSwitch('use-gl', 'swiftshader');
+  app.commandLine.appendSwitch('disable-gpu-compositing');
+} else if (GPU_MODE === 'disabled') {
+  app.disableHardwareAcceleration();
+}
+
 const BASE_URL = `http://${config.host}:${config.port}`;
+
+// ---------- DSH Web 会话认证 ----------
+//
+// dsh web 0.1.2+ 会在首页要求带 token 的 URL 才能种下认证 Cookie；token 是每次
+// 后端进程启动时随机生成、只存在于该进程 stdout（attach 模式下壳拿不到），
+// 而签名密钥持久保存在 DSH home 的 .credentials.yaml 中。这里直接用该密钥
+// 自行签发一个与权威同名同签名的会话 Cookie，注入 Electron 的 session，
+// 就能让任意已运行的后端（含外部启动 / 官方 WEBUI）直接放行，无需 token。
+// 票据本身不含权限提升，只是复用 DSH 自己信任的凭据，随密钥轮换自动失效。
+const DSH_AUTH_COOKIE_PREFIX = 'dsh-auth-';
+const DSH_AUTH_COOKIE_MAX_AGE_DAYS = 30;
+const DSH_AUTH_CREDENTIAL_KEY = 'client-connection/browser-session';
+
+function base64url(buf) {
+  return Buffer.from(buf).toString('base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function decodeBase64url(s) {
+  if (typeof s !== 'string' || !/^[A-Za-z0-9_-]*$/.test(s) || s.length % 4 === 1) return null;
+  return Buffer.from(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (s.length % 4)) % 4), 'base64');
+}
+
+// 从 ~/.dsh/.credentials.yaml 读取持久化签名密钥（与 DSH 的 credentialKey('client-connection','browser-session') 对应）
+function readWebSessionSecret() {
+  const yamlPath = path.join(os.homedir(), '.dsh', '.credentials.yaml');
+  let text;
+  try {
+    text = fs.readFileSync(yamlPath, 'utf8');
+  } catch (e) {
+    log('[auth] 无法读取 DSH 凭据文件：' + e.message);
+    return null;
+  }
+  // 轻量按行解析：找到记录键后，在其块内（缩进更深的下一级 key 之前）取 secret 字段。
+  // 不用通用 YAML 库，避免给薄壳引入依赖。
+  const lines = text.split(/\r?\n/);
+  let inRecord = false;
+  let recordIndent = 0;
+  let secretValue = null;
+  for (const line of lines) {
+    const m = /^(\s*)([A-Za-z0-9_./-]+):\s*(.*)$/.exec(line);
+    if (!m) continue;
+    const indent = m[1].length;
+    const key = m[2];
+    if (!inRecord) {
+      if (indent === 2 && key === DSH_AUTH_CREDENTIAL_KEY) {
+        inRecord = true;
+        recordIndent = indent;
+      }
+      continue;
+    }
+    // 记录块结束：遇到同级或更浅的 key
+    if (indent <= recordIndent) break;
+    if (key === 'secret' && /^[A-Za-z0-9_-]{43}$/.test(m[3].trim())) {
+      secretValue = m[3].trim();
+      break;
+    }
+  }
+  if (!secretValue) {
+    log('[auth] DSH 凭据中未找到 browser-session 签名密钥');
+    return null;
+  }
+  const bytes = decodeBase64url(secretValue);
+  if (!bytes || bytes.length !== 32) {
+    log('[auth] DSH 签名密钥格式异常');
+    return null;
+  }
+  return bytes;
+}
+
+// 生成 DSH 可接受的会话 Cookie（复用 DSH 的签名格式与 authority 规则）
+function makeSessionCookie(secret) {
+  const authority = config.host === '127.0.0.1' || config.host === 'localhost'
+    ? `127.0.0.1:${config.port}`
+    : `${config.host}:${config.port}`;
+  const issuedAt = Date.now();
+  const expiresAt = issuedAt + DSH_AUTH_COOKIE_MAX_AGE_DAYS * 86400000;
+  const payload = { version: 1, authority, issuedAt, expiresAt };
+  const body = base64url(Buffer.from(JSON.stringify(payload), 'utf8'));
+  const sig = base64url(crypto.createHmac('sha256', secret).update(body).digest());
+  const value = `v1.${body}.${sig}`;
+  const name = DSH_AUTH_COOKIE_PREFIX + base64url(crypto.createHash('sha256').update(authority).digest());
+  return { name, value, url: BASE_URL, expirationDate: expiresAt / 1000 };
+}
+
+// 把会话 Cookie 注入 Electron session；失败不致命（退回原有带 token URL 流程）。
+async function ensureWebSession() {
+  try {
+    const secret = readWebSessionSecret();
+    if (!secret) return false;
+    const { session } = require('electron');
+    const cookie = makeSessionCookie(secret);
+    await session.defaultSession.cookies.set(cookie);
+    log('[auth] 已为 DSH Web 会话注入认证 Cookie');
+    return true;
+  } catch (e) {
+    log('[auth] 注入会话 Cookie 失败：' + (e && e.message ? e.message : e));
+    return false;
+  }
+}
 
 // ---------- 状态 ----------
 
@@ -63,6 +183,39 @@ let attachMode = false; // true = 服务在启动前就已存在，退出时不�
 let authUrl = null; // 服务进程 stdout 里解析出的带 token 的 BASE_URL（dsh web 0.1.2 起需要认证）
 let quitting = false; // 正在退出
 let restarting = false; // 正在重启服务
+let restartingFrontend = false; // 托盘「重启前端」：销毁窗口重建，不碰后端
+let startupToken = 0; // 每次启动递增，避免过期流程回写已重建的窗口
+
+// 关闭窗口行为：'quit' = 彻底退出（默认，与旧版一致）；'tray' = 收进系统托盘，后端继续运行。
+const CLOSE_BEHAVIOR_FILE = 'close-behavior.json';
+function loadCloseBehavior() {
+  try {
+    const file = path.join(app.getPath('userData'), CLOSE_BEHAVIOR_FILE);
+    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return data.closeBehavior === 'tray' ? 'tray' : 'quit';
+  } catch {
+    return 'quit';
+  }
+}
+function saveCloseBehavior(value) {
+  try {
+    const file = path.join(app.getPath('userData'), CLOSE_BEHAVIOR_FILE);
+    fs.writeFileSync(file, JSON.stringify({ closeBehavior: value }), 'utf8');
+  } catch (e) {
+    log('[close-behavior] 保存失败：' + (e && e.message ? e.message : e));
+  }
+}
+let closeBehavior = 'quit'; // app.whenReady 后从磁盘载入
+
+// 启动阶段定义：key 用于文案，pct 为该阶段完成时的进度上限。
+const STARTUP_STAGES = [
+  { key: 'check', pct: 8 },
+  { key: 'locate', pct: 20 },
+  { key: 'spawn', pct: 34 },
+  { key: 'wait', pct: 82 },
+  { key: 'auth', pct: 92 },
+  { key: 'load', pct: 100 },
+];
 function loadInitialTheme() {
   try {
     const webPatchPath = path.join(os.homedir(), '.dsh', 'profiles', 'web', 'cordis.patch.yml');
@@ -88,23 +241,71 @@ let currentZoomLevel = 0; // 当前缩放级别（供浮窗与菜单联动）
 let sessionTranslateSize = null; // 会话级翻译浮窗尺寸记忆 { width, height }
 
 // ---------- 日志 ----------
+//
+// 后端 stdout/stderr 的每一行都经过 log()（见 startServer）。逐条
+// existsSync + statSync + appendFileSync 会在目录拉取失败等日志突发时让主线程
+// 反复同步刷盘，形成卡顿尖峰。改为「内存队列 + 1 秒批量落盘」：
+//   - console 输出仍即时；
+//   - 文件大小在内存中累计，不再每条 statSync；
+//   - 5MB 轮转保留，但只在批量写盘时判断一次；
+//   - 退出前 flushLogsSync() 写完残余队列，避免丢日志。
+const LOG_MAX_BYTES = 5 * 1024 * 1024;
+const LOG_FLUSH_INTERVAL_MS = 1000;
+let logQueue = [];
+let logFlushTimer = null;
+let logFileBytes = -1; // -1 = 还没读过磁盘上的文件大小
+let logFilePath = null;
 
-function log(...args) {
-  const line = `[${new Date().toLocaleTimeString()}] ${args.join(' ')}`;
-  console.log(line);
+function logFile() {
+  if (!logFilePath) logFilePath = path.join(app.getPath('userData'), 'main.log');
+  return logFilePath;
+}
+
+function flushLogsSync() {
+  if (logFlushTimer) {
+    clearTimeout(logFlushTimer);
+    logFlushTimer = null;
+  }
+  if (logQueue.length === 0) return;
+  const chunk = logQueue.join('');
+  logQueue = [];
   try {
-    const file = path.join(app.getPath('userData'), 'main.log');
-    if (fs.existsSync(file) && fs.statSync(file).size > 5 * 1024 * 1024) {
-      try { fs.renameSync(file, file + '.1'); } catch (_) {}
+    const file = logFile();
+    if (logFileBytes < 0) {
+      try {
+        logFileBytes = fs.statSync(file).size;
+      } catch {
+        logFileBytes = 0;
+      }
     }
-    fs.appendFileSync(file, line + '\n');
+    if (logFileBytes > LOG_MAX_BYTES) {
+      try { fs.renameSync(file, file + '.1'); } catch (_) {}
+      logFileBytes = 0;
+    }
+    fs.appendFileSync(file, chunk);
+    logFileBytes += Buffer.byteLength(chunk);
   } catch {
     /* 日志写失败不影响运行 */
   }
 }
 
+function log(...args) {
+  const line = `[${new Date().toLocaleTimeString()}] ${args.join(' ')}`;
+  console.log(line);
+  try {
+    logQueue.push(line + '\n');
+    if (!logFlushTimer) {
+      logFlushTimer = setTimeout(flushLogsSync, LOG_FLUSH_INTERVAL_MS);
+      // 不因为一个待写日志的定时器而拖住退出；退出路径会显式 flush。
+      if (typeof logFlushTimer.unref === 'function') logFlushTimer.unref();
+    }
+  } catch {
+    /* 日志缓冲失败不影响运行 */
+  }
+}
+
 function logPath() {
-  return path.join(app.getPath('userData'), 'main.log');
+  return logFile();
 }
 
 // ---------- 工具 ----------
@@ -247,7 +448,7 @@ async function startServer() {
   serverProc.on('exit', (code) => {
     log(`服务进程退出 (code=${code})`);
     if (!quitting && !restarting && serverProc) {
-      showError(`服务进程异常退出（code=${code}）。可点下方「重试启动」，或从托盘菜单「重启服务」。`);
+      showError(i18nT(currentLocale, 'error.serverExit', { code }));
     }
     serverProc = null;
     if (tray) rebuildTrayMenu();
@@ -280,57 +481,181 @@ async function targetUrl(maxMs = 5000) {
   return authUrl || BASE_URL;
 }
 
-// 启动主流程：先探测，已运行就挂载；否则拉起服务并等待就绪
+// 等待后端就绪：250ms 起步、×1.6 指数退避、2s 封顶。
+// 相比固定 500ms 轮询，启动正常时第一次探测仍然很快，启动失败时
+// 45 秒内只发约 25 次探测（原实现 90 次），状态推送也同步减少。
+// 返回可载入的 URL；超时或被更新的启动流程取代（token 失效）时返回 null。
+async function waitForServerReady(token) {
+  let delay = POLL_START_MS;
+  for (let waited = 0; waited < BOOT_TIMEOUT_MS; waited += delay) {
+    await sleep(delay);
+    delay = Math.min(POLL_MAX_MS, Math.round(delay * 1.6));
+    if (token !== startupToken) return null;
+    // 平滑推进到阶段上限，但不越过下一阶段的真实门槛
+    const ratio = Math.min(1, waited / BOOT_TIMEOUT_MS);
+    const pct = Math.round(STARTUP_STAGES[2].pct + ratio * (STARTUP_STAGES[3].pct - STARTUP_STAGES[2].pct));
+    stageUpdate(token, 'wait', pct);
+    if (await checkServer(600)) return targetUrl();
+  }
+  return null;
+}
+
+// ---------- 启动进度编排 ----------
+
+// 向加载页推送一次状态；只有当前 token 对应的窗口才接收，防止重启前端后旧流程污染新窗口。
+// 加载页尚未就绪时把状态入队，等 shell-page-ready 后按序回放——否则 loadFile 是异步的，
+// 紧随其后发出的阶段事件会因页面里还没有 onShellState 监听器而全部丢失，
+// 用户只能看到最后回放的一条状态「闪一下就消失」。
+let shellStateReady = false;
+const shellStateQueue = [];
+let shellStateReplayResolve = null;
+let shellStateReplayPromise = Promise.resolve();
+function pushShellState(token, patch) {
+  if (token !== startupToken) return;
+  lastShellState = Object.assign({ locale: currentLocale, theme: currentTheme }, patch);
+  const w = win;
+  if (!w || w.isDestroyed()) return;
+  if (!shellStateReady || replayingShellState || !(w.webContents.getURL().includes('loading.html') || w.webContents.getURL().includes('error.html'))) {
+    // Coalesce repeated progress ticks of the same stage: replaying dozens of
+    // "wait 12% / 14% / …" frames at min dwell would stall startup for seconds.
+    const last = shellStateQueue[shellStateQueue.length - 1];
+    const coalescible = last && last.stageKey === lastShellState.stageKey
+      && !lastShellState.ready && !last.ready
+      && last.stageText === lastShellState.stageText;
+    if (coalescible) {
+      shellStateQueue[shellStateQueue.length - 1] = Object.assign({}, lastShellState);
+    } else {
+      shellStateQueue.push(Object.assign({}, lastShellState));
+    }
+    return;
+  }
+  try {
+    w.webContents.send('shell-state', lastShellState);
+  } catch (_) {}
+}
+
+function stageUpdate(token, stageKey, pct, textOverride) {
+  const stage = STARTUP_STAGES.find((s) => s.key === stageKey);
+  const text = textOverride || i18nT(currentLocale, stage ? `loading.stage.${stageKey}ing` : 'loading.stage.checking');
+  pushShellState(token, {
+    stageKey,
+    stageText: text,
+    progress: pct != null ? pct : (stage ? stage.pct : 0),
+  });
+}
+
+// 启动主流程：先探测，已运行就挂载；否则拉起服务并等待就绪。
+// 无论托管/直连/重启前端，都先显示加载页，后端就绪并经真实 HTTP 探测通过后才载入前端。
 async function bootstrap() {
-  killServer(); // 清理上一次尝试遗留的进程
+  const token = ++startupToken;
   restarting = false;
+  restartingFrontend = false;
+
+  showLoading();
+  stageUpdate(token, 'check', STARTUP_STAGES[0].pct);
+
   if (await checkServer()) {
     attachMode = true;
     log(`检测到 Harness 服务已在 ${BASE_URL} 运行，直接挂载（退出时不影响该服务）`);
-    openWindow(BASE_URL);
-    return;
+    stageUpdate(token, 'check', 12, i18nT(currentLocale, 'loading.stage.attach'));
+    return enterFrontend(token, BASE_URL);
   }
   attachMode = false;
-  showLoading('正在启动 DeepSeek Harness 服务…');
+
+  // 清理上一次尝试遗留的进程
+  killServer();
+
+  stageUpdate(token, 'locate');
   const err = await startServer();
   if (err) {
-    showError(err);
+    if (token === startupToken) showError(err);
     return;
   }
+
+  stageUpdate(token, 'spawn');
   log('等待服务就绪 …');
-  for (let waited = 0; waited < BOOT_TIMEOUT_MS; waited += POLL_INTERVAL_MS) {
-    await sleep(POLL_INTERVAL_MS);
-    if (await checkServer(600)) {
-      openWindow(await targetUrl()); // 带 token 的 BASE_URL 首次认证（之后 30 天 cookie 有效）
-      return;
-    }
+  const readyUrl = await waitForServerReady(token);
+  if (readyUrl) {
+    stageUpdate(token, 'auth');
+    return enterFrontend(token, readyUrl);
   }
-  showError(`服务启动超时（${BOOT_TIMEOUT_MS / 1000} 秒）。详情见日志：${logPath()}`);
+  if (token === startupToken) {
+    showError(i18nT(currentLocale, 'error.hint') + ' ' + i18nT(currentLocale, 'error.unknown') + ` (${BOOT_TIMEOUT_MS / 1000}s) — ${logPath()}`);
+  }
+}
+
+// 后端已确认就绪后调用：显示完成态，给加载页一点收束时间，再载入前端。
+async function enterFrontend(token, url) {
+  if (token !== startupToken) return;
+  stageUpdate(token, 'auth');
+  // 先为已运行/刚拉起的后端种下认证会话，再载入前端，确保进入即可用（不是认证页/重连页）。
+  await ensureWebSession();
+  stageUpdate(token, 'load', 100);
+  pushShellState(token, { ready: true });
+  // 若页面还在加载/回放阶段，等它把每个阶段播完（带兜底超时，页面加载失败时不卡死），
+  // 再停留让最终「就绪」被看见。
+  await Promise.race([shellStateReplayPromise, sleep(3000)]);
+  await sleep(900); // 让 100% 与「就绪」被看见，避免瞬间切换
+  if (token !== startupToken) return;
+  log(`后端就绪，载入前端：${url}`);
+  openWindow(url);
+}
+
+// 托盘「重启 OrcaMind 前端」：仅重建窗口、重走启动动画，不动后端 LocalHost。
+async function restartFrontend() {
+  if (quitting || restartingFrontend) return;
+  restartingFrontend = true;
+  const token = ++startupToken;
+  log('重启前端壳（后端保持不变）…');
+
+  if (win && !win.isDestroyed()) {
+    const oldWin = win;
+    win = null;
+    oldWin.removeAllListeners('close');
+    oldWin.once('closed', () => { /* 已旧窗口，忽略 */ });
+    try { oldWin.destroy(); } catch (_) {}
+  }
+
+  // 后端本来就存在时重新探测；不 killServer / 不 startServer。
+  showLoading();
+  stageUpdate(token, 'check', STARTUP_STAGES[0].pct);
+  await sleep(800); // 最短动画展示时间
+
+  if (await checkServer()) {
+    attachMode = true;
+    stageUpdate(token, 'check', 12, i18nT(currentLocale, 'loading.stage.attach'));
+    await enterFrontend(token, BASE_URL);
+  } else {
+    // 服务意外消失时退化为完整 bootstrap（此时才会重新拉起）
+    restartingFrontend = false;
+    return bootstrap();
+  }
+  restartingFrontend = false;
 }
 
 async function restartServer() {
   if (!serverProc) return;
   restarting = true;
+  const token = ++startupToken;
   log('重启服务 …');
-  showLoading('正在重启服务…');
+  showLoading();
+  stageUpdate(token, 'check', STARTUP_STAGES[0].pct);
   killServer();
   await sleep(1500);
   const err = await startServer();
   if (err) {
     restarting = false;
-    showError(err);
+    if (token === startupToken) showError(err);
     return;
   }
-  for (let waited = 0; waited < BOOT_TIMEOUT_MS; waited += POLL_INTERVAL_MS) {
-    await sleep(POLL_INTERVAL_MS);
-    if (await checkServer(600)) {
-      restarting = false;
-      openWindow(await targetUrl());
-      return;
-    }
+  stageUpdate(token, 'spawn');
+  const restartedUrl = await waitForServerReady(token);
+  if (restartedUrl) {
+    restarting = false;
+    return enterFrontend(token, restartedUrl);
   }
   restarting = false;
-  showError('服务重启超时。');
+  if (token === startupToken) showError(i18nT(currentLocale, 'error.unknown') + ' (restart timeout)');
 }
 
 // ---------- 窗口 ----------
@@ -360,7 +685,21 @@ function ensureWindow() {
     },
   });
   win.on('page-title-updated', (e) => e.preventDefault()); // 保持固定标题
-  win.on('close', () => app.quit());
+  // 关闭窗口时按用户选择：彻底退出 or 收进托盘（进程常驻、后端不动）。
+  // 重启前端会先置 restartingFrontend=true 并 destroy 旧窗口，这条路径不算用户关窗，跳过。
+  win.on('close', (e) => {
+    if (quitting || restartingFrontend) return;
+    if (closeBehavior === 'tray') {
+      log('关闭窗口：收进系统托盘（渲染进程与后端都保持运行；要彻底退出请用托盘「完全退出」）');
+      e.preventDefault(); // 阻止销毁窗口，仅隐藏
+      // 显式声明后台节流（默认即为 true，写死以防未来被改动），并停掉朗读等可暂停的输出。
+      try { win.webContents.setBackgroundThrottling(true); } catch (_) {}
+      try { stopSpeaking(win.webContents); } catch (_) {}
+      win.hide();
+    } else {
+      app.quit();
+    }
+  });
   // 外部链接交给系统浏览器，应用内只允许 Harness 自身页面
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith(BASE_URL)) return { action: 'allow' };
@@ -385,15 +724,25 @@ function openWindow(url) {
   w.focus();
 }
 
-function showLoading(msg) {
+function showLoading() {
+  shellStateReady = false;
+  shellStateQueue.length = 0;
+  shellStateReplayResolve = null;
+  shellStateReplayPromise = new Promise((resolve) => { shellStateReplayResolve = resolve; });
   const w = ensureWindow();
-  w.loadFile(path.join(__dirname, 'loading.html'), { query: { msg } });
+  w.setBackgroundColor(currentTheme === 'dark' ? '#151517' : '#f9fafb');
+  w.loadFile(path.join(__dirname, 'loading.html'), {
+    query: { locale: currentLocale, theme: currentTheme },
+  });
   w.show();
 }
 
 function showError(msg) {
   const w = ensureWindow();
-  w.loadFile(path.join(__dirname, 'error.html'), { query: { msg } });
+  w.setBackgroundColor(currentTheme === 'dark' ? '#151517' : '#f9fafb');
+  w.loadFile(path.join(__dirname, 'error.html'), {
+    query: { msg, locale: currentLocale, theme: currentTheme },
+  });
   w.show();
 }
 
@@ -489,6 +838,33 @@ function setupZoom(wc) {
 
 let translateWin = null;
 
+// 透明 + 置顶的翻译浮窗只要还存在，合成器就要持续对它做桌面 alpha 混合，
+// 且 alwaysOnTop 会让系统无法对其应用「完全被遮挡就跳过」的优化。
+// 因此隐藏之后不能无限期保留渲染进程：30 秒没有再次使用就销毁，
+// 下次划词时由 ensureTranslateWindow() 重新创建。
+const TRANSLATE_TEARDOWN_MS = 30000;
+let translateHideTimer = null;
+
+function cancelTranslateTeardown() {
+  if (translateHideTimer) {
+    clearTimeout(translateHideTimer);
+    translateHideTimer = null;
+  }
+}
+
+function scheduleTranslateTeardown() {
+  cancelTranslateTeardown();
+  translateHideTimer = setTimeout(() => {
+    translateHideTimer = null;
+    if (translateWin && !translateWin.isDestroyed() && !translateWin.isVisible()) {
+      log('翻译浮窗已隐藏 30 秒，销毁以释放渲染进程与合成表面');
+      try { translateWin.destroy(); } catch (_) {}
+      translateWin = null;
+    }
+  }, TRANSLATE_TEARDOWN_MS);
+  if (typeof translateHideTimer.unref === 'function') translateHideTimer.unref();
+}
+
 function ensureTranslateWindow() {
   if (translateWin && !translateWin.isDestroyed()) return translateWin;
   translateWin = new BrowserWindow({
@@ -507,10 +883,14 @@ function ensureTranslateWindow() {
       preload: path.join(__dirname, 'preload-translate.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      sandbox: true, // 浮窗只用 preload 桥，不需要 Node 集成
     },
   });
   translateWin.loadFile(path.join(__dirname, 'translate.html'));
+  translateWin.on('closed', () => {
+    cancelTranslateTeardown();
+    translateWin = null;
+  });
 
   // 保证划词翻译窗口首次加载完成时缩放与主题即刻生效
   translateWin.webContents.on('did-finish-load', () => {
@@ -536,12 +916,14 @@ function ensureTranslateWindow() {
     if (translateWin && !translateWin.isDestroyed()) {
       translateWin.webContents.send('stop-speaking');
       translateWin.hide();
+      scheduleTranslateTeardown();
     }
   });
   return translateWin;
 }
 
 function showTranslateWindow(payload, triggerBounds) {
+  cancelTranslateTeardown(); // 复用/重建期间都不允许被回收
   const tw = ensureTranslateWindow();
 
   currentZoomLevel = currentZoomLevel || loadZoomLevel() || 0;
@@ -687,7 +1069,6 @@ function onlineTranslateFast(text, targetLang) {
 function loadDshCredentials() {
   const creds = {
     DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY || '',
-    OPENCODE_GO_API_KEY: process.env.OPENCODE_GO_API_KEY || '',
     GOOGLE_API_KEY: process.env.GOOGLE_API_KEY || '',
   };
   try {
@@ -1088,7 +1469,6 @@ function getLocalDshModels() {
       let providerLabel = m.provider;
       if (m.provider === 'antigravity') providerLabel = 'Antigravity';
       else if (m.provider === 'google') providerLabel = 'Google';
-      else if (m.provider === 'opencode-go') providerLabel = 'OpenCode-Go';
       else if (m.provider === 'deepseek' || m.provider === 'deepseek-official') providerLabel = 'DeepSeek';
       deduped.push({
         id: m.id,
@@ -1104,9 +1484,6 @@ function getLocalDshModels() {
       { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash', provider: 'antigravity', providerLabel: 'Antigravity' },
       { id: 'deepseek-v4-flash', name: 'DeepSeek V4 Flash', provider: 'deepseek', providerLabel: 'DeepSeek' },
       { id: 'deepseek-v4-pro', name: 'DeepSeek V4 Pro', provider: 'deepseek', providerLabel: 'DeepSeek' },
-      { id: 'qwen3.8-flash', name: 'Qwen 3.8 Flash', provider: 'opencode-go', providerLabel: 'OpenCode-Go' },
-      { id: 'glm-5.3-flash', name: 'GLM 5.3 Flash', provider: 'opencode-go', providerLabel: 'OpenCode-Go' },
-      { id: 'mimo-v2.6-flash', name: 'MiMo V2.6 Flash', provider: 'opencode-go', providerLabel: 'OpenCode-Go' },
     ];
   }
 
@@ -1146,7 +1523,6 @@ async function getDshConfiguredModels() {
             let providerLabel = group.name || group.id;
             if (group.id === 'antigravity') providerLabel = 'Antigravity';
             else if (group.id === 'google') providerLabel = 'Google';
-            else if (group.id === 'opencode-go') providerLabel = 'OpenCode-Go';
             else if (group.id === 'deepseek' || group.id === 'deepseek-official') providerLabel = 'DeepSeek';
 
             models.push({
@@ -1170,6 +1546,79 @@ async function getDshConfiguredModels() {
   }
 
   return getLocalDshModels();
+}
+
+// ---------- providers-hub OpenAI 兼容网关（复用 DSH 的 provider 路由） ----------
+// 模型选择器列出的所有 provider（astudio / opencode-go / mimo / …）都由 providers-hub
+// 注册到 ctx.llm。它的本地网关（默认 127.0.0.1:8326）直接驱动同一套 ctx.llm.stream()，
+// 因此划词翻译走它就能和 Agent 对话一样使用任意已登录 provider 的模型。
+function gatewayConfig() {
+  const host = (process.env.DSH_OPENAI_GATEWAY_HOST || '127.0.0.1').trim();
+  const portRaw = (process.env.DSH_OPENAI_GATEWAY_PORT || '').trim();
+  const port = portRaw ? (Number(portRaw) || 8326) : 8326;
+  return { host, port };
+}
+
+function gatewayApiKey() {
+  const envKey = (process.env.DSH_OPENAI_GATEWAY_API_KEY || '').trim();
+  if (envKey) return envKey;
+  try {
+    return fs.readFileSync(path.join(os.homedir(), '.dsh', 'openai-gateway', 'api-key'), 'utf8').trim();
+  } catch (_) {
+    return '';
+  }
+}
+
+// 一次性调用网关；返回 { ok, text?, error? }。任何失败（网关未装/未启用/密钥缺失/
+// 网络错误/上游报错）都不抛给调用方，由 translateWithModel 回退到直连分支。
+async function translateViaGateway(text, targetName, modelId, providerId) {
+  const key = gatewayApiKey();
+  if (!key || !providerId || !modelId) return null;
+  const { host, port } = gatewayConfig();
+  const model = `${providerId}/${modelId}`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+  try {
+    const res = await fetch(`http://${host}:${port}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: `You are a professional, direct translator. Translate the following text directly into ${targetName}. Output ONLY the final translated text. DO NOT output any thinking, reasoning, explanation, notes, markdown formatting, or quotes.` },
+          { role: 'user', content: text.trim() },
+        ],
+        stream: false,
+        temperature: 0.1,
+        max_tokens: 512,
+        reasoning_effort: 'none',
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      let detail = '';
+      try {
+        const j = await res.json();
+        detail = j?.error?.message || JSON.stringify(j);
+      } catch (_) {
+        detail = await res.text();
+      }
+      log(`[translateViaGateway] ${model} HTTP ${res.status}: ${detail || '调用失败'}`);
+      return null;
+    }
+    const data = await res.json();
+    const out = data?.choices?.[0]?.message?.content;
+    if (typeof out !== 'string' || !out.trim()) return null;
+    return { text: out.trim(), usedModel: model };
+  } catch (err) {
+    log(`[translateViaGateway] ${model} 异常: ${err && err.message ? err.message : String(err)}`);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 // 统一 AI 模型翻译引擎（单次无状态调用，严格关闭思考，真实返回错误状态供用户主动决策）
@@ -1217,13 +1666,19 @@ async function translateWithModel(text, targetLang, modelId, modelProvider) {
     } else if (mLower.startsWith('deepseek')) {
       resolvedProvider = 'deepseek';
     } else {
-      resolvedProvider = 'opencode-go';
+      // 未知模型退回 DeepSeek（由下方 3.3 分支给出明确错误）
+      resolvedProvider = 'deepseek';
     }
   }
 
   log(`[translateWithModel] 执行翻译: model=${resolvedModel}, provider=${resolvedProvider}`);
 
-  // 3. 执行特定模型调用
+  // 3.0 首选：providers-hub 网关（与 Agent 对话同一套 DSH provider 路由）。
+  // 只要拿到 provider + model 就先试它；失败再回退下面的直连分支。
+  const viaGateway = await translateViaGateway(text, targetName, resolvedModel, resolvedProvider);
+  if (viaGateway) return viaGateway;
+
+  // 3. 执行特定模型调用（网关不可用时的直连回退）
   try {
     // 3.1 Antigravity 原生调用
     if (resolvedProvider === 'antigravity') {
@@ -1336,62 +1791,6 @@ async function translateWithModel(text, targetLang, modelId, modelProvider) {
       return { error: 'DeepSeek 模型返回内容为空', failedModel: resolvedModel, canFallbackToFast: true };
     }
 
-    // 3.4 OpenCode-Go 网关上的全部模型
-    if (resolvedProvider === 'opencode-go') {
-      if (!creds.OPENCODE_GO_API_KEY) {
-        return {
-          error: '未配置 OPENCODE_GO_API_KEY 凭据，无法调用 OpenCode 模型。',
-          failedModel: resolvedModel,
-          canFallbackToFast: true,
-        };
-      }
-      const url = 'https://opencode.ai/zen/go/v1/chat/completions';
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 12000);
-      const sessId = 'sess-' + crypto.randomUUID();
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${creds.OPENCODE_GO_API_KEY}`,
-          'x-opencode-session': sessId,
-          'x-deepseek-harness-session-id': sessId,
-        },
-        body: JSON.stringify({
-          model: resolvedModel,
-          messages: [
-            { role: 'system', content: `You are a professional, direct translator. Translate into ${targetName}. Output ONLY the direct translation. Do NOT output any thinking, reasoning, explanation, or notes.` },
-            { role: 'user', content: text.trim() }
-          ],
-          temperature: 0.1,
-          max_tokens: 512,
-          reasoning_effort: 'none',
-        }),
-        signal: controller.signal,
-      });
-      clearTimeout(timer);
-      if (!res.ok) {
-        let errDetail = '';
-        try {
-          const errJson = await res.json();
-          errDetail = errJson?.error?.message || errJson?.message || JSON.stringify(errJson);
-        } catch (_) {
-          errDetail = await res.text();
-        }
-        return {
-          error: `[OpenCode-Go ${res.status}] ${errDetail || '调用失败'}`,
-          failedModel: resolvedModel,
-          canFallbackToFast: true,
-        };
-      }
-      const data = await res.json();
-      const out = data?.choices?.[0]?.message?.content;
-      if (out && out.trim()) {
-        return { text: out.trim(), usedModel: resolvedModel };
-      }
-      return { error: 'OpenCode 模型返回内容为空', failedModel: resolvedModel, canFallbackToFast: true };
-    }
-
     return {
       error: `无法为模型 ${resolvedModel} 匹配有效的提供商（${resolvedProvider || '未知'}）或可用 API 凭据。`,
       failedModel: resolvedModel,
@@ -1483,6 +1882,9 @@ function speakLocallyInWebContents(wc, text, rate) {
   wc.executeJavaScript(code).catch(() => {});
 }
 
+// tts-service 的异常经此进入 main.log（否则只会落在主进程 stdout，排查时看不到）
+const ttsLog = (...args) => log(...args);
+
 // 智能双引擎语音朗读（Edge TTS 神经网络在线高质量音色 + 本地 Web Speech 离线即时兜底）
 async function readTextAloud(wc, text, overrideOptions = {}) {
   if (!currentTtsSettings) {
@@ -1497,7 +1899,7 @@ async function readTextAloud(wc, text, overrideOptions = {}) {
   }
 
   try {
-    const audioBuf = await ttsService.synthesizeEdgeTts(text, { voice, rate, timeout: 6000 });
+    const audioBuf = await ttsService.synthesizeEdgeTts(text, { voice, rate, timeout: 6000, logger: ttsLog });
     const base64 = audioBuf.toString('base64');
     const code = `
       (() => {
@@ -1815,17 +2217,18 @@ function setupContextMenu(windowInstance) {
 
 function createTray() {
   tray = new Tray(assetPath('tray.png'));
-  tray.setToolTip(APP_TITLE);
+  tray.setToolTip(i18nT(currentLocale, 'tray.tooltip'));
   rebuildTrayMenu();
 }
 
 function rebuildTrayMenu() {
   if (!tray || tray.isDestroyed()) return;
-  const isZh = currentLocale === 'zh';
+  const tr = (key, vars) => i18nT(currentLocale, `tray.${key}`, vars);
+  tray.setToolTip(tr('tooltip'));
   tray.setContextMenu(
     Menu.buildFromTemplate([
       {
-        label: isZh ? '打开 Harness 窗口' : 'Open Harness Window',
+        label: tr('open'),
         click: () => {
           if (win && !win.isDestroyed()) {
             win.show();
@@ -1836,18 +2239,56 @@ function rebuildTrayMenu() {
         },
       },
       {
-        label: isZh ? `在浏览器中打开 Web 版（${config.port} 端口）` : `Open Web GUI in Browser (Port ${config.port})`,
+        label: tr('openBrowser', { port: config.port }),
         click: () => shell.openExternal(BASE_URL),
       },
       { type: 'separator' },
       {
-        label: isZh ? '重启服务' : 'Restart Service',
+        label: tr('restartFrontend'),
+        click: () => restartFrontend(),
+      },
+      {
+        label: tr('restartService'),
         enabled: !!serverProc && !attachMode,
         click: () => restartServer(),
       },
+      { type: 'separator' },
       {
-        label: isZh ? '退出' : 'Quit',
-        click: () => app.quit(),
+        label: tr('closeBehavior'),
+        submenu: [
+          {
+            label: tr('closeQuit'),
+            type: 'radio',
+            checked: closeBehavior === 'quit',
+            click: () => {
+              if (closeBehavior === 'quit') return;
+              closeBehavior = 'quit';
+              saveCloseBehavior(closeBehavior);
+              rebuildTrayMenu();
+              log('关闭窗口行为：彻底退出');
+            },
+          },
+          {
+            label: tr('closeTray'),
+            type: 'radio',
+            checked: closeBehavior === 'tray',
+            click: () => {
+              if (closeBehavior === 'tray') return;
+              closeBehavior = 'tray';
+              saveCloseBehavior(closeBehavior);
+              rebuildTrayMenu();
+              log('关闭窗口行为：收到系统托盘');
+            },
+          },
+        ],
+      },
+      {
+        // attach 模式下后端不是本壳拉起的，退出本来就不该回收——菜单文案要把这点说清楚。
+        label: attachMode ? tr('quitAttach') : tr('quit'),
+        click: () => {
+          log(attachMode ? '用户选择退出：保留外部启动的服务' : '用户选择完全退出：回收本壳拉起的服务');
+          app.quit();
+        },
       },
     ])
   );
@@ -1858,10 +2299,51 @@ function rebuildTrayMenu() {
 ipcMain.on('retry', () => bootstrap());
 ipcMain.on('open-browser', () => shell.openExternal(BASE_URL));
 
+// Shell-owned loading/error pages call this once their bridge is ready; replay
+// queued startup states in order so no stage is lost to the load race. Each stage
+// stays visible until the next one is replayed (with a short minimum dwell).
+let lastShellState = null;
+let replayingShellState = false;
+const SHELL_STAGE_MIN_DWELL_MS = 500;
+ipcMain.on('shell-page-ready', async (e) => {
+  shellStateReady = true;
+  if (replayingShellState) return;
+  replayingShellState = true;
+  try {
+    while (shellStateQueue.length) {
+      const state = shellStateQueue.shift();
+      try { e.sender.send('shell-state', state); } catch (_) {}
+      await sleep(SHELL_STAGE_MIN_DWELL_MS);
+    }
+  } finally {
+    replayingShellState = false;
+  }
+  if (lastShellState) {
+    try { e.sender.send('shell-state', lastShellState); } catch (_) {}
+  }
+  if (shellStateReplayResolve) {
+    shellStateReplayResolve();
+    shellStateReplayResolve = null;
+  }
+});
+
+function broadcastShellState(patch) {
+  lastShellState = Object.assign({ locale: currentLocale, theme: currentTheme }, patch);
+  for (const w of BrowserWindow.getAllWindows()) {
+    if (!w.isDestroyed() && w.webContents) {
+      const url = w.webContents.getURL();
+      if (url.includes('loading.html') || url.includes('error.html')) {
+        try { w.webContents.send('shell-state', lastShellState); } catch (_) {}
+      }
+    }
+  }
+}
+
 ipcMain.on('theme-changed', (_e, { isDark, themeSource }) => {
   currentTheme = isDark ? 'dark' : 'light';
   nativeTheme.themeSource = themeSource || currentTheme;
   log(`[theme] 主题变更: isDark=${isDark}, themeSource=${themeSource}, currentTheme=${currentTheme}`);
+  broadcastShellState({ theme: currentTheme });
   if (win && !win.isDestroyed()) {
     win.setBackgroundColor(currentTheme === 'dark' ? '#181a1f' : '#ffffff');
     if (process.platform === 'win32') {
@@ -1882,6 +2364,7 @@ ipcMain.on('locale-changed', (_e, { locale }) => {
   if (locale && (locale === 'zh' || locale === 'en')) {
     currentLocale = locale;
     rebuildTrayMenu();
+    broadcastShellState({ locale: currentLocale });
     if (translateWin && !translateWin.isDestroyed()) {
       translateWin.webContents.send('locale-updated', { locale: currentLocale });
     }
@@ -1906,6 +2389,7 @@ ipcMain.on('translate-close', () => {
   if (translateWin && !translateWin.isDestroyed()) {
     translateWin.webContents.send('stop-speaking');
     translateWin.hide();
+    scheduleTranslateTeardown();
   }
 });
 
@@ -1953,6 +2437,7 @@ ipcMain.handle('tts-synthesize', async (_e, { text, voice, rate }) => {
     const audioBuf = await ttsService.synthesizeEdgeTts(text, {
       voice: voice || currentTtsSettings.voice,
       rate: rate || currentTtsSettings.rate,
+      logger: ttsLog,
     });
     return { success: true, audioBase64: audioBuf.toString('base64') };
   } catch (err) {
@@ -1984,17 +2469,39 @@ if (!app.requestSingleInstanceLock()) {
   });
   app.whenReady().then(() => {
     currentTtsSettings = ttsService.loadTtsSettings(app.getPath('userData'));
+    closeBehavior = loadCloseBehavior(); // 载入用户对“关闭窗口”行为的偏好
     log(`OrcaMind 启动，目标地址 ${BASE_URL}`);
     log(`execPath=${process.execPath} PORTABLE_EXECUTABLE_DIR=${process.env.PORTABLE_EXECUTABLE_DIR || '(未设置)'}`);
     log(`Harness 目录：${findHarnessRoot() || '（未找到）'}`);
     log(`日志文件：${logPath()}`);
+    // GPU 策略自检：把 Chromium 汇报的实际渲染后端写进日志，便于判断
+    // 是否发生了软件渲染回退（gpu_compositing / webgl 为 software 等）。
+    try {
+      log(`[gpu] mode=${GPU_MODE} featureStatus=${JSON.stringify(app.getGPUFeatureStatus())}`);
+    } catch (e) {
+      log(`[gpu] 读取 GPU 状态失败：${e && e.message ? e.message : e}`);
+    }
     createTray();
     bootstrap();
   });
 }
 
-app.on('window-all-closed', () => app.quit());
+app.on('window-all-closed', () => {
+  // 托盘模式下隐藏窗口不会触发本事件；重启前端销毁旧窗口时也必须保持进程存活。
+  if (closeBehavior === 'tray' || restartingFrontend) {
+    log('window-all-closed：保持后台运行（托盘模式或重启前端中）');
+    return;
+  }
+  app.quit();
+});
 app.on('before-quit', () => {
   quitting = true;
+  cancelTranslateTeardown();
+  if (translateWin && !translateWin.isDestroyed()) {
+    try { translateWin.destroy(); } catch (_) {}
+    translateWin = null;
+  }
   killServer();
+  flushLogsSync(); // 缓冲日志在退出前一次性落盘
 });
+process.on('exit', () => flushLogsSync());

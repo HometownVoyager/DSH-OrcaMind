@@ -1,0 +1,1414 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index 9c09c4a2..08bc4dce 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -14,7 +14,7 @@
+ - `docs/agent-notes/dev-tasks.md`：「常见开发任务」的**调试与协议排障**细节（主文件只留导航表）
+ - `docs/agent-notes/rate-limit-resume.md`：⚠️⚠️ **限流中断后「解禁自动继续」（2026-11-20）** —— 「按钮有、到点没动静」的真根因是**解禁时刻只剩一条来源可用，而那一条本仓从不填**：扫本机 209 个会话取证，真实限流失败 **61** 条里带 `providerRetryAfterMs` 的 **0** 条、文案带「将于 … 解禁」的 **57** 条，且 `rate-limit-resume.json` 的 `hooks` 恒 `[]`、会话日志里自有来源的投递 **0** 条 ⇒ 该功能**从未生效过一次**（不是偶发时机问题）；三条判据分歧：①只读 `providerRetryAfterMs` ⇒ 恒退 1 小时兜底，而真解禁常是 18 分钟后 ⇒ 用户先自己补「继续」把钩子撤掉；②`no-live-agent` 直接放弃而「等一小时」必然跨重启/切会话；③把**任何** `user/message` 当人发言，而 `runtime-context`/`dsh-memory`/`skill-catalog`/`agent-instructions`/`tool-jobs` 全以 user/message 落盘（一个会话几百条）。修法：解禁时刻**记录那刻**就按 retry-after → 文案整句锚定 → 号池标记**取最早**算出来；会话不在内存**留钩子**（2 分钟重试 + `agent/created` 立刻补发，判「该不该抢跑」读 `unlockAtMs` 不是 `resetAtMs`）；只认 `source.kind === 'user'` 才撤；续跑消息带自有 `source.kind='rate-limit-resume'`（绝不伪造 user，`.tool-goal` 的授权据此）。五条 RPC 全走模块级单例（**没给 `registerJetHubRpc` 加位置形参**）。守卫 22 条，三条真缺陷回归旧实现都能精确变红
+ - `docs/agent-notes/misc.md`（11 节）：⚠️ 两条通用判据：一文件两套同义判据 / `String(undefined)`（PR !62）；⚠️ 包装适配器时必须包 `prepareCall`，不是 `stream`（PR !66）；项目概述（十个 provider 的协议源流与差异总览）；⚠⚠️ 客户端**不得**注册 `settings.models.provi；⚠️ dsh peer 范围必须**枚举并集**，不能用 `^0.1.2-r；LobsterAI 模型列表（三个易踩的坑）；…
+-- `docs/agent-notes/providers-qoder.md`（10 节）：⚠️⚠️ **出口代理与失败分类（2026-10-25 审计 3 域合规 + 2 域对抗 / 67 次变异）**：⚠️⚠️ **网关 5xx 原先不换号，而它才是实测主导形态** —— 扫本机**全部 1374 会话 / 163 条真实失败**按形态计数：`504 Gateway Time-out`（HTML）**74 次** + `First Token Timeout`**6 次**都落 `other` ⇒ 不换号，且终态 `SERVER` 在宿主 `DEFAULT_RETRYABLE_CODES` 里 ⇒ **白重试 5 次**；而本 PR 原以为的核心目标 `provider_error` 只有 **16 次**；⚠️⚠️ **折算路径没接 per-账号代理 ⇒ 墙外环境下该渠道从聚合轮换里静默消失**（本 PR 接了四条腿、漏了折算；`index.ts` 明写「credits 与 expiry 两条腿缺一不可」，`minimaxIntlFetchFor` 的注释逐字点了同一个症状）；⚠️⚠️ **非法代理字符串会让账号永久不可用，且入口 UI 可达**（`backup.import` 真跑实测 `ftp://host:21` ⇒ ok:true + 落池 + 此后每次取 fetcher 都抛）；⚠️ **代理口令的泄漏面：去向决定定级**（对抗轮实测宿主 logger 0 命中 / 客户端 console 零命中 / 不落盘 / 不进会话历史 ⇒ 由 P0 降 P2，因为**没有一条后果链能到达「用户以外的人」**）—— 但仍修了两处（`testProxy` 文案不再自拆台、四家日志统一走中立 `proxy-mask.ts` 脱敏）；⚠️ 两处**未修已登记**（401/403 把额度判在认证之前 = 结构可达零实测且 A1 的修法会丢上游原文；`auth` 行的「换号」也没实现 ⇒ 池里第二个号永不被尝试，且 `'AUTH'` 永不入参 ⇒ 那格是死代码）；⚠️ 安装（git 插件）的 allowBuilds 键在 pnpm 10 / 11 语义**互不兼容**（Issue IKJCOC）；⚠️ 额度类业务码**不是一个值，是一条链** —— 只认 `110` 会让换号静默失效（Issue IKKJFH，码值腿 + 文案腿必须同时在）；⚠️⚠️ **静态兜底表必然腐坏 ⇒ 已改走远端 `/api/v2/model/list?Encode=1`**（2026-10-20 用户报障：上游 `dfmodel` 已 `price_factor=0`+`is_free`、IDE 显示 `0.1×`划掉`0×`，插件还写 0.1；同批 `mmodel` 已改名 `MiniMax-M3.1-Flash`）：`Encode=1` **不保证响应加密**（两站实测都回明文，官方 `rb()` 是「失败即明文」）、WASM 自己补 `/algo` 前缀、响应是 `{场景:[模型]}` 取 `chat`；⚠️⚠️ **`fast` 拿不到曾是版本闸门不是缺陷**（`minimal_version` 按**自称的客户端类型**选命名空间：cli 需 ≥1.1.70 / app 需 ≥1.1.66，IDE 是 app+1.1.69）—— **2026-11-07 起 `COSY_VERSION` 由 `1.1.49` 抬到 `1.1.79`**（用户要求；依据本机 IDE 0.5.6 的 `cli_version = 1.1.79-hotfix.18`，且**不带** `-hotfix.18`：预发布按 semver **低于**同位正式版，上游把闸门抬到 `1.1.79` 本身会静默判不过；该值同时进推理签名 ⇒ 已实测 200）；⚠️⚠️ **`QoDuck`（`lmodel`）只发布在 `app` 场景**（`chat` 14→15 多的是 `fast`，`lmodel` **任何版本都不进 `chat`**、条目**无 `minimal_version`** ⇒ 与版本无关）⇒ 目录已改 `chat ∪ app`（`QODER_CATALOG_SCENES`，`chat` 优先、跨场景按 id 去重），实解 `contextWindow 1000000` / `efforts xhigh,high,low` / 默认 `high` / 免费；`lmodel` 与 `fast` 均已真机 200（91.4s / 64s）；⚠️ **目录按账号下发**（实测一个免费号只给 2 条），缓存是「上次成功那个账号的目录」；⚠️ **取数必须在 auth 服务里只读池**（`QoderAuth.fetchModels(pool)`），走 `resolveCredential` 会把「本次实际使用的账号」改写成目录用的账号 ⇒ 额度标记落错号；⚠️⚠️ **该端点对伪造凭据也回 200**（中途一版让单测真发 HTTPS 并拿到上游真表，4 条用例静默变随机真值）⇒ 适配器改为注入式取数、单测默认不接线；⚠️ 既有的 `qodercn` e2e「续期」用例**是写操作**（轮换 `refresh_token` 且不落盘）已加二次确认闸门；⚠️「1017」版本串**不在模型列表里**（在 IDE 遥控文案 `/ide-text/latest`）；⚠️⚠️ **审计补记（2026-10-20 subagent 一轮审计 + 对抗审计）**：①**真缺陷** —— 远端目录是**按账号**下发的，把 `inputModalitiesFor()`/`stream()` 的元数据判据改成「只查远端」后，目录里没有的模型被**硬拒图片**且 name/context/reasoning/请求体元数据一并退化 ⇒ 修法是**能力与元数据取「远端 ∪ 静态表」、菜单仍远端独占**（`resolveModel` 用「静态表专用的第二个骨架实例」做回退，别在适配器里重写装配）；②`isFree` 从未透出（Jet Hub 免费桶只认它）；③**六条假绿**实测（`refresh()` 空转仍 49 passed / `supportsDisable` 恒真 175 passed / `parseEfforts` 排序 175 passed / `readString` 去非空 175 passed / 删池读 `.catch` 111 passed / 兜底表置空 9 passed —— 后者是 `toBe(fallbackModels.length)` 同义反复）；④解析口径按官方产物对齐（白名单 `k3` **6 值无 `minimal`**、`efforts` 认**数组/字符串/对象**、`available_reasoning_effort` 是**thinking_config 对象要包一层**且按短路语义只在「条目自身无档位也无 `disabled`」时读、顶层 `default_effort`、`isDefault` 驼峰、顶层 `supports_disabled`）；⑤**三条过程教训**：「守卫有牙」≠「取值域正确」（缺陷 ① 就是从这缝里漏的）、**新写的守卫自己可能是假绿**（我的图片用例没先把远端目录读进缓存 ⇒ 变异打不中）、变异锚点必须先自证（CRLF + 缩进变化 ⇒ 报 `PATCH-NOT-APPLIED` 而不是「无牙」）；⑥未修已登记：折扣展示口径与官方 `yo0()` 分叉（官方**不做 `before×discount` 乘法**）、`refresh()` 失败后 TTL 上界丢失、真加密分支零覆盖、黑名单 ⊃ 收缩目录 ⇒ provider 被隐藏；⑦⚠️⚠️ **积分「永久」是假话（issue IKTLMX，2026-11-08）**：`addOnQuota`（个人资源包）**只有聚合标量、无任何日期字段**（8 个真实账号 + 13 个 `Cosy-ClientType` 取值逐字节相同 + 24 条候选端点全 404 + 官方网页端点要 Web Cookie 不认 OAuth，全部证实），而官方用量页写明「30 × 100 credits、逐笔 30 天后作废」⇒ 旧代码把「到期未知」渲染成「永久」，**废掉临期桶的救命功能**；修法是 `CreditPackage.expiryUnknown` **子量**（不是第 5 桶 —— `permanent` 同时承重永久锁 `allowPermanent` / 聚合轮换排序 / 与后端 `splitBuddyCreditsByExpiry` 逐格同判，拆桶会让「锁定永久积分」对 Qoder 直接失效）+ 展示层新增「到期未知」段（tone `warn`，绿字会读成「不用管」）；⚠️ **不得反推日期**（`remaining/100 = N` 只在「每天都领」时成立 ⇒ 是**乐观上界**，本仓红线绝不编造日期）；⚠️ 也不能反过来一律标未知（Loomy 那种平台明说永久的必须还是「永久」）；7 条变异全红 + 反向对照（不带标记 ⇒ 键不出现、仍显示「永久」）；⑧⚠️⚠️ **企业账号（`userType:'enterprise'`）的额度在 `orgResourcePackage`**（PR #182，2026-11-09 真实凭据实测）：该形态 `userQuota`/`addOnQuota` **都不下发**、`displayMode` 仍是 `'qoder'`（与「企业版只给网页链接」那条早退分支**不是同一形态**）；`cap` 即总额，但它会**缺失/给 0** ⇒ 必须用 `used+remaining` 兜底（否则面板渲染「3000 / 0」假分母），两者都读不到时**不产出包**（只有 `used` 的形状仍须 `null` = 查不到）；本层**无任何逐笔日期** ⇒ **必须置 `expiryUnknown`**（否则卡片又写「永久」）；`available === false` ⇒ `active:false`（不得进聚合轮换）；fixture 必须让 `cap ≠ remaining ≠ used+remaining`，否则 `total:cap` 改成 `total:remaining` **全绿**（初版就这么漏的）
++- `docs/agent-notes/providers-qoder.md`（10 节）：⚠️⚠️ **「不回复也不报错」= 两条静默挂死路径**（2026-10-27 诊断 + 修复，报告 `Reports/qoder-no-response-diagnosis.md`）：①`sendEncrypted` **无响应头超时** ⇒ 上游「接受连接但不回响应头」时 `fetch` **永不 settle**，而两条 SSE 超时都作用在**已 resolve 的** `body.getReader()` 上、**够不着**该阶段（决定性证据：会话 `session-7efe210e` 的 `before headers`）⇒ 已加 `DSH_QODER_HEADER_TIMEOUT_MS`（默认 30s，**0 = 不设**，⚠️ 严禁直接把 `AbortSignal.timeout` 传给 fetch，必须在收到响应头后立即 `clearTimeout` 避免掐断 response.body 长文本流）；②`serviceAvailable` 被解析却**零处读取** ⇒ 国际版 `RESOURCE_LIMIT` 时照样空等满 30 分钟 ⇒ 判据 `isServiceUnavailable` 必须是 **`=== false`**（缺失 ≠ false，写成 `!` 会让「上游不下发该字段」时所有排队立刻失败）、处置是「**先换号**、换不到才失败、**不写冷却**」；⚠️⚠️ **报告 §5 P1-A 的「yield 进度 chunk」方案已被实测证伪**（`BlockAssembler.push` 与 `AssistantStreamAccumulator.push` 的 `default` 都是 `assertNever`，**抛错而非忽略** ⇒ 真加新 chunk 类型会让整轮会话崩），改用 `warn` 通道记排队；⚠️ 默认排队总时长 **30min → 5min** 且超时文案带上 `queueCount`/`waitTime`/`subCode`，`subCode` 嵌在**第三层**且位置不固定（须整链展开取第一个非空）；⚠️⚠️ **出口代理与失败分类（2026-10-25 审计 3 域合规 + 2 域对抗 / 67 次变异）**：⚠️⚠️ **网关 5xx 原先不换号，而它才是实测主导形态** —— 扫本机**全部 1374 会话 / 163 条真实失败**按形态计数：`504 Gateway Time-out`（HTML）**74 次** + `First Token Timeout`**6 次**都落 `other` ⇒ 不换号，且终态 `SERVER` 在宿主 `DEFAULT_RETRYABLE_CODES` 里 ⇒ **白重试 5 次**；而本 PR 原以为的核心目标 `provider_error` 只有 **16 次**；⚠️⚠️ **折算路径没接 per-账号代理 ⇒ 墙外环境下该渠道从聚合轮换里静默消失**（本 PR 接了四条腿、漏了折算；`index.ts` 明写「credits 与 expiry 两条腿缺一不可」，`minimaxIntlFetchFor` 的注释逐字点了同一个症状）；⚠️⚠️ **非法代理字符串会让账号永久不可用，且入口 UI 可达**（`backup.import` 真跑实测 `ftp://host:21` ⇒ ok:true + 落池 + 此后每次取 fetcher 都抛）；⚠️ **代理口令的泄漏面：去向决定定级**（对抗轮实测宿主 logger 0 命中 / 客户端 console 零命中 / 不落盘 / 不进会话历史 ⇒ 由 P0 降 P2，因为**没有一条后果链能到达「用户以外的人」**）—— 但仍修了两处（`testProxy` 文案不再自拆台、四家日志统一走中立 `proxy-mask.ts` 脱敏）；⚠️ 两处**未修已登记**（401/403 把额度判在认证之前 = 结构可达零实测且 A1 的修法会丢上游原文；`auth` 行的「换号」也没实现 ⇒ 池里第二个号永不被尝试，且 `'AUTH'` 永不入参 ⇒ 那格是死代码）；⚠️ 安装（git 插件）的 allowBuilds 键在 pnpm 10 / 11 语义**互不兼容**（Issue IKJCOC）；⚠️ 额度类业务码**不是一个值，是一条链** —— 只认 `110` 会让换号静默失效（Issue IKKJFH，码值腿 + 文案腿必须同时在）；⚠️⚠️ **静态兜底表必然腐坏 ⇒ 已改走远端 `/api/v2/model/list?Encode=1`**（2026-10-20 用户报障：上游 `dfmodel` 已 `price_factor=0`+`is_free`、IDE 显示 `0.1×`划掉`0×`，插件还写 0.1；同批 `mmodel` 已改名 `MiniMax-M3.1-Flash`）：`Encode=1` **不保证响应加密**（两站实测都回明文，官方 `rb()` 是「失败即明文」）、WASM 自己补 `/algo` 前缀、响应是 `{场景:[模型]}` 取 `chat`；⚠️⚠️ **`fast` 拿不到曾是版本闸门不是缺陷**（`minimal_version` 按**自称的客户端类型**选命名空间：cli 需 ≥1.1.70 / app 需 ≥1.1.66，IDE 是 app+1.1.69）—— **2026-11-07 起 `COSY_VERSION` 由 `1.1.49` 抬到 `1.1.79`**（用户要求；依据本机 IDE 0.5.6 的 `cli_version = 1.1.79-hotfix.18`，且**不带** `-hotfix.18`：预发布按 semver **低于**同位正式版，上游把闸门抬到 `1.1.79` 本身会静默判不过；该值同时进推理签名 ⇒ 已实测 200）；⚠️⚠️ **`QoDuck`（`lmodel`）只发布在 `app` 场景**（`chat` 14→15 多的是 `fast`，`lmodel` **任何版本都不进 `chat`**、条目**无 `minimal_version`** ⇒ 与版本无关）⇒ 目录已改 `chat ∪ app`（`QODER_CATALOG_SCENES`，`chat` 优先、跨场景按 id 去重），实解 `contextWindow 1000000` / `efforts xhigh,high,low` / 默认 `high` / 免费；`lmodel` 与 `fast` 均已真机 200（91.4s / 64s）；⚠️ **目录按账号下发**（实测一个免费号只给 2 条），缓存是「上次成功那个账号的目录」；⚠️ **取数必须在 auth 服务里只读池**（`QoderAuth.fetchModels(pool)`），走 `resolveCredential` 会把「本次实际使用的账号」改写成目录用的账号 ⇒ 额度标记落错号；⚠️⚠️ **该端点对伪造凭据也回 200**（中途一版让单测真发 HTTPS 并拿到上游真表，4 条用例静默变随机真值）⇒ 适配器改为注入式取数、单测默认不接线；⚠️ 既有的 `qodercn` e2e「续期」用例**是写操作**（轮换 `refresh_token` 且不落盘）已加二次确认闸门；⚠️「1017」版本串**不在模型列表里**（在 IDE 遥控文案 `/ide-text/latest`）；⚠️⚠️ **审计补记（2026-10-20 subagent 一轮审计 + 对抗审计）**：①**真缺陷** —— 远端目录是**按账号**下发的，把 `inputModalitiesFor()`/`stream()` 的元数据判据改成「只查远端」后，目录里没有的模型被**硬拒图片**且 name/context/reasoning/请求体元数据一并退化 ⇒ 修法是**能力与元数据取「远端 ∪ 静态表」、菜单仍远端独占**（`resolveModel` 用「静态表专用的第二个骨架实例」做回退，别在适配器里重写装配）；②`isFree` 从未透出（Jet Hub 免费桶只认它）；③**六条假绿**实测（`refresh()` 空转仍 49 passed / `supportsDisable` 恒真 175 passed / `parseEfforts` 排序 175 passed / `readString` 去非空 175 passed / 删池读 `.catch` 111 passed / 兜底表置空 9 passed —— 后者是 `toBe(fallbackModels.length)` 同义反复）；④解析口径按官方产物对齐（白名单 `k3` **6 值无 `minimal`**、`efforts` 认**数组/字符串/对象**、`available_reasoning_effort` 是**thinking_config 对象要包一层**且按短路语义只在「条目自身无档位也无 `disabled`」时读、顶层 `default_effort`、`isDefault` 驼峰、顶层 `supports_disabled`）；⑤**三条过程教训**：「守卫有牙」≠「取值域正确」（缺陷 ① 就是从这缝里漏的）、**新写的守卫自己可能是假绿**（我的图片用例没先把远端目录读进缓存 ⇒ 变异打不中）、变异锚点必须先自证（CRLF + 缩进变化 ⇒ 报 `PATCH-NOT-APPLIED` 而不是「无牙」）；⑥未修已登记：折扣展示口径与官方 `yo0()` 分叉（官方**不做 `before×discount` 乘法**）、`refresh()` 失败后 TTL 上界丢失、真加密分支零覆盖、黑名单 ⊃ 收缩目录 ⇒ provider 被隐藏；⑦⚠️⚠️ **积分「永久」是假话（issue IKTLMX，2026-11-08）**：`addOnQuota`（个人资源包）**只有聚合标量、无任何日期字段**（8 个真实账号 + 13 个 `Cosy-ClientType` 取值逐字节相同 + 24 条候选端点全 404 + 官方网页端点要 Web Cookie 不认 OAuth，全部证实），而官方用量页写明「30 × 100 credits、逐笔 30 天后作废」⇒ 旧代码把「到期未知」渲染成「永久」，**废掉临期桶的救命功能**；修法是 `CreditPackage.expiryUnknown` **子量**（不是第 5 桶 —— `permanent` 同时承重永久锁 `allowPermanent` / 聚合轮换排序 / 与后端 `splitBuddyCreditsByExpiry` 逐格同判，拆桶会让「锁定永久积分」对 Qoder 直接失效）+ 展示层新增「到期未知」段（tone `warn`，绿字会读成「不用管」）；⚠️ **不得反推日期**（`remaining/100 = N` 只在「每天都领」时成立 ⇒ 是**乐观上界**，本仓红线绝不编造日期）；⚠️ 也不能反过来一律标未知（Loomy 那种平台明说永久的必须还是「永久」）；7 条变异全红 + 反向对照（不带标记 ⇒ 键不出现、仍显示「永久」）；⑧⚠️⚠️ **企业账号（`userType:'enterprise'`）的额度在 `orgResourcePackage`**（PR #182，2026-11-09 真实凭据实测）：该形态 `userQuota`/`addOnQuota` **都不下发**、`displayMode` 仍是 `'qoder'`（与「企业版只给网页链接」那条早退分支**不是同一形态**）；`cap` 即总额，但它会**缺失/给 0** ⇒ 必须用 `used+remaining` 兜底（否则面板渲染「3000 / 0」假分母），两者都读不到时**不产出包**（只有 `used` 的形状仍须 `null` = 查不到）；本层**无任何逐笔日期** ⇒ **必须置 `expiryUnknown`**（否则卡片又写「永久」）；`available === false` ⇒ `active:false`（不得进聚合轮换）；fixture 必须让 `cap ≠ remaining ≠ used+remaining`，否则 `total:cap` 改成 `total:remaining` **全绿**（初版就这么漏的）
+ - `docs/agent-notes/client-ui.md`（28 节）：⚠⚠️ **`notice` 类状态必须是对象形状；接线层守卫只能靠行为级**（2026-10-22 白屏 + 2026-10-25 审计：三条源码文本断言各有一个真实旁路 —— 三元字面量 / `['length']` / `if (false)` 包归一化，三者同时注入时 41 条相关用例**全绿**而代码**确实抛** `TypeError`；⚠️⚠️ 那个「`jet-hub.js` 根本 import 不了」的前提**是错的**，被仓库自己的 `jet-hub-tdz.spec.ts:99` 证伪 ⇒ 真守卫是 `tests/unit/jet-hub-panel-wiring.spec.ts`（真渲染 + 真调用 `useCallback` 回调）；⚠️⚠️ 宿主 `SlotErrorBoundary` **从 `0.1.0-rc.8` 起就有** ⇒「插件内没有边界 ⇒ 整页清空」**归因不成立**，插件边界的价值是可读文案 + **可恢复**（宿主 abdicate 对非 chain 槽永久、失败记录只在插件重载时清除）；⚠️「不必重启」**成立**（关掉设置再打开即恢复，宿主 `open && <SettingsPanel>`），真缺陷是**恢复路径不可发现**）；⚠⚠️ **包名 = 插件身份** —— `package.json.name` / `cordis.patch.yml` 加载行 `name:` / `build.mjs` 产物注册 id / `jet-hub-styles.js` 的 `PLUGIN_ID` **四处必须逐字相同**，漏一处启动即 `N entry did not activate` 并被自动禁用（Issue IKLUME；含「闸门必须写在 build.mjs 里，`pnpm add git+…` 不跑 vitest」「判据必须打在行为上，源码正则有假红假绿」「第三条腿在用户 profile 的 `dependencies` + `dsh.profile.bundles`，失败全静默」）；⚠⚠️ 注入的 `<style>` **必须署名 `data-plugin`**，否则被别的插件认领后连带删除（Issue IKK764）；⚠⚠️ **源码文本断言的共同弱点：`if (false)` 短路禁用**（2026-10-16 对抗审计实测 5 条全绿：`setData` / `commitOrder` / `onSortByExpiry` / `onDragEnd` / 指纹 —— 字面量在死分支里照样存在）⇒ 修法是「常量假条件检测 + 缩进级无条件调用检测」，且**两条过程教训**：①判据没抓住先怀疑判据本身（我的启发式找到了**相邻**语句的 `if`）②**变异「全绿」可能是变异根本没注入**（CRLF 上 `replace` 静默不生效 ⇒ 必须打印实际片段确认，锚点未命中要报 `PATCH-NOT-APPLIED` 而非「无牙」）；⚠⚠️ 一键签到的汇总**必须按单位分列**，不得跨单位求和（2026-10-04）；⚠ 「通用面板」里的按钮与弹窗**必须按 provider 分支**（Iss；账号池与多账号（含模型饱和 14003 不许换号）；模型黑名单（Jet Hub「显示列表」开关）；⚠⚠️ **判「某个 id 在不在目录里」时两个目录来源（`listModels` / `listAllModels`）必须取并集**（Issue IKJW33：只用任一个都被实测证伪 —— 冷缓存下 `listAllModels` 是编译期兜底**子集**（cline 实测 3/460）⇒ 误报；而 `opencode` 的 `listAllModels` 恒兜底表 + `listModels` 匿名身份只给免费模型 ⇒ 反向误报 13/13；另含「黑名单必须在 `await` 之后读」与「源码级断言必须锚定片段、并列断言必须用计数」两条测试教训）；⚠⚠️ **「关闭全部/关闭供应商」写黑名单前必须取同一份并集，且「远端读到但为空」也要判**（同一个 `fullCatalogIds` 缺陷的另一入口：远端 `[]` + 兜底表 1 条 ⇒ 只关那 1 条却返回成功 ⇒ 供应商**显示已关闭而模型仍可选**；判据**已按端点分道**（2026-08 修订，别再统一成 `complete`）：`provider.setEnabled` 判 `remoteError`（读到但为空要照常关闭，否则无账号供应商永远关不掉）、`model.setAllDisabled` 判 `complete` 但**并集已全在黑名单时幂等成功**（「全部已关闭」会让 `listModels` 被过滤成 `[]`、与「无账号」同形，不幂等就会误报「没有可关闭的模型」），`account.test` 是刻意例外「尽力而为」不得改拒绝）；目录门控：没有已登录账号就隐藏整个 provider；⚠⚠️ **额度错误的码不得被客户端替换**（Issue IKJVCW：harness 常量 `QUOTA_EXCEEDED_CODE` 的字面值就是 `'QUOTA'`，客户端会丢掉 message 换成「当前请求的额度已用尽」；额度须用字面量 `'QUOTA_EXCEEDED'`，四处产出点缺一不可，含 `httpErrorCode` 的 401/403 短路；⚠️ **不要给 codearts 加「地域封锁」判据** —— 141 个真实会话零命中，那套 marker 是从 cline 照搬的，已撤回）；⚠⚠️ **`AUTH` 码会连 message 一起吞掉，这不是孤例而是复发形态**（Issue IKLBSH：opencode 的 `FreeTierError` 曾抛 `AUTH` ⇒ 用户只看到「API 密钥无效」而「根因是 session id 形状」这句**唯一指路文案**连同报文一起消失；**真实报文取证**于会话 `session-d7c80d34`。凡「文案本身就是出路」的错误（形状门禁 / 账号级拦截 / 需要用户做非登录动作的）码一律避开 `AUTH` / `QUOTA` / `ACCOUNT_QUOTA`，判据可复用 `dead-model-store` 的 `IGNORED_CODES`）；⚠️ **`errorDetail` 要认 `detail` 字段，但展示出口与分类出口必须分开**（IKLBSH A1 + 真实净回归，两轮审计独立确证：本仓库 6 份同义 `errorDetail` ⇒ 该腿只留一份实现 `openai-compat.ts` 的 `detailFieldText`；**但** `httpErrorCode` 拿它的**产物**跑 `isQuotaExceededError` ⇒ 无条件加 detail 腿会**翻转错误码**（detail 含 `out of credits` 时 `INVALID_REQUEST` → `QUOTA_EXCEEDED`；含超限措辞时 → `CONTEXT_WINDOW_EXCEEDED` 并**触发溢出压缩**）⇒ 两条出口 `errorDetail`（展示，含 detail）／`errorDetailForClassify`（分类，不含），分类点只有 `llm-adapter.ts` 两处；⚠️ 证据强度如实标注：868 会话真实失败面零命中，旁证「harness 也产出该字段」**已被审计证伪** ⇒ 「结构上可达、零实测」）；⚠️⚠️ **页头按钮搬进侧边栏 + 「设置」弹窗 + 供应商开关（GitHub PR #52，2026-11-09 三域审计）**：① **PR 声称的「只写关闭意图、黑名单不动」是假的** —— `src/` 一行未改，`provider.setEnabled(false)` 仍把整个目录灌进黑名单（`writeModelsWithProviderClosed` 逐条 `perProvider[id]=true`），`(true)` 仍 `delete next[provider]` **整家清空**（探针 `expected {} to deeply equal { 'glm-5.3': true }`），而同一交互 `title` 写「黑名单保持不动」、confirm 写「将关闭它的 N 个模型」自相矛盾；② **删「第二个更新点」时把守卫一起删了** —— `providerStatusSeqRef` 仍承重（1 个 `++` + 2 个 `!==`）但 AST 闸门整段删除，变异实测「`++` 不递增 / 删失败分支比较」**12526 条全绿** ⇒ 正确做法是把计数 2 改成 1；③ **`disabled` 会把原生 tooltip 一起关掉** —— 原因只挂 `title`，Chromium 对 disabled 控件不显示 ⇒ 用户与 AT 都读不到「为什么点不动」，改 `aria-disabled` + onClick 早退（属性不是拦截，必须行为级守）；④ **循环指认** —— `model-center-panel.spec.ts` 写「行为守卫在 `provider-toggle.spec.ts`」，后者全是源码文本 ⇒ 变异（`onClick` 体包 `if (false)`）**148 全绿**；⑤ **`provider.status` 失败不许置 null**（一次瞬态失败让 29 个开关全灰、恢复入口没写进提示）；⑥ **死 import 让运行态圆点静默消失**（`gatewayButtonLabel` 引入了却不用，`openai-gateway-panel.spec.ts` 仍测那个纯函数 ⇒ 测试全绿）；⑦⚠️⚠️ **react 替身的 `useRef` 只写 `cur` 不写 `current`** ⇒ `useRef(0)` 后 `++ref.current` = NaN ⇒ `NaN !== NaN` 恒真 ⇒ 任何「按序号丢弃过期响应」的闸门在该替身下**永远丢弃、state 恒 null**（这正是序号闸门没行为级用例的根因；替身少一个字段 ⇒ 整条分支静默失效）；⑧⚠️⚠️ **二审补的三条行为级守卫**（AST 计数只挡「整段删掉」，挡不住「留着但失效」）：`if (false && …)` / 删 `return` 留空 `if` 体 / 把 `++` 搬到隔壁函数 ⇒ 三个计数全不变、34 条全绿 ⇒ 必须成对（AST 挡删除、行为级挡失效）；且 **`slice(at, at+4000)` 会越界**（函数体仅 900 余字符，窗口盖到隔壁 `commitProviderOrder`）⇒ 用 AST 取 `initializer` 精确范围；**变异红在「超时」上 ≠ 红在「被测腿」上**（防双写用例只放行一个 resolver ⇒ 去重腿一删就超时，红因不是断言）⇒ 所有挂起的 resolver 收进数组一次放行；…；★ 2026-11-23：登录授权页「自动打开浏览器」开关 —— **两条腿**（客户端 `window.open` + 宿主 `openBrowser` / 无痕窗 / Raccoon 授权页）少一条就静默失效；缺键方向必须是「开」；CDP 渠道（豆包/百智云/超级麦吉/MonkeyCode/Marvis）刻意不受开关影响；同批把设置弹窗抬到 840/940 并参考「档次窗口」加实边框 + 内描边（分区间距保持 8/10，`overflow-y` 兜底不许删）
+ - `docs/agent-notes/protocol-wire.md`（19 节）：⚠⚠ RPC 的 `catch` **不得**把失败包成 `ok:true`（Issue IKJOZA）；⚠️⚠️ **网关监听地址**：容器/端口映射下默认 `127.0.0.1` 使映射**永不可达**（Issue IKL7UN），修法是 `DSH_OPENAI_GATEWAY_HOST` 可配 + **拒绝通配地址**；⚠️⚠️ 通配判据**绝不能交给 `new URL()` 规范化**（初版如此、注释自称「无假阴性」，被两轮独立审计实测证伪：`::%eth0` / `::\u200b` / `[::]:8326` 等 14 条 fail-open），而**修法本身也被后两轮各证伪过一次** —— 不可见字符**必须按 Unicode 类别**（`\p{Cf}\p{Cc}\p{Cs}\p{Mn}\p{Me}\p{Zs}\p{Zl}\p{Zp}`）**+ NFKC**，**枚举码点必漏**（`Cf` 有 160+ 个，且 `\u034f` CGJ 是 `Mn` 不是 `Cf`；实测 25 条可绕）；⚠️⚠️⚠️ 更关键的是**「认不出来就放行」这条路线本身必须废弃**（fail-closed）—— 内核把 **`U+3002` 表意句号**（`Po`，NFKC 不折）当 `.`，实测 `0。0。0。0` **真绑全部网卡**；最终修法是加 `isLegalHostText` 只放行 `[A-Za-z0-9.:%_-]`，**先字符闸门（fail-closed）→ 再通配识别（放行未知）**；且**「判据串」与「listen 串」必须分两个函数**（判据剥 zone id、返回值保留 —— 剥了会让 Linux link-local `fe80::1%eth0` 绑不上）；IPv4 还要兼容 `inet_aton` 紧凑写法（`0`/`0x0`/`00`/`0.0.0.0.` 在 Linux 上都是 `0.0.0.0`）；且**必须同步改四处把 127.0.0.1 当常量的 UI/日志文案**（客户端回环判据必须**复用宿主侧实现**，自己写正则会立刻漂移成假阳性）；⚠️ 网关请求体超限**必须是 413、不能是断连**（Issue IKKUBJ：销毁 socket 让 413 发不出去 ⇒ 客户端只看到连接重置、会话永久不可用；上限还须与自家图片声明自洽、`keepAliveTimeout` 必须显式设置）；⚠️ 图片必须按像素预算发**请求版本**，不能恒发原图（Issue !IK；⚠️⚠️ 该节的两条**已实测边界**（Issue IKKX0T）：**报文里的 `100001` 是常量哨兵 = `limit+1`，与张数无关**（12/15/20 三档报的都是它）⇒ **不能拿它反推每张 token**（「15 张估算 99,579、差 0.4%」那条是**巧合式吻合**，已删除）；且 **`617 px/token` 只在小图上成立**（1721×997 → 601~618；2560×1600 → 410~492 px/token，面积涨 2.39× 而 token 涨 3.25×）⇒ `DEFAULT_IMAGE_PIXEL_BUDGET` 的「约 96 张」是**乐观端**（悲观端约 64 张），引用余量必须带区间；buddy 边界应读作**区间 `(8,15]`** 而非「= 15」；单次输出上限（`maxOutputTokens`）必须下发，不能只用来过滤；⚠️ 持久化：DSH 0.1.7 移除 `settings.register；⚠️ 「锁定永久积分」三家**共用一张表与一个端点**，但判据必须各算；⚠️⚠️ **`login.poll` 的失败终态**（Issue IKLI7J，真实报障）：`done:true` **只在成功时下发** ⇒ 其余 provider 失败后删占位条目，与「用户还没授权完」**同形**，而 OfficeAce 唯一那句 `{done:false, error}` 又被前端 `if (!pollRes?.done) return;` 丢掉 ⇒ **任何 provider 的登录失败都只剩静默转圈 5 分钟**（5 分钟是**客户端自己的**轮询上限、不是服务端超时；云侧其实已用 `200 + subscription:null` 讲清原因）；修法 = 三态契约 `{done:true, success:false, error}` + 十余处后台失败统一走 `failLogin()` 记终态（**读后不删**、TTL **读写两侧都判**、终态查询必须在查账号池**之前**、客户端「先判 `success===false` 再判 `done`」顺序不能反、**不得**把「占位条目在但凭据未写」判成失败）——⚠️⚠️ **两轮独立审计各自打穿了第一版修法**，两处都是**用户数据被销毁**、都已修：① OfficeAce 分支原把「交换/落库/回填」罩在一个 `try` 里 ⇒ 落库后回填抛错、或客户端两拍重叠（`setInterval` 无 in-flight 闸门）都会**删掉刚登好的账号与凭据**（改为**三段式 + 单飞表**）；② `failLogin` 把「登录失败」与「登录**成功后的记账失败**」混为一谈 ⇒ 各 provider 的 `pool.updateAccount` 排在凭据落盘之后、落盘失败会抛错 ⇒ 报「登录失败」并删号（改为先判 **`loginCredentialLanded`：凭据在 ⇒ 就是成了**）；另记：**删除不可逆 ⇒ 「读不到池」绝不当成「没有」**（`poolEntryOf()` 返回 `'unknown'` 时只记终态不删号），且计数守卫必须**剥注释 + 两类收尾分开计数**（否则一行注释诱饵、或把 `failLogin` 换成 `recordLoginFailure` 都能配平）；⚠️⚠️ **`reasoning.efforts` 的数组顺序 = 强度序（弱 → 强），不是「默认档排第一」**（Issue IKLIDV）：DSH 把它当**展示顺序**（`dsh-llm` 类型注释 `adapter-preferred display order`）且官方客户端**直接 `map` 不排序** ⇒ 默认档排首位只在**纵向**列表成立，铺成**横向档位轴**就变成「左强右弱」（「开启」贴最左）；强度序权威是 `REASONING_EFFORT_RANK`，三处**我们自己构造**的两档已统一为 `关闭 → 开启`（`llm-adapter.ts` 的 `CODEARTS_REASONING_EFFORTS`＝**唯一定义处** —— 同一文件原先写了**两份**同义数组，只改一份会让用户手填模型 id 时档位轴反向；另两处 `raccoon-product.ts`、`minimax-adapter.ts` 的 switchable 追加档）；⚠️ **`defaultEffort` 与数组位置是两件事，且不得用 `array[0]` 反推默认档** —— raccoon 那处曾如此，顺序一改就会静默把默认档翻成「关闭」（该分支不可达 ⇒ **恒真断言抓不到**，我第一版就写成同义反复、被反向验证当场证伪；改为入参化纯函数 `raccoonDefaultEffort` 才测得动）；⚠️ **Qoder 刻意不重排**：其乱序是上游目录原样（实测 8 个账号键序**完全一致**），重排会让 `verify-qoder-model-meta.mjs` 对账全失效，**排序责任在渲染方**；⚠️⚠️ **网关是最后一道防线：空名工具调用必须「剔除」而不是 400**（Issue IKLRIK：客户端把 `{name:""}` 的 `function_call` 每轮原样重放 ⇒ /v1/responses 与 /v1/chat/completions 两条入口都硬 400、**整条会话永久报废**，而下游九个适配器的 `resolveToolPairing` 对同一份数据都是「剔除并继续」⇒ 同一仓库两套口径且更严的一套在最外层）；判据**可推广**：网关的消费者是「把历史全部回传」的客户端（Codex / Claude 系）**没法自愈** ⇒ 凡「下游会剔除」的坏数据网关不得比下游更严；修法四条缺一不可（入站两端口径共用 `hasUsableToolName` 且**只放宽 name 这一格**、`id`/`arguments` 缺失仍 400；**两处都要预扫并剔除配对的工具结果**否则留孤儿；出站三处 `name` 覆盖加非空守卫——空串**不是** `undefined`；**名字始终不可用的 `function_call` 一个事件都不发**，`added` 发了就改不了 `name`）；⚠️⚠️ 响应向**帧类型与已开项 kind 不符**时旧代码会用**该既有项的 id** 发事件（实测三方向：A `reasoning`+`tool-call-delta` 用 `rs_…` id 发增量=**本次报废会话的起点**、B `function_call`+`text-delta` 正文**静默丢失**，两者**有牙**；C `block-end` 撞已开项**无牙**——`closeItem`/`outputItemJson` 仍按 `item.kind` 输出、`output` 逐字节相同 ⇒ **刻意不写用例**，保留只为「流式与非流式同口径」）；⚠️⚠️ **`closeItem` 判据必须读「名字现在是否可用」，不能读「曾经发过 added（`announced`）」**——`block-end` 才是名字的**权威来源**（适配器在收尾循环补发），以 `announced` 为判据会把「名字与参数都齐全」的真实调用**整条丢弃**（比改前更糟，我第一版就写错了）；⚠️⚠️ **两条由独立审计打穿的真回归**（都在本修法内、且**全量测试全绿** ⇒ 只有盯不变式的审计才抓得到）：① **非流式 `output[]` 顺序被翻转**（`output_index` 语义＝**开项顺序**，而各适配器收尾顺序**相反**；我让流式在「名字可用」占号、非流式在「收尾」占号 ⇒ 三工具收尾逆序实测 `["cC","cB","cA"]` vs 流式 `["cA","cB","cC"]`；修法＝两条路径共用**同一时刻**的幂等 `assignOutputIndex`；⚠️ 原有用例锁不住——「顺序正确的单工具」是**恒真**的，判据必须写成「两条路径给出相同顺序」且输入含**并行工具+收尾逆序**）；② **坏块会话产出「空 assistant 消息」把 400 挪到上游**（剔除坏调用后该 assistant 留成空 content、成为 wire 开头发言且无 user ⇒ `model_param_invalid`；修法＝`tool_calls` 全剔光**且**正文为空时整条剔除，⚠️ **正文非空者必须保留**——那是模型真实发言）；⚠️⚠️ **方法论**：变异验证有一处**实测无牙**（非流式新建时急躁占号——该变异态与修复态**逐字节相同**）⇒ **无牙要如实登记，绝不为它编恒真用例**；且用跨模块副本做变异时 `instanceof` 断言会因**类身份不同**而**假红** ⇒「用例变红」**不自动等于**红因是被测变异；⚠️ 另：本守卫与权威实现 `BlockAssembler` **语义有分歧**（它对异类 `block-end` 是**采纳**、我是**忽略**，实测两方向各丢一个完整工具调用）——**已核实**且**有意保留**（采纳在流式**不可行**：`added` 已发就改不了类型，非流式单独采纳会让两路径分叉），代价已如实登记…
+ - `docs/agent-notes/providers-buddy.md`（6 节）：模型计费倍率与同名模型（必须写进 `name`，不是 `descriptio；⚠️ CodeArts benefit（免费额度）模型：集合必须动态判定，不；⚠⚠️ 腾讯系内容级风控：system 里的客户端模板句会被**整轮拦死**；⚠️⚠️ 第二条指纹（Claude Code 身份句，Issue IKLS2L）的锚点与第一条**相反** —— 该句是**行首锚定**（前接任意一个字符即放行），故新增指纹的探针必须**两侧都测**，只测「夹在句中」会得到**假阴性**；⚠️⚠️ 第三条指纹（Claude Code 反馈句，Issue IKLYCT）**每轮必带**且位置无关、`find` **必须写整句**（砍掉任一半即放行 ⇒ 写短了等于空跑）；⚠️⚠️ **第四条指纹 = DSH 自己的身份首句**（`You are an AI agent powered by DeepSeek Harness`，**每轮必带**、行首锚定），2026-10-21 起 `replace` 换成**官方同形**措辞 `You are an AI coding assistant, powered by a large language model`（取证：CodeBuddy 会话 `8c9dbeb1…` 的 reasoning 复述 + 客户端 `product.json` 提示词资产两条独立来源一致 ⇒ 官方首句是 `You are an AI coding assistant, powered by <模型展示名> model.`，**与本句同形、只差 Y 填模型名还是 harness 名**；旧 `replace` 把 `DeepSeek Harness` token 原样留着 = 只躲字面量不解决身份）—— ✅ 2026-10-21 实发验收通过（buddy 站新措辞干净 200，`pnpm test:e2e:buddy-fingerprint` 全文件 45/45、ds-v4.1-flash、两轮一致），⚠️⚠️ 且该句**端点相关**：`www.workbuddy.ai` 对同一句**两模型实测均不拦**，只有 `copilot.tencent.com` 拦（登记时只测过后者的账号）；⚠️⚠️⚠️ **第五条指纹 = DSH Web 运行面那两句**（`dsh-harness-dev-context` 的 `WEB_SURFACE_PROMPT` 前两句、221 字符，**只在 Web 运行时挂载** ⇒ CLI / 桌面面的「真实整段」测不到它）：2026-10-21 真实报障「只改第 1 行仍被拦」的**真凶** —— 该字面量**单独就能拦**且**位置无关**，而裸 token `DeepSeek Harness` **放行**（**不是**「认 token」）；`find` 就是这 221 字符（220 前缀放行、**切句两半各自也放行** ⇒ 写短 / 写散都**空跑**）；`www.workbuddy.ai` **不拦**；已补单测（含本机**漂移守卫**：读会话落盘的真实 system，往 find 注入一个空格即**精确变红**）+ e2e 第 5 节（含 `★★` **多出现位置**那一格）；⚠️ **漂移风险未解**（DSH 改这两句任一字符即静默失效）；⚠️⚠️ **`11128` 有两个同码子原因**（`unapproved channel`=内容级 / `request illegal`=**按账号**的渠道门控）⇒ 探针**必须先筛基线放行的账号再固定用它**，轮换账号会实测出「短前缀被拦、长超集放行」的**非单调假结论**；⚠️⚠️ **「不该把 11128 加进 `isContentRejection`」≠「判据不会因它误判」** —— 腿③ 扫**全文案**会绕过排除逻辑，2026-10-18 实测真会把内容级 11128 判成账号级⇒烧整池+锁 30 分钟（已加 `isContentBlockedIllegalBody` 同型早退）；且腾讯两站对**非流式**请求回 `11101`，探针不带 `stream:true` 会把「不支持非流式」误读成风控拦截；⚠️⚠️ **`reasoning_effort` 是 buddy 系 deepseek 的「思考开关」，不是可选强度** —— IKLMIY「为保住正文而不发它」已**撤回**（`e261cd6`，用户取舍「思考优先于前言」；复测：不发该字段 `reasoning_tokens` **10/10 恒为 0**，`thinking:{type:'enabled'}` 单独无效）
+diff --git a/docs/agent-notes/providers-qoder.md b/docs/agent-notes/providers-qoder.md
+index ff8ed634..c75379dc 100644
+--- a/docs/agent-notes/providers-qoder.md
++++ b/docs/agent-notes/providers-qoder.md
+@@ -843,6 +843,125 @@ Qoder 服务端按**设备指纹**（`Cosy-MachineToken` + `Cosy-MachineType`）
+   若 Linux 用户拿不到身份，应先用 `QODER_RUNTIME_INFO` 指向真实可执行文件验证。若 Linux 用户仍拿不到身份，
+   应先用 `QODER_RUNTIME_INFO` 指向真实的 `runtime-info` 验证，再谈路径扩展。
+ 
++## ⚠️⚠️ 「不回复也不报错」的两条静默挂死路径（2026-10-27 诊断 + 修复）
++
++> 诊断报告：`D:\Tools\DeepSeek Harness\Reports\qoder-no-response-diagnosis.md`
++> 现象：通过 dsh-provider-hub 对 Qoder（国际版）与 Qoder CN（中国版）发起的请求
++> **得不到回复，也不报错**；UI 停在「运行中」。
++
++### 结论先行：不是「服务器繁忙」，是**上游秒回错误帧 + 插件静默等待**
++
++上游其实**秒回了错误帧**（CN `dfmodel` HTTP 200、0.5s 到达）：
++
++```
++data:{"headers":{"Content-Type":["application/json"],"Retry-After":["30"]},
++"body":"{\"code\":\"403\",\"message\":\"{\\\"code\\\":\\\"10605\\\",
++\\\"message\\\":\\\"{\\\\\\\"isQueued\\\\\\\":true,…,\\\\\\\"queueCount\\\\\\\":4375,
++\\\\\\\"serviceAvailable\\\\\\\":true,\\\\\\\"subCode\\\\\\\":\\\\\\\"CALL_COUNT_LIMIT\\\\\\\",
++\\\\\\\"waitTime\\\\\\\":489}\\\",\\\"subCode\\\":\\\"CALL_COUNT_LIMIT\\\"}\"}",
++"statusCodeValue":403,"statusCode":"FORBIDDEN"}
++```
++
++**外层信封 `statusCodeValue:403`，业务码 `10605`（排队）藏在 `message` 里再嵌一层**
++—— 这正是本文件多处记录的「`message` 是一个 JSON 字符串，必须二次解析」那条。
++
++⚠️ **之前用 `res.text()` 探测是错的**：它要等流结束，而这条流**永不结束**，
++所以看起来像「挂死」。改用**增量读取**后，真实帧立刻现形。
++
++### 两条**互相独立**的静默路径（必须分开记，修一条不等于修另一条）
++
++| | 路径 | 触发条件 | 症状 |
++|---|---|---|---|
++| **A** | `sendEncrypted` **没有响应头超时** | 上游「接受 TCP 连接但永不回响应头」 | `fetch` **永不 settle**，generator 卡在 `await fetcher(…)` |
++| **B** | `serviceAvailable` **从未被读取** | 上游明说服务不可用（`serviceAvailable:false`） | 照样空等满总时长，然后报「排队等待超时」 |
++
++**路径 A 的决定性证据**：会话 `session-7efe210e` 的报文措辞是
++`qodercn: upstream connect error or disconnect/reset **before headers**` ——
++注意 **before headers**。而 `resolveFirstTokenTimeoutMs` / `resolveChunkTimeoutMs`
++（默认各 120s）**都够不着这一阶段**：它们作用在**已经 resolve 的**
++`response.body.getReader()` 上（`src/sse.ts`）。
++
++**路径 B 的决定性证据**：`grep serviceAvailable src/qoder-adapter.ts` 在修复前
++**零命中** —— 字段被 `parseQueueError` 解析出来、随 `QueueInfo` 一路传到适配器，
++然后**没有任何人读它**。
++
++### 修复（逐条对应报告 §5）
++
++| 报告项 | 落地 | 关键点 |
++|---|---|---|
++| **P0-A** 响应头超时 | `resolveHeaderTimeoutMs()` + `sendEncrypted` 管理 | `DSH_QODER_HEADER_TIMEOUT_MS`，默认 **30s**，**0 = 不设**；⚠️⚠️ 严禁直接把 `AbortSignal.timeout` 传给 fetch，必须用 AbortController 且在收到响应头后立即 `clearTimeout`，否则 30s 到期会掐断后续的 response.body 流（2026-10-29 修复，会话 `session-b4bcc236` 30.01s 掐断取证） |
++| **P0-B** `serviceAvailable:false` 不空等 | `isServiceUnavailable()`（`model-queue.ts`） | 判据必须是 **`=== false`**；处置是「**先换号**、换不到才失败、**不写冷却**」 |
++| **P1-A** 排队期间可见进度 | ⚠️ **方案作废**（见下） | 改用 `warn` 通道记排队（首次 + 每 10 次） |
++| **P1-B** 缩短默认排队总时长 | `DEFAULT_QUEUE_TIMEOUT_MS = 5 * 60_000` | 30min → **5min**；超时文案带上游事实 |
++
++### ⚠️⚠️ 报告 P1-A 的「进度 chunk」方案**已被实测证伪**，不要再试
++
++报告建议 `stream()` 在等待前 `yield` 一个 `{kind:'status', text:'排队中…'}`
++让用户看到「在排队」而不是「卡死」。**本宿主做不到** —— 实测两个消费者对
++未知 chunk 类型的 `default` 分支都是 `assertNever`，**抛错而不是忽略**：
++
++```
++unreachable variant in BlockAssembler.push: {"type":"status",…}
++unreachable variant in AssistantStreamAccumulator.push: {"type":"status",…}
++```
++
++⇒ 真加新 chunk 类型会让**整轮会话直接崩**（比静默等待更糟）。报告 §5 自己也
++把这条标成「回归风险：中。需确认宿主 `BlockAssembler` 能透传或忽略」——
++现在确认了：它**既不透传也不忽略**。
++
++⚠️ 这不是「未实现」，是**方案作废**。替代：`warn` 通道（生产接 `ctx.logger`）
++记「模型 X 排队中（第 N 次等待，本次 10s）(积压 4375，上游预计 489s)」。
++UI 侧的「运行中」由宿主自己维护 —— 与 codearts 的排队路径同款处置
++（`llm-adapter.ts:1888` 的注释：「StreamChunk 协议没有独立的瞬态状态通道」）。
++
++### ⚠️ 判据坑：`serviceAvailable` 缺失 **≠** `false`
++
++必须写 `info?.serviceAvailable === false`，**不能**写 `!info.serviceAvailable`。
++字段缺席时上游只是**没说**（老端点 / 别的错误形态），必须保持既有行为（继续等）；
++`!` 会把 `undefined` 一并吞进来 ⇒ 一旦上游哪天不下发该字段，**所有排队都会立刻
++失败** —— 那是把「修一个静默」换成「制造一个新静默」。
++单测里有一条专门守这个（`serviceAvailable **缺失**时行为不变`），变异验证过：
++把它改成 `!` 会红 2 条。
++
++### `subCode`：嵌在第三层，且**位置不固定**
++
++同一份 `10605` 信封下，`subCode` 才是「为什么在排队」的唯一可读线索：
++
++| `subCode` | 含义 | 实测出处 |
++|---|---|---|
++| `CALL_COUNT_LIMIT` | **调用数**限额 | CN `dfmodel`（`queueCount:4375` / `waitTime:489`） |
++| `RESOURCE_LIMIT` | **资源**限额 | 国际版 `qfmodel`（`serviceAvailable:false` / `queueCount:0`） |
++
++⚠️ 取法必须**整链展开后取第一个非空值**（`parseQueueError` 的 BFS 链），不能只看
++排队字段那一层：实测它既可能在内层 `{isQueued,…,subCode}`，也可能在外层信封
++`{code:'10605', message:'{…}', subCode}`。单测有一条专门把值**只**放在中间信封
++（内层不含），守这个展开。
++
++### 默认值 30min → 5min：理由与代价
++
++**理由**：30 分钟对实测积压**几乎必然超时** —— 单次等待被 `QUEUE_MAX_DELAY_MS`
++封顶 10s ⇒ 30 分钟 = 180 次空转（正好撞上 `QUEUE_MAX_ATTEMPTS`），期间**零输出**。
++而 5 分钟覆盖全部实测的正常排队形态（CN `qfmodel` 等 0.6–3.6s 就回，见报告 §4）。
++
++**代价**：真有长时间排队时会比以前更早放弃 —— 已用 `DSH_QODER_QUEUE_TIMEOUT_MS`
++留出口（含 `0` = 不等）。⚠️ 该变量**不能用 `parseInt(…) || 默认值`**：`0` 是合法
++配置而 falsy，会被静默换掉（与 `DSH_QODER_QUEUE_TIMEOUT_MS` 记过的是同一个坑）。
++
++⚠️ **`QUEUE_MAX_ATTEMPTS = 180` 现在基本触达不了**（5min/10s = 30 次，时间上限
++先生效）⇒ 那条分支退化成**纯防御性兜底**，这正是 `waitForQueue` 注释里
++「先判时间、再判次数」想要的形态。**刻意保留**（用户可把 env 调到 30min 以上，
++那时它仍是兜底）。
++
++### 证据索引
++
++| 证据 | 位置 |
++|---|---|
++| 诊断报告（含 §2.1 真实帧 / §4 复现矩阵） | `Reports/qoder-no-response-diagnosis.md` |
++| 会话证据（`before headers`） | `session-7efe210e` |
++| 判据实现 | `src/model-queue.ts` 的 `isServiceUnavailable` / `queueFacts` / `QueueInfo.subCode` |
++| 适配器接线 | `src/qoder-adapter.ts` 的 `resolveHeaderTimeoutMs` / `sendEncrypted` / `waitForQueue` / 两处 `serviceAvailable` 分支 |
++| 单测 | `tests/unit/qoder-adapter.spec.ts`（`serviceAvailable:false` / `响应头超时` / `排队错误文案` / `subCode` 四组） |
++
+ ## ⚠️⚠️ 「积分显示永久，但实际有到期时间」（issue IKTLMX，2026-11-08）
+ 
+ ### 报障
+diff --git a/src/doubao-upstream.ts b/src/doubao-upstream.ts
+index cc88f981..1bcf59bf 100644
+--- a/src/doubao-upstream.ts
++++ b/src/doubao-upstream.ts
+@@ -351,7 +351,9 @@ export function doubaoRemoteModels(payload: unknown): readonly DoubaoRemoteModel
+     readonly reasoning: DoubaoRemoteModel['reasoning']
+   }
+   const found = new Map<string, Appearance[]>()
+-  const visit = (node: unknown, menuMode?: DoubaoModeId, reasoningEnabled = false): void => {
++  // undefined = 上游没下发标志（2026-11-25 起的新形态）；true/false = 上游显式声明。
++  // 两者必须分开，否则「缺席」会被当成「显式关闭」，模型自带的档位就被吞掉。
++  const visit = (node: unknown, menuMode?: DoubaoModeId, reasoningEnabled?: boolean): void => {
+     if (Array.isArray(node)) {
+       for (const item of node) visit(item, menuMode, reasoningEnabled)
+       return
+@@ -359,7 +361,16 @@ export function doubaoRemoteModels(payload: unknown): readonly DoubaoRemoteModel
+     if (typeof node !== 'object' || node === null) return
+     const record = node as Record<string, unknown>
+     const mode = doubaoModeId(record.mode_id) ?? menuMode
+-    const enabled = typeof record.show_reasoning_effort === 'boolean' ? record.show_reasoning_effort : reasoningEnabled
++    // 2026-11-25 协议漂移：上游不再在菜单节点逐条下发 `show_reasoning_effort`，
++    // 但模型节点自身的 `reasoning_effort_config.option_list` 仍在（且正是网页端
++    // 「推理强度」选择器的数据源，真机 brief_list 实测 12 个模型带档位）。
++    // 判据：模型节点自己显式 false → 关；否则模型自带 option_list → 开；
++    // 只有既无本节点标志、又无 option_list 时，才沿用菜单继承值。
++    const efforts = doubaoReasoningEfforts(record.reasoning_effort_config)
++    const ownFlag = record.show_reasoning_effort
++    const enabled = typeof ownFlag === 'boolean'
++      ? ownFlag
++      : (efforts !== undefined ? true : (reasoningEnabled ?? false))
+     const key = record.model_item_key
+     if ((typeof key === 'string' || typeof key === 'number') && key !== '') {
+       const id = String(key)
+@@ -369,7 +380,7 @@ export function doubaoRemoteModels(payload: unknown): readonly DoubaoRemoteModel
+         tags: doubaoTagList(record.tag_list),
+         menuMode: mode,
+         defaultMode: doubaoModeId(record.default_mode),
+-        reasoning: enabled ? doubaoReasoningEfforts(record.reasoning_effort_config) : undefined,
++        reasoning: enabled ? efforts : undefined,
+       })
+       found.set(id, rows)
+     }
+@@ -386,9 +397,12 @@ export function doubaoRemoteModels(payload: unknown): readonly DoubaoRemoteModel
+     // Prefer an unambiguous default present in the menu. On conflict, avoid task billing if chat exists.
+     const modeId = preferred !== undefined && modes.has(preferred) ? preferred : modes.has('1') || !modes.has('3') ? '1' : '3'
+     const chosen = candidates.filter((row) => modeOf(row) === modeId)
+-    const reasoning = chosen[0]?.reasoning
+-    // Conflicting descriptions of the same route are not a reliable capability declaration.
+-    const sameEfforts = reasoning !== undefined && chosen.every((row) => JSON.stringify(row.reasoning) === JSON.stringify(reasoning))
++    // 同一模型在目录里可能出现多次（menu_conf / menu_conf_v2 / support_models）：
++    // 有的节点带 option_list、有的只带名字。取第一份**明确声明**的档位为准，
++    // 没声明的节点不构成冲突（2026-11-25 起 support_models 节点不带档位）。
++    const reasoning = chosen.find((row) => row.reasoning !== undefined)?.reasoning
++    const sameEfforts = reasoning !== undefined && chosen.every((row) =>
++      row.reasoning === undefined || JSON.stringify(row.reasoning) === JSON.stringify(reasoning))
+     const display = [...chosen, ...rows]
+     return {
+       key,
+diff --git a/src/magicrew-adapter.ts b/src/magicrew-adapter.ts
+index f172ed8c..e3e437fc 100644
+--- a/src/magicrew-adapter.ts
++++ b/src/magicrew-adapter.ts
+@@ -188,6 +188,22 @@ function magicrewNonStreamError(text: string): LlmError {
+   return new LlmError(`超级麦吉返回了非流式响应：${text.slice(0, 200)}`, 'SERVER')
+ }
+ 
++/**
++ * 连续失败时的退避上限（30 分钟）。
++ *
++ * 负缓存原本只有固定的 `catalogRetryMs`（60s）：业务码 2155/6008 这类**持续性**
++ * 故障会让它每分钟稳定失败一次 —— 一天上千次无效 GET + 上千条 warn，正是
++ * 「桌面端关窗后风扇仍高」的后端来源之一。改为 60s → 120s → … → 30min 封顶的
++ * 指数退避；成功或手动刷新即归零。
++ */
++const CATALOG_RETRY_MAX_MS = 30 * 60 * 1000
++
++/**
++ * `DSH_MAGICREW_REMOTE_CATALOG=off`：完全不再发起远端目录 GET，只用上次快照/静态表。
++ * 给「模型源长期故障、不想让它后台反复重试」的环境一个总开关（缺省照常拉取）。
++ */
++const isRemoteCatalogDisabled = () => process.env.DSH_MAGICREW_REMOTE_CATALOG === 'off'
++
+ export class MagicrewAdapter extends LlmAdapter {
+   private readonly product: MagicrewProduct
+   private readonly fetchImpl: typeof fetch
+@@ -206,6 +222,8 @@ export class MagicrewAdapter extends LlmAdapter {
+   private catalogAt = 0
+   /** 上次**失败**的时间戳（负缓存用；0 = 从未失败）。 */
+   private catalogFailedAt = 0
++  /** 连续失败次数：决定退避窗口的翻倍倍数；成功 / 手动刷新时归零。 */
++  private catalogFailStreak = 0
+   private catalogInFlight: Promise<readonly MagicrewCatalogModel[]> | undefined
+ 
+   constructor(options: MagicrewAdapterOptions = {}) {
+@@ -244,6 +262,7 @@ export class MagicrewAdapter extends LlmAdapter {
+           //    「强制刷新」会被负缓存挡住 ⇒ 后台刷新器与用户点刷新**静默空转**。
+           this.catalogAt = 0
+           this.catalogFailedAt = 0
++          this.catalogFailStreak = 0
+           await this.loadModels()
+         },
+       },
+@@ -592,6 +611,8 @@ export class MagicrewAdapter extends LlmAdapter {
+   }
+ 
+   private async loadModels(): Promise<readonly MagicrewCatalogModel[]> {
++    // 总开关：环境要求完全离线时，连第一次远端 GET 都不发（静态表/上次快照兜底）。
++    if (isRemoteCatalogDisabled()) return this.remote ?? this.staticModels()
+     // ⚠️⚠️ **读驱动 TTL（20 分钟）**：`isCatalogFreshFor` 是**唯一**判据
+     //    （`model-catalog.ts`），它比 `isCatalogFresh` 多一条**正交**的
+     //    「用户主动失效」腿 —— 用户刚在 Jet Hub 改设置就该立刻重拉，
+@@ -607,8 +628,9 @@ export class MagicrewAdapter extends LlmAdapter {
+     //    （一次上游抖动 ⇒ 整段对话里每轮都多一次超时请求）。
+     //    成功时 `catalogFailedAt` 会被清零，故正常路径不受影响；
+     //    `refresh()` 会同时清零两个时间戳 ⇒ 用户/后台刷新**随时**能越过退避。
++    //    窗口时长随连续失败翻倍（60s → 120s → … → 30min 封顶），见 catalogRetryDelayMs。
+     if (this.catalogFailedAt !== 0
+-      && this.nowImpl() - this.catalogFailedAt < this.product.catalogRetryMs) {
++      && this.nowImpl() - this.catalogFailedAt < this.catalogRetryDelayMs()) {
+       return this.remote ?? this.staticModels()
+     }
+     // 并发去重：多个入口同时 listModels 只发一次。
+@@ -661,10 +683,28 @@ export class MagicrewAdapter extends LlmAdapter {
+     // ⚠️ 两条腿都没拿到 ⇒ 记失败时间戳（`loadModels` 的负缓存据此退避）。
+     //    **不覆盖** `catalogAt`：上一次成功的时间戳仍然有效，
+     //    只是被负缓存压在后面不再发请求。
++    this.catalogFailStreak += 1
+     this.catalogFailedAt = this.nowImpl()
++    // 保留上面的原始 warn 文案不变；这里补一条「下次什么时候再试」，
++    // 否则日志里只有失败、看不到退避是否生效（审计 4.3 的验收点）。
++    this.warnImpl(
++      `[magicrew] 目录拉取连续失败 ${this.catalogFailStreak} 次，`
++      + `${Math.round(this.catalogRetryDelayMs() / 1000)}s 内不再重试（手动刷新可立即重试；`
++      + `设 DSH_MAGICREW_REMOTE_CATALOG=off 可彻底停用远端目录）`
++    )
+     return this.remote ?? this.staticModels()
+   }
+ 
++  /**
++   * 本次失败后的实际退避窗口：`catalogRetryMs`（60s）起步，连续失败逐次翻倍，
++   * 封顶 {@link CATALOG_RETRY_MAX_MS}。第一次失败仍是 60s —— 上游一次抖动不该被惩罚，
++   * 只有**持续**故障才该被压下去。
++   */
++  private catalogRetryDelayMs(): number {
++    const streak = Math.max(1, this.catalogFailStreak)
++    return Math.min(CATALOG_RETRY_MAX_MS, this.product.catalogRetryMs * 2 ** (streak - 1))
++  }
++
+   /**
+    * 拉一次倍率表（products/model-points）并缓存。
+    * 失败静默：倍率是装饰性信息，让它的失败冒泡会让整份目录回退到静态表。
+@@ -694,5 +734,6 @@ export class MagicrewAdapter extends LlmAdapter {
+     this.remote = models
+     this.catalogAt = this.nowImpl()
+     this.catalogFailedAt = 0
++    this.catalogFailStreak = 0
+   }
+ }
+diff --git a/src/model-queue.ts b/src/model-queue.ts
+index 9c8ba552..7f6e42dc 100644
+--- a/src/model-queue.ts
++++ b/src/model-queue.ts
+@@ -217,6 +217,25 @@ export interface QueueInfo {
+   /** 毫秒口径的延迟（客户端 `kJa()` 优先取这个）。 */
+   retry_after_ms?: number
+   retryAfterMs?: number
++  /**
++   * 上游给的**子业务码**（诊断报告 `qoder-no-response-diagnosis.md` §2.1 实测）。
++   *
++   * 它才是「为什么在排队」的**唯一**可读线索 —— 同一份 `10605` 信封下：
++   *
++   * | `subCode` | 含义 | 实测出处 |
++   * |---|---|---|
++   * | `CALL_COUNT_LIMIT` | **调用数**限额 | CN `dfmodel`（`queueCount:4375`） |
++   * | `RESOURCE_LIMIT` | **资源**限额 | 国际版 `qfmodel`（`serviceAvailable:false`） |
++   *
++   * ⚠️ 它**嵌在第三层**：`body` → `message` → `message` → `subCode`
++   * （见本模块头的「`message` 是一个 JSON 字符串」）。故必须靠 {@link parseQueueError}
++   * 的广度优先展开才能取到 —— 只读顶层的实现拿不到它（这正是报告 §5 的
++   * 示例代码 `info.subCode` 在本仓**编译不过**的原因：字段此前根本不存在）。
++   *
++   * ⚠️ 它与 `serviceAvailable` **不是**同一件事，不要互相替代：
++   * `subCode` 解释原因（给人看），`serviceAvailable` 决定处置（等 / 不等）。
++   */
++  subCode?: string
+ }
+ 
+ /** 只接受有限数字（与客户端的 `RE()` 同口径）。 */
+@@ -294,6 +313,14 @@ export function parseQueueError(body: unknown): QueueInfo | undefined {
+   if (typeof info.modelKey === 'string' && info.modelKey.length > 0) out.modelKey = info.modelKey
+   if (typeof info.queueType === 'string' && info.queueType.length > 0) out.queueType = info.queueType
+   if (typeof info.serviceAvailable === 'boolean') out.serviceAvailable = info.serviceAvailable
++  // ⚠️ `subCode` 出现的位置**不固定**：实测它既可能就在排队字段那一层
++  //（诊断报告 §2.1 的 `{isQueued,…,"subCode":"CALL_COUNT_LIMIT"}`），也可能
++  // 在更外层（`{code:"10605",message:"{…}","subCode":"CALL_COUNT_LIMIT"}`）。
++  // 故在**整条展开链**上取第一个非空值，而不是只看 `info` 那一层。
++  for (const node of nodes) {
++    const value = node.subCode
++    if (typeof value === 'string' && value.length > 0) { out.subCode = value; break }
++  }
+   for (const key of ['queueCount', 'retryAfterSeconds', 'waitTime', 'retry_after_ms', 'retryAfterMs'] as const) {
+     const value = readFiniteNumber(info[key])
+     if (value !== undefined) out[key] = Math.trunc(value)
+@@ -318,3 +345,84 @@ export function queueDelayMs(info: QueueInfo | undefined): number | undefined {
+   if (raw === undefined || raw < 0) return undefined
+   return Math.min(Math.trunc(raw), QUEUE_MAX_DELAY_MS)
+ }
++
++/**
++ * 上游是否**明确说「服务此刻不可用」**——是则排队等待**没有意义**。
++ *
++ * ## 为什么必须单独成判据（诊断报告 `qoder-no-response-diagnosis.md` P0-B）
++ *
++ * `grep serviceAvailable src/qoder-adapter.ts` 在修复前**零命中**：字段被
++ * {@link parseQueueError} 解析出来、随 `QueueInfo` 一路传到适配器，
++ * 然后**没有任何人读它**。于是国际版 `qfmodel` 回
++ * `serviceAvailable:false, subCode:RESOURCE_LIMIT` 时，插件照样原地等满
++ * 30 分钟 —— 而这是**账号级资源限制**，等不会自愈（诊断报告 §3）。
++ *
++ * ## 判据为什么是 `=== false` 而不是 `!serviceAvailable`
++ *
++ * **缺失 ≠ false**。字段缺席时上游只是没说（老版本端点、或别的错误形态），
++ * 那必须保持既有行为（继续排队等）。只有**显式**的 `false` 才是「上游说
++ * 它现在不可用」。`!` 会把 `undefined` 一并吞进来 ⇒ 一旦上游哪天不下发该
++ * 字段，所有排队都会立刻失败 —— 那是把「修一个静默」换成「制造一个新静默」。
++ *
++ * ⚠️ 证据强度如实标注：`serviceAvailable:false` 的**自愈可能性**没有被
++ * 排除（当前证据不支持它自愈，见报告 §5 P0-B 的「回归风险：中」）。
++ * 故调用方不应把它当**终态**处理 —— 正确处置是「**先换号**（池里别的账号
++ * 可能不受限），换不到才如实失败」，见 `qoder-adapter.ts` 的调用点。
++ */
++export function isServiceUnavailable(info: QueueInfo | undefined): boolean {
++  return info?.serviceAvailable === false
++}
++
++/**
++ * 上游是否在说「**这个账号被资源上限卡死了**」（P0-B 的原始触发形态）。
++ *
++ * ## 为什么与 {@link isServiceUnavailable} 是**两个判据**（2026-11-16 合并教训）
++ *
++ * 上游 11-13/11-15 的排队重构带来一份**新的真实报文**：
++ * `serviceAvailable:false` + `queueCount:0` + **没有 `subCode`** —— 这只是
++ * 普通排队（上游 visible 档测试与聚合测试都以它为「等有意义」的夹具），
++ * 若把 {@link isServiceUnavailable} 当换号判据，会把上游整条
++ * 「排队等待 / 心跳帧 / 聚合立即切换候选」通路拦死（实测：聚合测试 6 条全红）。
++ *
++ * ⇒ 账号级封顶的**真信号**是 2026-10 实测抓到的那一格：
++ * `serviceAvailable:false` **且** `subCode:RESOURCE_LIMIT`（报告 §2.1/§3）。
++ * 只有它才「等待无意义、先换号」；其余 `serviceAvailable:false` 形态
++ * 交还排队通路处理。
++ */
++export function isAccountCappedQueue(info: QueueInfo | undefined): boolean {
++  return info?.serviceAvailable === false && info.subCode === 'RESOURCE_LIMIT'
++}
++
++/**
++ * 把排队信息里的**上游事实**渲染成一段短文本（供错误文案拼接）。
++ *
++ * ## 为什么错误文案必须带上这些数字（诊断报告 P1-B）
++ *
++ * 修复前超时只说「排队等待超时」，用户**无法判断**该「再等等」还是
++ * 「换模型 / 换号」。而上游其实把判断依据都给了：
++ *
++ * | 字段 | 实测值 | 用户能据此做什么 |
++ * |---|---|---|
++ * | `queueCount` | `4375` | 积压 4 千多 ⇒ 等下去基本没戏 |
++ * | `waitTime` | `489`（秒） | 上游自己估计要 8 分钟 ⇒ 明显超过预算 |
++ * | `subCode` | `CALL_COUNT_LIMIT` / `RESOURCE_LIMIT` | 是限额还是资源不足 |
++ *
++ * ⚠️ **拿不到就整段省略**，绝不编造数字（与 `maxTokens` 文案同一纪律：
++ * 编一个 0 或猜测值会让用户据此做出错的判断）。
++ *
++ * ⚠️ 返回的是**纯事实串**（`积压 4375，上游预计 489s`），不带「排队中」
++ * 之类的前缀 —— 调用方在不同场景要不同措辞（超时 / 服务不可用 / 换号失败），
++ * 把措辞写死在这里会让三处文案互相打架。
++ *
++ * @param info - 排队信息（可能为空）。
++ * @returns 形如 `积压 4375，上游预计 489s，CALL_COUNT_LIMIT`；
++ *   一条字段都没有时返回空串（调用方据此不加后缀）。
++ */
++export function queueFacts(info: QueueInfo | undefined): string {
++  if (info === undefined) return ''
++  const parts: string[] = []
++  if (info.queueCount !== undefined) parts.push(`积压 ${info.queueCount}`)
++  if (info.waitTime !== undefined) parts.push(`上游预计 ${info.waitTime}s`)
++  if (info.subCode !== undefined) parts.push(info.subCode)
++  return parts.join('，')
++}
+diff --git a/src/qoder-adapter.ts b/src/qoder-adapter.ts
+index 9d9e9efc..93400807 100644
+--- a/src/qoder-adapter.ts
++++ b/src/qoder-adapter.ts
+@@ -78,10 +78,13 @@ import {
+   QUEUE_BUSINESS_CODE,
+   QUEUE_MAX_ATTEMPTS,
+   QUEUE_MAX_DELAY_MS,
++  isAccountCappedQueue,
+   isBillingBusinessCode,
+   isQueueBusinessCode,
++  isServiceUnavailable,
+   looksLikeBillingError,
+   nextUtc8DayStartMs,
++  queueFacts,
+   parseQueueError,
+   queueDelayMs,
+   type QueueInfo,
+@@ -118,8 +121,11 @@ export {
+   QUEUE_BUSINESS_CODE as QODER_QUEUE_CODE,
+   QUEUE_MAX_ATTEMPTS as QODER_QUEUE_MAX_ATTEMPTS,
+   QUEUE_MAX_DELAY_MS as QODER_QUEUE_MAX_DELAY_MS,
++  queueFacts as qoderQueueFacts,
++  isAccountCappedQueue,
+   isBillingBusinessCode,
+   isQueueBusinessCode,
++  isServiceUnavailable,
+   looksLikeBillingError,
+   nextUtc8DayStartMs,
+   parseQueueError as parseQoderQueueError,
+@@ -499,18 +505,41 @@ export function qoderEffortsFor(model: QoderFallbackModel): string[] {
+   return efforts
+ }
+ 
++/**
++ * 排队等待的**默认**总时长上限（毫秒）：**5 分钟**。
++ *
++ * ## 为什么从 30 分钟降到 5 分钟（诊断报告 P1-B）
++ *
++ * 30 分钟对实测的积压规模**几乎必然超时**：CN `dfmodel` 那次上游给的
++ * `queueCount:4375` / `waitTime:489s`（报告 §2.1）。而单次等待被
++ * `QUEUE_MAX_DELAY_MS` 封顶 10s ⇒ 30 分钟 = 180 次空转（正好撞上
++ * `QUEUE_MAX_ATTEMPTS`），期间**零输出**。用户看到的「不回复也不报错」
++ * 有相当一部分时长就耗在这里。
++ *
++ * 5 分钟覆盖「真排队但很快放行」的全部实测形态（CN `qfmodel` 等正常模型
++ * 0.6–3.6s 就回，见 §4），又让「积压 4 千」这种注定失败的情形**早点结束**
++ * 并带上真实原因（`queueFactsSuffix` 会附上 `queueCount` / `waitTime`）。
++ *
++ * ⚠️ 用户仍可用 `DSH_QODER_QUEUE_TIMEOUT_MS` 改回去（含 `0` = 不等）。
++ *
++ * ⚠️ 与 `QUEUE_MAX_ATTEMPTS`（180 次 × 10s 封顶 = 1800s = 30 分钟）的关系：
++ * 现在**时间上限先到**（5 分钟 = 30 次），次数上限退化成纯粹的防御性兜底
++ * —— 这正是 `waitForQueue` 注释里「先判时间、再判次数」想要的形态。
++ */
++const DEFAULT_QUEUE_TIMEOUT_MS = 5 * 60_000
++
+ /**
+  * 排队总时长上限（毫秒），可用 `DSH_QODER_QUEUE_TIMEOUT_MS` 覆盖。
+  *
+  * ⚠️ **不能用 `parseInt(…) || 默认值`**：`0` 是**合法**配置（表示「不等，立即
+- * 判超时」，单测就靠它验证该开关），而 `0` 是 falsy，会被 `||` 静默换成 30 分钟
++ * 判超时」，单测就靠它验证该开关），而 `0` 是 falsy，会被 `||` 静默换成默认值
+  * —— 那会让这个开关在「想关掉排队等待」时**恰好失效**。故显式判 `undefined`。
+  */
+ function resolveQueueTimeoutMs(): number {
+   const raw = process.env.DSH_QODER_QUEUE_TIMEOUT_MS
+-  if (raw === undefined || raw.length === 0) return 30 * 60_000
++  if (raw === undefined || raw.length === 0) return DEFAULT_QUEUE_TIMEOUT_MS
+   const parsed = Number.parseInt(raw, 10)
+-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 30 * 60_000
++  return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_QUEUE_TIMEOUT_MS
+ }
+ 
+ /**
+@@ -601,6 +630,19 @@ function queueInfoOf(error: ModelQueuedError): QoderQueueInfo {
+   return error.queueInfo as QoderQueueInfo
+ }
+ 
++/**
++ * 把排队信息拼成**错误文案后缀**（形如 `（积压 4375，上游预计 489s，CALL_COUNT_LIMIT）`）。
++ *
++ * ⚠️ 一条字段都没有时返回**空串**，绝不产出 `（）` 这种空括号 ——
++ * 那会让用户以为「上游什么都没说」与「我们没取到」无法区分。
++ *
++ * ⚠️ 措辞（「排队超时」/「服务不可用」）**不在这里**，由各调用点自己给：
++ * 三处场景不同，写死会打架。本函数只负责「上游说了什么数字」。
++ */
++function queueFactsSuffix(info: QoderQueueInfo | undefined): string {
++  const facts = queueFacts(info)
++  return facts.length === 0 ? '' : `（${facts}）`
++}
+ 
+ /**
+  * 把 DSH 的工具 schema 映射成加密端点认的 `tools[]`。
+@@ -786,6 +828,40 @@ function resolveChunkTimeoutMs(): number {
+   return Number.parseInt(process.env.DSH_QODER_SSE_CHUNK_TIMEOUT_MS ?? '', 10) || 120_000
+ }
+ 
++/**
++ * **响应头**超时（毫秒）：从「发出请求」到「收到响应头」的上限。
++ *
++ * ## 为什么必须单独有一条（真实缺陷，诊断报告 `qoder-no-response-diagnosis.md` P0-A）
++ *
++ * 上面两个 SSE 超时**都够不着这一阶段**：它们作用在**已经 resolve 的**
++ * `response.body.getReader()` 上（`src/sse.ts`）。若上游「接受 TCP 连接但
++ * 永不回响应头」，`fetch()` 会**永不 settle** ⇒ 整个 generator 卡在
++ * `await fetcher(...)` 上 ⇒ 用户看到「运行中」且**零输出、零报错**。
++ *
++ * 会话 `session-7efe210e` 抓到的正是这条路径：
++ * `qodercn: upstream connect error or disconnect/reset before headers.
++ * reset reason: connection timeout` —— 注意措辞是 **before headers**。
++ *
++ * ⇒ 这是**第二种**静默挂死路径，与「排队空等 30 分钟」并列且互相独立。
++ *
++ * ## 取值为什么是 30s 而不是复用 120s
++ *
++ * 120s 是「首 token」预算（模型开始思考的合理等待）。而**响应头**只是网关
++ * 路由 + 鉴权的结果，正常在**毫秒级**返回：实测 CN 加密端点 0.5–3.6s
++ * （见诊断报告 §4 矩阵）。30s 已是正常值的 10 倍，足够容忍抖动，又能在
++ * 真挂死时把「永久」变成「有界」。
++ *
++ * ⚠️ **不能用 `parseInt(…) || 默认值`**：`0` 是**合法**配置（表示「不设
++ * 响应头超时」，用于需要超长首包的场景），而 `0` 是 falsy 会被静默换成
++ * 30s —— 与 `resolveQueueTimeoutMs` 记过的是同一个坑。故显式判 `undefined`。
++ */
++function resolveHeaderTimeoutMs(): number {
++  const raw = process.env.DSH_QODER_HEADER_TIMEOUT_MS
++  if (raw === undefined || raw.length === 0) return 30_000
++  const parsed = Number.parseInt(raw, 10)
++  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 30_000
++}
++
+ /**
+  * 单次原生搜索请求的预算（毫秒）。
+  *
+@@ -2285,6 +2361,47 @@ export class QoderAdapter extends LlmAdapter {
+         const queueInfo = parseQoderQueueError(errorText)
+ 
+         if (queueInfo !== undefined) {
++          // ⚠️⚠️ **上游明说「服务不可用」时，排队等待没有意义**（诊断报告 P0-B）。
++          //
++          // 实测（§2.1 / §4）：国际版 `qfmodel` 回
++          // `serviceAvailable:false, subCode:RESOURCE_LIMIT, queueCount:0`
++          // —— 这是**账号级资源限制**，不是「排一会儿就能过」。修复前字段被
++          // 解析出来却**零处读取**，于是原地等满 30 分钟再报「排队等待超时」，
++          // 用户看到的就是「不回复也不报错」。
++          //
++          // ⚠️ **判据必须用 `isAccountCappedQueue`（P0-B 精化，2026-11-16）**：
++          // 账号封顶的真信号是 `serviceAvailable:false` **且** `subCode:RESOURCE_LIMIT`。
++          // 上游重构后的真实报文里 `serviceAvailable:false` 还会以**无 subCode** 的
++          // 形态出现在普通排队里（`queueCount:0`）—— 那种必须交还排队通路
++          // （等待 / 心跳帧 / 聚合立即切换候选），否则上游聚合测试 6 条全红。
++          //
++          // ⚠️ **处置是「先换号」而不是「立即失败」**：`RESOURCE_LIMIT` 是
++          // **按账号**的（同 §3：`queueCount:4375` 是该账号被限流后的积压，
++          // 不是全站饱和），池里别的账号可能完全正常 —— 直接抛错会把
++          // 「登录 N 个账号」的可用性白白浪费掉（本仓在 `upstream` 类上记过
++          // 同型教训：`provider_error` 时第二个账号从未被尝试）。
++          //
++          // ⚠️ 换号**不写冷却**：`RESOURCE_LIMIT` 与「这个账号今天额度用完」
++          // 不是一回事，写冷却会把账号无故封一天（见 `recordsQoderRateLimit`
++          // 的语义表 —— 该类别归 `upstream`：只换号、绝不记）。
++          if (isAccountCappedQueue(queueInfo)) {
++            const switched = await this.switchAccountOnQuota(
++              options, triedAccounts, activeAccountId, 'upstream',
++            )
++            if (switched !== undefined) {
++              credential = switched.credential
++              activeAccountId = switched.accountId
++              authRefreshed = false
++              continue
++            }
++            throw new LlmError(
++              `${label}: 服务暂不可用（${queueInfo.subCode ?? 'RESOURCE_LIMIT'}）`
++              + queueFactsSuffix(queueInfo)
++              + '；排队等待无意义，已停止',
++              'SERVER',
++              { status: response.status },
++            )
++          }
+           // ⚠️⚠️ **排队等待期间必须先让出并发名额**（2026-11-15 审计 P1）。
+           //
+           // `using slot` 与 `waitForQueueFrames`（最长 `DSH_QODER_QUEUE_TIMEOUT_MS`，
+@@ -2410,11 +2527,35 @@ export class QoderAdapter extends LlmAdapter {
+             await decoded.body?.cancel().catch(() => {})
+             if (emitted && error instanceof ModelQueuedError) throw error
+             if (error instanceof ModelQueuedError) {
++              const queueInfo = queueInfoOf(error)
++              // ⚠️⚠️ **与 HTTP 403 分支同一判据、同一处置**（诊断报告 P0-B）。
++              // 两条通道必须都判：Qoder 的排队实测以 **HTTP 200 + SSE 内嵌帧**
++              // 为主（§4 矩阵：CN/国际版加密端点全是 200），只改 HTTP 层等于
++              // 一条都没改 —— 这正是「只修一条通道」那类缺陷的复发面。
++              // ⚠️ 判据与 HTTP 层同一精化（`isAccountCappedQueue`，见上）。
++              if (isAccountCappedQueue(queueInfo)) {
++                const switched = await this.switchAccountOnQuota(
++                  options, triedAccounts, activeAccountId, 'upstream',
++                )
++                if (switched !== undefined) {
++                  credential = switched.credential
++                  activeAccountId = switched.accountId
++                  authRefreshed = false
++                  queued = true
++                  break
++                }
++                throw new LlmError(
++                  `${label}: 服务暂不可用（${queueInfo.subCode ?? 'RESOURCE_LIMIT'}）`
++                  + queueFactsSuffix(queueInfo)
++                  + '；排队等待无意义，已停止',
++                  'SERVER',
++                )
++              }
+               // ⚠️⚠️ 同上：SSE 内嵌排队也要先让出名额 —— HTTP 层与 SSE 层是
+               // **两个入口、同一条不变式**，只修一处会让另一半静默失效。
+               slot?.[Symbol.dispose]()
+               for await (const frame of this.waitForQueueFrames(
+-                queueInfoOf(error),
++                queueInfo,
+                 ++queueAttempts,
+                 queueDeadline,
+                 options,
+@@ -2689,6 +2830,10 @@ export class QoderAdapter extends LlmAdapter {
+     maxAttempts: number,
+     retryAfterHeaderMs: number | undefined,
+   ): AsyncGenerator<StreamChunk, void, undefined> {
++    // 本地 WIP 的文案修复（诊断报告 P1-B）：报错前缀用 `this.product.id`
++    // （`qoder` / `qodercn` 各自称对名字），不能硬编码 —— 共享区里既有的
++    // `${label}` 文案（超时 / 取消）依赖它。
++    const label = this.product.id
+     /**
+      * ⚠️ 模式只解析**一次**：同一次等待里读两遍 `process.env` 是 TOCTOU —— 两次
+      * 调用之间环境变量被改过，就会出现「按 `fast` 判定、按 `visible` 分支执行」
+@@ -2748,16 +2893,27 @@ export class QoderAdapter extends LlmAdapter {
+     // 而同一毫秒内 `Date.now() > now + 0` 为 **false**，会让它**先等一次**才
+     // 超时 —— 那与「0 = 不等待」的语义不符（单测专门守这一点）。
+     if (Date.now() + totalMs >= deadline) {
+-      throw new LlmError('qoder: 排队等待超时', 'QUEUE')
++      // ⚠️ **文案必须带上游给的数字**（诊断报告 P1-B）：只说「排队等待超时」
++      // 用户无从判断该「再等等」还是「换模型 / 换号」。而 `queueCount:4375`
++      // 与 `waitTime:489s` 正好是那个判断依据。
++      //
++      // ⚠️ 前缀用 `label`（= `this.product.id`），不能硬编码 `'qoder'` ——
++      // 中国版与国际版共用本类，硬编码会让 `qodercn` 的报错说自己是 `qoder`
++      // （本文件 :1718 附近记着同一个缺陷）。
++      throw new LlmError(
++        `${label}: 排队等待超时${queueFactsSuffix(queueInfo)}；`
++        + '上游积压未在预算内消退，可换模型或换账号，或调 DSH_QODER_QUEUE_TIMEOUT_MS',
++        'QUEUE',
++      )
+     }
+     if (attempts > maxAttempts) {
+       throw new LlmError(
+-        `qoder: 排队重试超过上限（${maxAttempts} 次）`,
++        `${label}: 排队重试超过上限（${maxAttempts} 次）${queueFactsSuffix(queueInfo)}`,
+         'QUEUE',
+       )
+     }
+     if (options.signal?.aborted === true) {
+-      throw new LlmError('qoder: 排队等待期间请求已取消', 'QUEUE')
++      throw new LlmError(`${label}: 排队等待期间请求已取消`, 'QUEUE')
+     }
+     warnQueue(totalMs)
+     if (mode === 'visible') {
+@@ -2812,8 +2968,9 @@ export class QoderAdapter extends LlmAdapter {
+         await this.sleep(slice, options.signal)
+         remaining -= slice
+         // ⚠️ 这次检查**不是**循环条件的重复：它检测的是「**等待期间**被中止」。
++        // （前缀用 `label` 而非硬编码 `'qoder'` —— 与本方法其余报错同口径。）
+         if (isAborted(options.signal)) {
+-          throw new LlmError('qoder: 排队等待期间请求已取消', 'QUEUE')
++          throw new LlmError(`${label}: 排队等待期间请求已取消`, 'QUEUE')
+         }
+         // 空串 `text-delta`：消费端是 `content += ''`，不改动正文与用量，
+         // 只是让 SSE 通道上真的有字节流过（这就是本档的全部意义）。
+@@ -2829,7 +2986,7 @@ export class QoderAdapter extends LlmAdapter {
+     // `false` 而报「无重叠」—— 故经**不透明函数**读取，避免静态收窄掩盖
+     // 这个真实场景（`await` 之后状态可能已变）。
+     if (isAborted(options.signal)) {
+-      throw new LlmError('qoder: 排队等待期间请求已取消', 'QUEUE')
++      throw new LlmError(`${label}: 排队等待期间请求已取消`, 'QUEUE')
+     }
+     // ⚠️ 排队**不刷新凭据**、不换账号：它与认证和额度都无关。
+   }
+@@ -2871,15 +3028,84 @@ export class QoderAdapter extends LlmAdapter {
+     //    载荷里（签名覆盖 payload + key + date + body + path），且只补缺失，
+     //    所以不会碰 `Authorization` 里的 `Bearer COSY.<载荷>.<签名>`。
+     applyQoderAlignmentHeaders(headers)
++
++    // ⚠️⚠️ **响应头必须有自己的 deadline**（诊断报告 P0-A，真实缺陷）：
++    // 上游「接受连接但不回响应头」时 `fetch` **永不 settle**，而
++    // `resolveFirstTokenTimeoutMs` / `resolveChunkTimeoutMs` 都作用在
++    // **已 resolve 的** `response.body.getReader()` 上（`src/sse.ts`）
++    // ⇒ 那两条超时**够不着这一阶段**。症状是「运行中」且零输出零报错，
++    // 会话 `session-7efe210e` 抓到的 `reset reason: connection timeout`
++    // 正是 `before headers` 阶段。
++    //
++    // ⚠️ **必须与调用方的 `options.signal` 熔合**（不是替代）：用户点「停止」
++    // 要能立刻打断；只用 `AbortSignal.timeout` 会让取消延迟到超时到期。
++    // 用 `AbortSignal.any` 与 `searchOnce` / `buddy-adapter.ts:4534` 同口径。
++    //
++    // ⚠️ `headerTimeoutMs === 0` ⇒ **不设预算**（保留纯 `options.signal`）：
++    // 那是 `DSH_QODER_HEADER_TIMEOUT_MS=0` 的显式语义（见解析函数的注释）。
++    //
++    // ⚠️⚠️ **严禁直接把 AbortSignal.timeout 传给 fetch**（2026-10-29 真实缺陷）：
++    // 原生 Fetch 规范规定，传给 fetch 的 signal 会一直绑定到后续的 response.body
++    // ReadableStream 上。若直接熔合 `AbortSignal.timeout(headerTimeoutMs)`，定时器在
++    // 收到响应头后**不会**注销，会在 30s 到期时把正在接收的长文本流（如 DeepSeek 思考流）
++    // 暴力掐断（见会话 session-b4bcc236 在 30.01s 准时被杀的实测记录）。
++    // 正确做法：用 AbortController 管理，收到响应头后**立即 clearTimeout** 解除定时器。
++    const headerTimeoutMs = resolveHeaderTimeoutMs()
++    const controller = new AbortController()
++    let headerTimedOut = false
++    let timer: NodeJS.Timeout | undefined
++
++    if (headerTimeoutMs > 0) {
++      timer = setTimeout(() => {
++        headerTimedOut = true
++        controller.abort(new DOMException('The operation was aborted due to timeout', 'TimeoutError'))
++      }, headerTimeoutMs)
++      timer?.unref?.()
++    }
++
++    const onCallerAbort = (): void => {
++      controller.abort(options.signal?.reason)
++    }
++    if (options.signal !== undefined) {
++      if (options.signal.aborted) {
++        if (timer !== undefined) clearTimeout(timer)
++        throw options.signal.reason ?? new DOMException('The operation was aborted.', 'AbortError')
++      }
++      options.signal.addEventListener('abort', onCallerAbort, { once: true })
++    }
++
+     try {
+-      return await fetcher(request.url, {
++      const response = await fetcher(request.url, {
+         method: 'POST',
+         headers,
+         body: request.body,
+-        signal: options.signal,
++        signal: controller.signal,
+       })
++      // ⚠️ 响应头已收到：立即清除响应头超时定时器，绝不能让它泄漏并掐断后续的 response.body 流！
++      if (timer !== undefined) {
++        clearTimeout(timer)
++        timer = undefined
++      }
++      return response
+     } catch (error) {
++      if (timer !== undefined) {
++        clearTimeout(timer)
++        timer = undefined
++      }
++      // ⚠️ **先判调用方取消**（顺序是承重件）：用户取消时 `options.signal.aborted`
++      // 为真，此时原样抛出 —— 绝不能改写成 TIMEOUT，否则「用户主动停止」
++      // 会被报成「上游超时」，且 TIMEOUT 在宿主 `DEFAULT_RETRYABLE_CODES` 里
++      // ⇒ 会**白重试 5 次**，用户点了停止却还在跑。
+       if (options.signal?.aborted) throw error
++      // 响应头超时：定时器在 fetcher 结算前到期
++      if (headerTimedOut) {
++        throw new LlmError(
++          `${this.product.id}: 响应头超时（${headerTimeoutMs}ms 内未收到上游响应头；`
++          + '上游可能接受了连接但不再响应。可调 DSH_QODER_HEADER_TIMEOUT_MS）',
++          'TIMEOUT',
++          { cause: error as Error },
++        )
++      }
+       if (isTransportError(error)) {
+         /**
+          * ⚠️ 文案必须带**沿 `cause` 链的可操作信息**（issue IKR5ZD）：
+@@ -2889,7 +3115,7 @@ export class QoderAdapter extends LlmAdapter {
+          * ⚠️ `cause` 仍原样挂上（`transportErrorDetail` 只影响 message）——
+          * 上层若想程序化取原始错误，链路不能断。
+          */
+-        throw new LlmError(`qoder: transport error: ${transportErrorDetail(error)}`,
++        throw new LlmError(`${this.product.id}: transport error: ${transportErrorDetail(error)}`,
+           'TRANSPORT', { cause: error as Error })
+       }
+       throw error
+diff --git a/tests/unit/doubao-protocol.spec.ts b/tests/unit/doubao-protocol.spec.ts
+index be13b11f..4cd5a73e 100644
+--- a/tests/unit/doubao-protocol.spec.ts
++++ b/tests/unit/doubao-protocol.spec.ts
+@@ -68,7 +68,7 @@ describe('doubao model catalog parsing', () => {
+     expect(models[1].tags).toEqual(['0.65x'])
+   })
+ 
+-  it('uses reasoning levels only from a model-menu mode that enables them', () => {
++  it('uses reasoning levels from a model that declares them; menu flag suppresses only undecorated models', () => {
+     const item = {
+       model_item_key: 'flash', name: 'Flash', default_mode: 3,
+       reasoning_effort_config: { option_list: [{ level: 3, name: '低' }, { level: 7, name: '最高' }] },
+@@ -79,14 +79,49 @@ describe('doubao model catalog parsing', () => {
+     ] } } } }] } })
+     expect(models).toHaveLength(1)
+     expect(models[0].reasoning?.efforts).toEqual([{ id: '3', name: '低' }, { id: '7', name: '最高' }])
+-    const disabled = doubaoRemoteModels({ data: { entry_list: [{ active_switch_conf: {
++    // A chat-mode menu with false still exposes a model that itself declares efforts.
++    const decorated = doubaoRemoteModels({ data: { entry_list: [{ active_switch_conf: {
+       menu_conf_v2: { mode_list: { item_list: [{
+         mode_id: '1', show_reasoning_effort: false, model_list: { item_list: [item] },
+       }] } },
+     } }] } })
++    expect(decorated[0].reasoning?.efforts).toEqual([{ id: '3', name: '低' }, { id: '7', name: '最高' }])
++    // A model with no own config stays suppressed by an explicit menu false.
++    const plain = { model_item_key: 'plain', name: 'Plain', default_mode: 1 }
++    const disabled = doubaoRemoteModels({ data: { entry_list: [{ active_switch_conf: {
++      menu_conf_v2: { mode_list: { item_list: [{
++        mode_id: '1', show_reasoning_effort: false, model_list: { item_list: [plain] },
++      }] } },
++    } }] } })
+     expect(disabled[0].reasoning).toBeUndefined()
+   })
+ 
++  it('keeps model-declared efforts when show_reasoning_effort is absent (2026-11-25 brief_list)', () => {
++    // 真机 2026-11-25：菜单节点不再逐条下发 show_reasoning_effort，
++    // 但每个模型自带 reasoning_effort_config.option_list（网页端「推理强度」同款）。
++    const model = { model_item_key: 'person-glm-5-4', name: 'GLM 5.4', default_mode: 3,
++      reasoning_effort_config: { default_level: 3, option_list: [
++        { level: 3, name: '低' }, { level: 5, name: '高' }, { level: 7, name: '最高' },
++      ] } }
++    const parsed = doubaoRemoteModels({ mode_list: { item_list: [
++      { mode_id: '3', model_list: { item_list: [model] } },
++    ] } })
++    expect(parsed[0].reasoning?.efforts).toEqual([
++      { id: '3', name: '低' }, { id: '5', name: '高' }, { id: '7', name: '最高' },
++    ])
++    // A menu-level false suppresses only models that do NOT declare their own efforts.
++    const noConfig = { model_item_key: 'x', name: 'X', default_mode: 3 }
++    const suppressed = doubaoRemoteModels({ mode_list: { item_list: [
++      { mode_id: '3', show_reasoning_effort: false, model_list: { item_list: [noConfig] } },
++    ] } })
++    expect(suppressed[0].reasoning).toBeUndefined()
++    // An explicit false on the MODEL node itself still wins over its own option_list.
++    const modelOff = doubaoRemoteModels({ mode_list: { item_list: [
++      { mode_id: '3', model_list: { item_list: [{ ...model, show_reasoning_effort: false }] } },
++    ] } })
++    expect(modelOff[0].reasoning).toBeUndefined()
++  })
++
+   it('does not transfer task efforts to a default chat route, regardless of menu order', () => {
+     const model = { model_item_key: 'shared', name: 'Shared', default_mode: 1 }
+     const chat = { mode_id: '1', show_reasoning_effort: false, model_list: { item_list: [model] } }
+diff --git a/tests/unit/magicrew-adapter.spec.ts b/tests/unit/magicrew-adapter.spec.ts
+index 1e7ad2b4..c60d3acf 100644
+--- a/tests/unit/magicrew-adapter.spec.ts
++++ b/tests/unit/magicrew-adapter.spec.ts
+@@ -396,6 +396,55 @@ describe('MagicrewAdapter 目录刷新与失败退避', () => {
+     await adapter.refresh()
+     expect(counter.catalog).toBe(3)
+   })
++
++  it('★ 连续失败 ⇒ 退避 60s 起逐次翻倍、封顶 30 分钟；成功/刷新后归零', async () => {
++    const counter = { catalog: 0 }
++    let upstreamOk = false
++    const fetchImpl = vi.fn(async (input: unknown) => {
++      if (String(input).endsWith(MAGICREW_MODELS_PATH)) {
++        counter.catalog += 1
++        if (!upstreamOk) return jsonResponse({ code: 500, message: 'catalog exploded' })
++        return jsonResponse({
++          code: 1000,
++          data: { models: [{ value: 'deepseek-v4.1-flash', label: 'DeepSeek V4.1 Flash', vision: true }] },
++        })
++      }
++      return sseResponse(['[DONE]'])
++    }) as unknown as FetchStub
++
++    let now = 1_000_000
++    const adapter = makeAdapter(fetchImpl, { now: () => now, warn: () => {} })
++    const base = MAGICREW.catalogRetryMs
++    const step = async (advanceMs: number, expected: number) => {
++      now += advanceMs
++      await adapter.listModels(MAGICREW.id)
++      expect(counter.catalog).toBe(expected)
++    }
++
++    await step(0, 1) // 第 1 次失败 ⇒ 窗口 60s
++    await step(base + 1, 2) // 越过 60s ⇒ 第 2 次失败 ⇒ 窗口 120s
++    await step(base + 1, 2) // 只过了 60s ⇒ 120s 窗口内，不得重发（固定 60s 的旧实现这里会红）
++    await step(base, 3) // 累计 120s+ ⇒ 第 3 次失败 ⇒ 窗口 240s
++    await step(base * 4 + 1, 4) // ⇒ 窗口 480s
++    await step(base * 8 + 1, 5) // ⇒ 窗口 960s
++    await step(base * 16 + 1, 6) // ⇒ 60s×32=1920s，被封顶压到 1800s
++    // ⚠️ 这一格专打「没有封顶」：1800s+1 时必须已经重试；
++    //    若窗口真是 1920s，这里就不会发请求 ⇒ 用例变红。
++    await step(1_800_000 + 1, 7)
++
++    // ⚠️ 成功**不走 refresh**：让负缓存自然到期后拉成功，才能证明「成功本身」
++    //    会把 streak 归零 —— 走 refresh 会被它自己的清零掩盖（实测：那样写时
++    //    删掉 rememberModels 里的归零，用例仍然全绿 = 假绿）。
++    upstreamOk = true
++    await step(1_800_000 + 1, 8)
++    await step(0, 8) // 成功快照在 20 分钟 TTL 内 ⇒ 不重拉
++
++    // 成功之后再次失败 ⇒ 窗口回到 60s 起步（streak 已归零），
++    // 否则这里（只过了 60s+）会被 1800s 的封顶窗口挡住。
++    upstreamOk = false
++    await step(20 * 60 * 1000 + 1, 9) // 越过 TTL ⇒ 重拉失败
++    await step(base + 1, 10)
++  })
+ })
+ 
+ describe('MagicrewAdapter.stream SSE（共享 consumeOpenAiSse）', () => {
+diff --git a/tests/unit/qoder-adapter.spec.ts b/tests/unit/qoder-adapter.spec.ts
+index ff1fe118..d2e4b3ac 100644
+--- a/tests/unit/qoder-adapter.spec.ts
++++ b/tests/unit/qoder-adapter.spec.ts
+@@ -8,11 +8,14 @@ import {
+   QODER_TRANSPORT_MAX_RETRIES,
+   classifyQoderFailure,
+   transportErrorDetail,
++  isAccountCappedQueue,
+   isBillingBusinessCode,
+   looksLikeBillingError,
++  isServiceUnavailable,
+   nextUtc8DayStartMs,
+   parseQoderQueueError,
+   qoderQueueDelayMs,
++  qoderQueueFacts,
+   recordsQoderRateLimit,
+   shouldRotateQoderAccount,
+   shouldFallbackQoderAppIdentity,
+@@ -1116,15 +1119,24 @@ describe('QoderAdapter 图片输入', () => {
+ /**
+  * ## 真实缺陷（用户报障，2026-09-27）：Qoder 的**排队错误**被当成认证失败
+  *
+- * 用户给的两条真实错误（都是 HTTP 403 + 业务码 `10605`）：
++ * 真实帧（诊断报告 `qoder-no-response-diagnosis.md` §2.1 逐字取证，都是 HTTP 403
++ * 或 HTTP 200 + 业务码 `10605`）。⚠️ **它们不是同一件事**，2026-10-27 前本文件
++ * 把前两条混用一个 fixture（都叫「真排队」），而 `serviceAvailable` 的取值相反：
+  *
+  * ```
+- * 国际版: {"code":"10605","message":"{\"isQueued\":true,…,\"retryAfterSeconds\":30,
+- *          \"serviceAvailable\":false,\"waitTime\":30}"}      → 真排队 30s
+- * 中国版: {"code":"10605","message":"{\"isQueued\":false,…,\"retryAfterSeconds\":2,
+- *          \"serviceAvailable\":true,\"waitTime\":0}"}        → 瞬时，等 2s 即成功
++ * CN dfmodel:  {"isQueued":true, "queueCount":4375, "retryAfterSeconds":30,
++ *               "serviceAvailable":true,  "subCode":"CALL_COUNT_LIMIT",
++ *               "waitTime":489}                        → 真排队（等有意义）
++ * INTL qfmodel:{"isQueued":true, "queueCount":0,    "retryAfterSeconds":30,
++ *               "serviceAvailable":false, "subCode":"RESOURCE_LIMIT",
++ *               "waitTime":30}                         → 服务不可用（等无意义）
++ * CN 瞬时:      {"isQueued":false,"queueCount":0,    "retryAfterSeconds":2,
++ *               "serviceAvailable":true,  "waitTime":0} → 瞬时，等 2s 即成功
+  * ```
+  *
++ * ⚠️ 第二行就是「不回复也不报错」的根因：`serviceAvailable:false` 修复前**零处
++ * 读取**，插件照样等满 30 分钟。判据见 `isServiceUnavailable()`。
++ *
+  * ⚠️ **关键结构**：`message` 是**一个 JSON 字符串**（不是对象），必须**二次解析**。
+  * 客户端 `lFc()` 为此递归遍历 `data`/`result`/`message`/`body`，字符串则
+  * `JSON.parse`。旧实现只读顶层 `code`，因此从未识别出排队。
+@@ -1407,10 +1419,34 @@ describe('QoderAdapter 排队错误（10605 model_queued）', () => {
+     )
+   }
+ 
+-  /** 国际版真排队：等 30s。 */
++  /**
++   * **真排队**（等 30s，**服务可用**）。
++   *
++   * ⚠️ `serviceAvailable` 必须是 `true` —— 它是「等有意义」的唯一依据；
++   * 本仓适配器带 P0-B 修复（`serviceAvailable:false` ⇒ 换号 / 如实失败，
++   * 不会进入等待循环），而上游没有该修复。字段值取上游 fixture 的形状
++   * （`qfmodel`/0/30s），使上游的 visible 档测试原样可用。
++   */
+   const REAL_QUEUED = {
+     isQueued: true, modelKey: 'qfmodel', queueCount: 0, queueType: 'p3',
+-    retryAfterSeconds: 30, serviceAvailable: false, waitTime: 30,
++    retryAfterSeconds: 30, serviceAvailable: true, waitTime: 30,
++  }
++  /**
++   * **真排队 + 深度积压**（CN `dfmodel` 实测，报告 §2.1/§3）：等 489s、
++   * 积压 4375、`CALL_COUNT_LIMIT`。本仓 P1-B 文案与默认预算测试用
++   * （原 `REAL_QUEUED` 的字段，2026-11-16 合并时因上游测试共用该名而拆出）。
++   */
++  const REAL_QUEUE_SATURATED = {
++    isQueued: true, modelKey: 'dfmodel', queueCount: 4375, queueType: 'p3',
++    retryAfterSeconds: 30, serviceAvailable: true, subCode: 'CALL_COUNT_LIMIT', waitTime: 489,
++  }
++  /**
++   * **服务不可用**（国际版 `qfmodel` 实测，报告 §2.1）：`serviceAvailable:false`
++   * + `RESOURCE_LIMIT` ⇒ 排队等待无意义（P0-B 要修的那一格）。
++   */
++  const REAL_UNAVAILABLE = {
++    isQueued: true, modelKey: 'qfmodel', queueCount: 0, queueType: 'p3',
++    retryAfterSeconds: 30, serviceAvailable: false, subCode: 'RESOURCE_LIMIT', waitTime: 30,
+   }
+   /** 中国版瞬时排队：等 2s，重试即成功。 */
+   const REAL_TRANSIENT = {
+@@ -1628,7 +1664,8 @@ describe('QoderAdapter 排队错误（10605 model_queued）', () => {
+           modelKey: 'qfmodel',
+           queueType: 'p3',
+           queueCount: 0,
+-          serviceAvailable: false,
++          // ⚠️ 本仓 P0-B：fixture 必须为 true，否则走「换号 / 如实失败」到不了等待循环
++          serviceAvailable: true,
+         })
+       } finally {
+         if (previousMode === undefined) delete process.env.DSH_QODER_QUEUE_WAIT_MODE
+@@ -1733,7 +1770,8 @@ describe('QoderAdapter 排队错误（10605 model_queued）', () => {
+       try {
+         const noDelay = {
+           isQueued: true, modelKey: 'qfmodel', queueCount: 0, queueType: 'p3',
+-          serviceAvailable: false,
++          // ⚠️ 本仓 P0-B：false 会走「换号 / 如实失败」，测不到 1s 兜底等待
++          serviceAvailable: true,
+         }
+         let call = 0
+         const fetchImpl = vi.fn(async () => {
+@@ -2077,6 +2115,373 @@ describe('QoderAdapter 排队错误（10605 model_queued）', () => {
+     })
+   })
+ 
++  /**
++   * ## P0-B：`serviceAvailable:false` 时**不许空等**
++   *
++   * 诊断报告 `qoder-no-response-diagnosis.md` §2.3-B / §5 P0-B：
++   * `grep serviceAvailable src/qoder-adapter.ts` 在修复前**零命中** —— 字段被
++   * `parseQueueError` 解析出来、一路传到适配器，然后**没有任何人读它**。
++   * 于是国际版回 `serviceAvailable:false, subCode:RESOURCE_LIMIT` 时，
++   * 插件照样原地等满总时长（修复前 30 分钟），期间**零输出零报错**。
++   *
++   * ⚠️ 处置是「**先换号、换不到才如实失败**」而不是「立即失败」：
++   * `RESOURCE_LIMIT` 是**按账号**的（报告 §3），池里别的账号可能完全正常。
++   */
++  describe('serviceAvailable:false（P0-B：排队等待无意义）', () => {
++    it('HTTP 403 形态：一次都不等，如实报 SERVER 并带上 subCode', async () => {
++      const fetchImpl = vi.fn(async () => queueResponse(REAL_UNAVAILABLE)) as unknown as typeof fetch
++      const sleeps: number[] = []
++      const error = await collectWith(makeAdapter({
++        fetchImpl, sleep: async (ms) => { sleeps.push(ms) },
++      }), { model: 'qfmodel', messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }] })
++        .then(() => undefined, (e: unknown) => e as { code?: string; message?: string })
++
++      // ⚠️ 承重断言：**一次都不许等**。修复前这里会是 30 分钟 / 10s = 180 次。
++      expect(sleeps, 'serviceAvailable:false 仍在排队空等').toEqual([])
++      expect(error?.code, '应如实归类为 SERVER（不是 QUEUE，也不是 AUTH）').toBe('SERVER')
++      expect(error?.message).toContain('服务暂不可用')
++      expect(error?.message, '必须带出上游给的 subCode，否则用户不知道是什么限制')
++        .toContain('RESOURCE_LIMIT')
++    })
++
++    it('SSE 200 形态：同一判据（Qoder 排队实测主要走这条通道）', async () => {
++      // ⚠️ 这条是承重件：报告 §4 矩阵显示 CN/国际版加密端点全是 **HTTP 200 +
++      // 内嵌帧**，只守 HTTP 403 层等于一条都没修。
++      const payload = `data:${JSON.stringify({
++        headers: { 'Content-Type': ['application/json'] },
++        body: JSON.stringify({ code: '10605', message: JSON.stringify(REAL_UNAVAILABLE) }),
++        statusCodeValue: 200,
++        statusCode: 'OK',
++      })}\n\n`
++      const fetchImpl = vi.fn(async () => new Response(payload, {
++        status: 200, headers: { 'Content-Type': 'text/event-stream' },
++      })) as unknown as typeof fetch
++
++      const sleeps: number[] = []
++      const error = await collectWith(makeAdapter({
++        fetchImpl, sleep: async (ms) => { sleeps.push(ms) },
++      }), { model: 'qfmodel', messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }] })
++        .then(() => undefined, (e: unknown) => e as { code?: string; message?: string })
++
++      expect(sleeps, 'SSE 通道的 serviceAvailable:false 未被识别').toEqual([])
++      expect(error?.code).toBe('SERVER')
++      expect(error?.message).toContain('RESOURCE_LIMIT')
++    })
++
++    it('⚠️ serviceAvailable **缺失**时行为不变（缺失 ≠ false）', async () => {
++      // ⚠️ 守的是「判据必须是 === false 而不是 !serviceAvailable」：
++      // 字段缺席时上游只是没说，必须保持既有行为（继续排队等）。
++      // 若写成 `!`，一旦上游哪天不下发该字段，**所有排队都会立刻失败** ——
++      // 那是把「修一个静默」换成「制造一个新静默」。
++      const { serviceAvailable: _omit, ...withoutFlag } = REAL_QUEUED
++      let call = 0
++      const fetchImpl = vi.fn(async () => {
++        call += 1
++        return call === 1
++          ? queueResponse(withoutFlag)
++          : envelopeResponse([textFrame('排到了'), finishFrame])
++      }) as unknown as typeof fetch
++
++      const sleeps: number[] = []
++      const chunks = await collectWith(makeAdapter({
++        fetchImpl, sleep: async (ms) => { sleeps.push(ms) },
++      }), { model: 'qfmodel', messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }] })
++
++      expect(sleeps, 'serviceAvailable 缺失被误判成 false').toEqual([10_000])
++      expect(chunks.some((c) => c.type === 'text-delta')).toBe(true)
++    })
++
++    it('池里有第二个账号时必须**换号**而不是失败', async () => {
++      // `RESOURCE_LIMIT` 是按账号的 ⇒ 直接抛错会白白浪费「登录 N 个账号」的可用性
++      // （本仓在 `upstream` 类上记过同型教训：provider_error 时第二个号从未被尝试）。
++      const credB = buildQoderCredential(
++        parseQoderTokenPayload({ token: 'tokB', refresh_token: 'refB', user_id: 'uid-2' }),
++        { machineId: 'm-2' })
++      const pool = {
++        getAvailableAccount: async () => ({ entry: { id: 'acct-B' }, credential: credB }),
++        updateModelRateLimit: async () => {},
++      } as never
++
++      let call = 0
++      const fetchImpl = vi.fn(async () => {
++        call += 1
++        return call === 1
++          ? queueResponse(REAL_UNAVAILABLE)
++          : envelopeResponse([textFrame('换号成功'), finishFrame])
++      }) as unknown as typeof fetch
++
++      const sleeps: number[] = []
++      const chunks = await collectWith(makeAdapter({
++        fetchImpl, accountPool: pool, currentAccountId: () => 'acct-A',
++        sleep: async (ms) => { sleeps.push(ms) },
++      }), { model: 'qfmodel', messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }] })
++
++      expect(call, '未换号重发').toBe(2)
++      expect(sleeps, '换号路径不该排队等待').toEqual([])
++      expect(chunks.some((c) => c.type === 'text-delta'), '换号后应正常产出').toBe(true)
++    })
++  })
++
++  /**
++   * ## P1-B：排队错误文案必须带**上游给的数字**
++   *
++   * 修复前超时只说「排队等待超时」，用户无法判断该「再等等」还是
++   * 「换模型 / 换号」。而上游把判断依据都给了：`queueCount:4375`（积压 4 千
++   * ⇒ 等下去没戏）、`waitTime:489`（上游自己估计 8 分钟）、`subCode`。
++   */
++  describe('排队错误文案带上游事实（P1-B）', () => {
++    it('超时文案含 queueCount / waitTime / subCode', async () => {
++      process.env.DSH_QODER_QUEUE_TIMEOUT_MS = '0'
++      try {
++        const fetchImpl = vi.fn(async () => queueResponse(REAL_QUEUE_SATURATED)) as unknown as typeof fetch
++        const error = await collectWith(makeAdapter({
++          fetchImpl, sleep: async () => {},
++        }), { model: 'dfmodel', messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }] })
++          .then(() => undefined, (e: unknown) => e as { message?: string })
++
++        expect(error?.message).toContain('排队等待超时')
++        expect(error?.message, '必须带 queueCount').toContain('4375')
++        expect(error?.message, '必须带 waitTime').toContain('489')
++        expect(error?.message, '必须带 subCode').toContain('CALL_COUNT_LIMIT')
++      } finally {
++        delete process.env.DSH_QODER_QUEUE_TIMEOUT_MS
++      }
++    })
++
++    it('CN 渠道的排队文案必须自称 qodercn（不能硬编码 qoder）', async () => {
++      // ⚠️ 中国版与国际版**共用本适配器类**，硬编码 'qoder' 会让 qodercn 的
++      // 报错冒充国际版 —— 两个渠道的凭据、端点、额度池完全不同（本文件
++      // :1718 附近记着同一个缺陷）。故 waitForQueue 的 label 必须透传。
++      process.env.DSH_QODER_QUEUE_TIMEOUT_MS = '0'
++      try {
++        const fetchImpl = vi.fn(async () => queueResponse(REAL_QUEUED)) as unknown as typeof fetch
++        const error = await collectWith(makeAdapter({
++          fetchImpl, product: QODER_CN, sleep: async () => {},
++        }), { model: 'dfmodel', messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }] })
++          .then(() => undefined, (e: unknown) => e as { message?: string })
++
++        expect(error?.message).toMatch(/^qodercn:/)
++        expect(error?.message).not.toMatch(/^qoder:/)
++      } finally {
++        delete process.env.DSH_QODER_QUEUE_TIMEOUT_MS
++      }
++    })
++  })
++
++  /**
++   * ## P0-A：`sendEncrypted` 的**响应头**超时
++   *
++   * 报告 §2.3-A：`fetch` 在「上游接受连接但不回响应头」时**永不 settle**，
++   * 而 `resolveFirstTokenTimeoutMs` / `resolveChunkTimeoutMs` 都作用在
++   * **已 resolve 的** `response.body.getReader()` 上（`src/sse.ts`）
++   * ⇒ 那两条超时**够不着这一阶段**。这是**第二种**静默挂死路径。
++   */
++  describe('响应头超时（P0-A）', () => {
++    it('上游永不回响应头 ⇒ 有界失败为 TIMEOUT，而不是永久挂起', async () => {
++      process.env.DSH_QODER_HEADER_TIMEOUT_MS = '50'
++      try {
++        // 「接受连接但不回响应头」：**照真实 fetch 的契约**，收到 abort 才结算。
++        // ⚠️ 不能写成 `new Promise(() => {})`（永不 settle、也忽略 signal）——
++        // 那样用例只会证明「桩不会自己结算」，与实现是否设了 deadline 无关。
++        // 真实 fetch 在 signal abort 时**立即** reject，这里必须同契约。
++        const fetchImpl = vi.fn((_url: unknown, init?: { signal?: AbortSignal }) =>
++          new Promise<Response>((_resolve, reject) => {
++            init?.signal?.addEventListener('abort', () => {
++              reject(new DOMException('The operation was aborted.', 'AbortError'))
++            }, { once: true })
++          })) as unknown as typeof fetch
++
++        const startedAt = Date.now()
++        const error = await collectWith(makeAdapter({ fetchImpl }), {
++          model: 'qfmodel', messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
++        }).then(() => undefined, (e: unknown) => e as { code?: string; message?: string })
++
++        expect(error, '必须 reject 而不是挂起').toBeDefined()
++        expect(error?.code, '响应头超时应归 TIMEOUT').toBe('TIMEOUT')
++        expect(error?.message).toContain('响应头超时')
++        // ⚠️ 有界性断言：必须按 **DSH_QODER_HEADER_TIMEOUT_MS=50** 收敛，
++        // 而不是等到别的超时（首 token 是 120s）。留 3s 余量吸收调度抖动。
++        expect(Date.now() - startedAt, '未按响应头超时预算收敛').toBeLessThan(3_000)
++      } finally {
++        delete process.env.DSH_QODER_HEADER_TIMEOUT_MS
++      }
++    })
++
++    it('⚠️ 用户取消不得被改写成 TIMEOUT（两个信号**同时**为真时归因给取消）', async () => {
++      // ⚠️ 守的是 sendEncrypted 的 catch 里「**先判 options.signal?.aborted**」：
++      // TIMEOUT 在宿主 DEFAULT_RETRYABLE_CODES 里 ⇒ 误归类会让「用户点了停止」
++      // 被白重试 5 次，用户点了停止却还在跑。
++      //
++      // ⚠️⚠️ **这条用例第一版是无牙的，已如实登记并重写**：初版只在 fetch 里
++      // abort 用户 signal（headerSignal 未到期）⇒ 删掉「先判 options.signal.aborted」
++      // 那一条后**用例仍全绿**（实测：130 passed）。原因是被删后代码落到
++      // isTransportError(AbortError) → false → **原样 rethrow**，结果与修复态
++      // 逐字节相同 ⇒ 该变异态不可观测，用例**本来就抓不到**。
++      //
++      // ⇒ 要让它有牙，必须构造「**两个信号同时为真**」：用户在响应头超时到期的
++      // **同一毫秒**点了停止。桩在收到 fused signal 的 abort 时**先** abort
++      // 用户 controller、**再** reject —— 于是 catch 里两个 aborted 都是 true，
++      // 归因顺序才真正决定报哪个码。
++      process.env.DSH_QODER_HEADER_TIMEOUT_MS = '50'
++      try {
++        const controller = new AbortController()
++        const fetchImpl = vi.fn((_url: unknown, init?: { signal?: AbortSignal }) =>
++          new Promise<Response>((_resolve, reject) => {
++            init?.signal?.addEventListener('abort', () => {
++              // ① 先让「用户取消」也成立（同一毫秒点了停止）
++              controller.abort()
++              // ② 再照真实 fetch 契约结算
++              reject(new DOMException('The operation was aborted.', 'AbortError'))
++            }, { once: true })
++          })) as unknown as typeof fetch
++
++        const error = await collectWith(makeAdapter({ fetchImpl }), {
++          model: 'qfmodel', signal: controller.signal,
++          messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
++        }).then(() => undefined, (e: unknown) => e as { code?: string; name?: string })
++
++        expect(error, '必须 reject').toBeDefined()
++        // ⚠️ 承重断言：归因必须是「取消」（原样抛 AbortError），**不是** TIMEOUT。
++        expect(error?.code, '用户取消被误判成响应头超时 ⇒ 会白重试 5 次').not.toBe('TIMEOUT')
++        expect(error?.name, '应原样抛出 AbortError').toBe('AbortError')
++      } finally {
++        delete process.env.DSH_QODER_HEADER_TIMEOUT_MS
++      }
++    })
++
++    it('⚠️ 响应头正常返回后，流式传输持续时长超过 headerTimeoutMs 不得被误杀（session-b4bcc236 漂移守卫）', async () => {
++      // ⚠️ 守的是 sendEncrypted 中响应头收到后立即 clearTimeout 解除定时器：
++      // 原实现直接把 AbortSignal.timeout 传给 fetch，导致 30s 到期后流被原生 fetch 掐断，
++      // 会话在正吐出 reasoning 时突发 The operation was aborted due to timeout。
++      process.env.DSH_QODER_HEADER_TIMEOUT_MS = '50'
++      try {
++        const stream = new ReadableStream<Uint8Array>({
++          async start(controller) {
++            const encoder = new TextEncoder()
++            controller.enqueue(encoder.encode('data: {"choices":[{"delta":{"content":"hello "}}]}\n\n'))
++            await new Promise(r => setTimeout(r, 100))
++            controller.enqueue(encoder.encode('data: {"choices":[{"delta":{"content":"world"}}]}\n\n'))
++            controller.enqueue(encoder.encode('data: [DONE]\n\n'))
++            controller.close()
++          },
++        })
++        const fetchImpl = vi.fn(() => Promise.resolve(new Response(stream, {
++          headers: { 'Content-Type': 'text/event-stream' },
++        }))) as unknown as typeof fetch
++
++        const chunks: unknown[] = []
++        for await (const chunk of makeAdapter({ fetchImpl }).stream({
++          model: 'qfmodel',
++          messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
++        })) {
++          chunks.push(chunk)
++        }
++
++        expect(chunks.length, '流不应在 50ms 响应头超时到期时被掐断').toBeGreaterThan(0)
++      } finally {
++        delete process.env.DSH_QODER_HEADER_TIMEOUT_MS
++      }
++    })
++  })
++
++  /**
++   * ## 纯函数：`subCode` 的解析与 `isServiceUnavailable` 判据
++   */
++  describe('subCode / isServiceUnavailable / queueFacts（纯函数）', () => {
++    it('从**报告 §2.1 的三层真实帧**里解析出 subCode', () => {
++      // 真实帧（逐字取自报告，`message` 套了三层）：
++      // body → message → message → {isQueued,…,subCode}
++      const outer = JSON.stringify({
++        code: '403',
++        message: JSON.stringify({
++          code: '10605',
++          message: JSON.stringify(REAL_QUEUE_SATURATED),
++          subCode: 'CALL_COUNT_LIMIT',
++        }),
++      })
++      const info = parseQoderQueueError(outer)
++      expect(info?.subCode, 'subCode 嵌在第三层，只读顶层拿不到').toBe('CALL_COUNT_LIMIT')
++      expect(info?.queueCount).toBe(4375)
++      expect(info?.waitTime).toBe(489)
++    })
++
++    it('subCode 只在**中间信封**时也取得到（位置不固定 ⇒ 必须整链展开）', () => {
++      // ⚠️⚠️ **这条用例第一版是无牙的，已如实登记并重写**：初版的 fixture 在
++      // `REAL_UNAVAILABLE` 里**也**带 `subCode:RESOURCE_LIMIT`，于是「只读 info 那层」
++      // 的实现照样取到同一个值 ⇒ 把整链展开删成 `info.subCode` 后**用例仍全绿**
++      // （实测：130 passed）。判据没被守住，是因为 fixture 自己泄露了答案。
++      //
++      // ⇒ 现在让**内层（info 那层）不含 subCode**，只把值放在中间信封：
++      // 只有真正做整链展开的实现才取得到。
++      const { subCode: _dropInner, ...innerWithoutSubCode } = REAL_UNAVAILABLE
++      const outer = JSON.stringify({
++        code: '10605',
++        message: JSON.stringify(innerWithoutSubCode),
++        subCode: 'RESOURCE_LIMIT',
++      })
++      expect(parseQoderQueueError(outer)?.subCode, 'subCode 在中间信封时未做整链展开')
++        .toBe('RESOURCE_LIMIT')
++    })
++
++    it('isServiceUnavailable：只有**显式 false** 才算（缺失 ≠ false）', () => {
++      expect(isServiceUnavailable({ serviceAvailable: false })).toBe(true)
++      expect(isServiceUnavailable({ serviceAvailable: true })).toBe(false)
++      expect(isServiceUnavailable({}), '缺失被误判成不可用').toBe(false)
++      expect(isServiceUnavailable(undefined)).toBe(false)
++    })
++
++    it('isAccountCappedQueue：`serviceAvailable:false` 还须带 `subCode:RESOURCE_LIMIT`（2026-11-16 精化）', () => {
++      // ⚠️ 上游重构后的普通排队报文是 `serviceAvailable:false` 且**无 subCode**
++      // （`queueCount:0` 还在等）—— 那种必须交还排队 / 聚合通路，
++      // 只有带 RESOURCE_LIMIT 的才是「账号被封顶、等待无意义」。
++      expect(isAccountCappedQueue({ serviceAvailable: false }), '无 subCode 的 false 只是普通排队').toBe(false)
++      expect(isAccountCappedQueue({ serviceAvailable: false, subCode: 'RESOURCE_LIMIT' })).toBe(true)
++      expect(isAccountCappedQueue({ serviceAvailable: true, subCode: 'RESOURCE_LIMIT' })).toBe(false)
++      expect(isAccountCappedQueue({ serviceAvailable: false, subCode: 'OTHER' })).toBe(false)
++      expect(isAccountCappedQueue({})).toBe(false)
++      expect(isAccountCappedQueue(undefined)).toBe(false)
++    })
++
++    it('queueFacts：完整输入给出全部事实，空输入给空串（不是空括号）', () => {
++      expect(qoderQueueFacts({ queueCount: 4375, waitTime: 489, subCode: 'CALL_COUNT_LIMIT' }))
++        .toBe('积压 4375，上游预计 489s，CALL_COUNT_LIMIT')
++      expect(qoderQueueFacts({})).toBe('')
++      expect(qoderQueueFacts(undefined)).toBe('')
++    })
++
++    it('默认排队总时长是 **5 分钟**（30 分钟 → 5 分钟，P1-B）', async () => {
++      // ⚠️ 守的是「**默认值本身**」（诊断报告 §5 P1-B：30 分钟对 queueCount:4375
++      // 这种积压几乎必然超时）。
++      //
++      // ⚠️ **不能只断言常量**（那测不出默认值真的被用上），也不能用真实时钟
++      // （要等 5 分钟）。故用 **fake timers** 让 `Date.now()` 随注入的 sleep 前进：
++      // 每次等待 10s（QUEUE_MAX_DELAY_MS 封顶）。
++      // ⚠️ 2026-11-16 合并上游后，deadline 判据升级为**预检**
++      // （`Date.now() + totalMs >= deadline`，即将开始的等待若会越界就不再开始）
++      // ⇒ 第 30 次（290s + 10s ≥ 300s）**不会发生**，实际是 **29 次** 睡眠；
++      // 若默认值退回 30 分钟则会是 179 次（正好等于 QUEUE_MAX_ATTEMPTS 上限）。
++      // ⇒ 断言精确的 29 次，两种默认值**必然只对一种**。
++      vi.useFakeTimers()
++      try {
++        const fetchImpl = vi.fn(async () => queueResponse(REAL_QUEUE_SATURATED)) as unknown as typeof fetch
++        const sleeps: number[] = []
++        const error = await collectWith(makeAdapter({
++          fetchImpl,
++          // 虚拟时间前进：不真睡，但让 Date.now() 走过 waitMs。
++          sleep: async (ms) => { sleeps.push(ms); vi.advanceTimersByTime(ms) },
++        }), { model: 'dfmodel', messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }] })
++          .then(() => undefined, (e: unknown) => e as { message?: string })
++
++        expect(error?.message, '应以「排队等待超时」收场').toContain('排队等待超时')
++        // 5 分钟 / 10s = 29 次睡眠 + 1 次预检拒绝（30 分钟会是 179 次 ⇒ 该断言能区分两者）
++        expect(sleeps.length, '默认排队总时长不是 5 分钟').toBe(29)
++        expect(sleeps.every((ms) => ms === 10_000)).toBe(true)
++      } finally {
++        vi.useRealTimers()
++      }
++    })
++  })
++
+   /**
+    * ## 真实缺陷（用户报障 2026-09-27）：额度用尽被当成可重试的 `SERVER`
+    *

@@ -6,6 +6,13 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('desktop', {
   retry: () => ipcRenderer.send('retry'),
   openBrowser: () => ipcRenderer.send('open-browser'),
+  // Shell-owned pages (loading/error) acknowledge readiness so the main process
+  // can push locale/theme/progress updates reliably.
+  loadingReady: () => ipcRenderer.send('shell-page-ready'),
+  onShellState: (handler) => {
+    if (typeof handler !== 'function') return;
+    ipcRenderer.on('shell-state', (_e, state) => handler(state));
+  },
 });
 
 // 主题状态自动感知与同步
@@ -91,12 +98,17 @@ function setupThemeObserver() {
 }
 
 // 语言状态自动感知与同步（zh / en）
+let lastNotifiedLocale = null;
 function checkAndNotifyLocale() {
   try {
     const htmlLang = (document.documentElement && document.documentElement.lang) || '';
     const navLang = (typeof navigator !== 'undefined' && (navigator.language || (navigator.languages && navigator.languages[0]))) || '';
     const isZh = htmlLang.startsWith('zh') || (!htmlLang && navLang.startsWith('zh'));
-    ipcRenderer.send('locale-changed', { locale: isZh ? 'zh' : 'en' });
+    const locale = isZh ? 'zh' : 'en';
+    if (locale !== lastNotifiedLocale) {
+      lastNotifiedLocale = locale;
+      ipcRenderer.send('locale-changed', { locale });
+    }
   } catch (err) {}
 }
 
@@ -113,13 +125,17 @@ function setupLocaleObserver() {
 }
 
 // 当前活跃对话模型探测
+// mouseup 与 click 都会触发本函数；不做去重的话每次点击都要发一次 IPC。
+// 与主题同步的 lastNotifiedThemeKey 同理，只有模型真的变了才通知主进程。
+let lastNotifiedModel = null;
 function checkAndNotifyActiveModel() {
   try {
     const btn = document.querySelector('button[aria-haspopup="menu"] span') ||
                 document.querySelector('[data-slot="conversation.composer.bar"] button span');
     if (btn && btn.textContent) {
       const modelName = btn.textContent.trim();
-      if (modelName) {
+      if (modelName && modelName !== lastNotifiedModel) {
+        lastNotifiedModel = modelName;
         ipcRenderer.send('active-model-changed', { modelName });
       }
     }

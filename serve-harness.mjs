@@ -103,7 +103,9 @@ if (!cmd) {
 }
 
 const node = nodeCommand()
-const args = [...node.argsPrefix, cmd.script, 'web', '--port', String(port), ...extra]
+// 桌面壳只把 3080 当作后端来加载，不要额外用默认浏览器打开 Web UI。
+// --no-open 关闭 web-app 插件的 openBrowser 交接，服务器本身照常运行。
+const args = [...node.argsPrefix, cmd.script, 'web', '--no-open', '--port', String(port), ...extra]
 console.log(`[serve-harness] root=${ROOT}`)
 console.log(`[serve-harness] kind=${cmd.kind}`)
 console.log(`[serve-harness] exec=${node.cmd} ${args.map((a) => JSON.stringify(a)).join(' ')}`)

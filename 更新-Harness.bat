@@ -335,17 +335,6 @@ if errorlevel 1 (
     )
 )
 cd "%~dp0"
-echo [3/3] Syncing OpenCode Go model catalogs per profile (a pi-ai upgrade
-echo        would otherwise wipe local fixes) ...
-if exist "Dependency\scripts\sync-opencode-go-models.mjs" (
-    for %%P in (web desktop headless) do (
-        if exist "%USERPROFILE%\.dsh\profiles\%%P\cordis.patch.yml" (
-            echo     profile %%P ...
-            set "DSH_PROFILE=%%P"
-            node "Dependency\scripts\sync-opencode-go-models.mjs" --quiet
-        )
-    )
-)
 echo ==============================================
 echo [OK] Update finished.
 for /f "delims=" %%i in ('git -C "%SRC%" log -1 --oneline') do echo     Commit: %%i

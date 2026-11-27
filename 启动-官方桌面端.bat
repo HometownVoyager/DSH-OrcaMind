@@ -35,7 +35,7 @@ if not exist "lib\main.js" (
 )
 
 REM ---- dev mode: uses the SOURCE runtime, so the local session patch and
-REM      pi-ai catalog fixes (opencode-go etc.) all apply. The PACKAGED app
+REM      local pi-ai source patches all apply. The PACKAGED app
 REM      would bundle its own runtime WITHOUT those local patches. ----
 REM ---- dev.ts defaults to a throwaway DSH_HOME under .desktop-build; point
 REM      it back at the real home so profiles/credentials/presets are shared ----

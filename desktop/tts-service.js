@@ -277,6 +277,7 @@ function synthesizeEdgeTts(text, options = {}) {
     volume = '+0%',
     pitch = '+0Hz',
     timeout = 10000,
+    logger = null, // 可选：主进程传入 log 以便异常落进 main.log，缺省走 console
   } = options;
 
   return new Promise((resolve, reject) => {
@@ -307,6 +308,19 @@ function synthesizeEdgeTts(text, options = {}) {
     let timer = null;
     let settled = false;
     const audioChunks = [];
+    let chunkParseErrors = 0;
+
+    const logWarn = (msg) => {
+      try {
+        if (typeof logger === 'function') logger(msg);
+        else console.error(msg);
+      } catch {}
+    };
+    const emptyAudioError = () => new Error(
+      chunkParseErrors > 0
+        ? `Edge TTS returned empty audio (${chunkParseErrors} audio chunks failed to parse)`
+        : 'Edge TTS returned empty audio'
+    );
 
     const cleanup = () => {
       clearTimeout(timer);
@@ -359,12 +373,27 @@ function synthesizeEdgeTts(text, options = {}) {
           if (totalBuffer.length > 0) {
             resolve(totalBuffer);
           } else {
-            reject(new Error('Edge TTS returned empty audio'));
+            reject(emptyAudioError());
           }
         }
       } else {
         try {
-          const buf = Buffer.from(await event.data.arrayBuffer());
+          // 类型归一化：运行时的 WebSocket 可能给 Blob（浏览器形态）、Buffer 或
+          // ArrayBuffer（Node/undici 形态）。原实现无条件调用 event.data.arrayBuffer()，
+          // 一旦拿到 Buffer 就会逐块抛错，再被空 catch 吞掉 —— 表现为音频全丢、
+          // 永远降级本地语音。这里三种形态都支持，并把异常打进日志。
+          const data = event.data;
+          let ab;
+          if (typeof ArrayBuffer !== 'undefined' && data instanceof ArrayBuffer) {
+            ab = data;
+          } else if (Buffer.isBuffer(data)) {
+            ab = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+          } else if (data && typeof data.arrayBuffer === 'function') {
+            ab = await data.arrayBuffer();
+          } else {
+            throw new Error('unexpected audio chunk type: ' + Object.prototype.toString.call(data));
+          }
+          const buf = Buffer.from(ab);
           if (buf.length >= 2) {
             const headerLen = buf.readUInt16BE(0);
             const header = buf.subarray(2, 2 + headerLen).toString('utf-8');
@@ -376,7 +405,8 @@ function synthesizeEdgeTts(text, options = {}) {
             }
           }
         } catch (err) {
-          // ignore chunk parse failure
+          chunkParseErrors += 1;
+          logWarn(`[tts] 音频块解析失败（已跳过该块）：${err && err.message ? err.message : String(err)}`);
         }
       }
     };
@@ -396,7 +426,7 @@ function synthesizeEdgeTts(text, options = {}) {
         if (audioChunks.length > 0) {
           resolve(Buffer.concat(audioChunks));
         } else {
-          reject(new Error(`WebSocket closed unexpectedly (code ${event.code})`));
+          reject(new Error(`WebSocket closed unexpectedly (code ${event.code})${chunkParseErrors > 0 ? `; ${chunkParseErrors} audio chunks failed to parse` : ''}`));
         }
       }
     };

@@ -1,7 +1,7 @@
 #> 本地功能叠加补丁（source 未提交改动的兜底备份，2026-11-24 自 4b399c39a6 = v0.2.3-alpha.2 导出）
 #> 内容: 会话回收站(trash) + session-log 全模型上传开关 + desktop 壳接线 + liveshare 端点表 + acp model-control 等
 #> 重放: git -C source apply ../Dependency/patches/local-features-overlay.patch
-#> 与 opencode-session-fix.patch 互补: 该补丁覆盖 packages/llm/llm-pi-ai/src，本补丁 = 其余全部本地改动
+#> 本补丁 = 除 llm-pi-ai 之外的全部本地改动（原独立 session 补丁已随路由退役删除）
 diff --git a/apps/desktop/src/ipc.ts b/apps/desktop/src/ipc.ts
 index 83ebe7415a..e6f3d4682b 100644
 --- a/apps/desktop/src/ipc.ts
@@ -3002,52 +3002,6 @@ index 1242197b3b..aaf3ddf432 100644
    'workspace/unarchiveSession': 'owner-only', // owner unarchives a Session
    'workspace/unpinSession': 'owner-only', // owner unpins a Session
    'workspaceFiles/changes': 'owner-only', // owner Workspace file access
-diff --git a/packages/llm/llm-pi-ai/tests/adapter.spec.ts b/packages/llm/llm-pi-ai/tests/adapter.spec.ts
-index 66638a1ef9..463bbe93da 100644
---- a/packages/llm/llm-pi-ai/tests/adapter.spec.ts
-+++ b/packages/llm/llm-pi-ai/tests/adapter.spec.ts
-@@ -164,6 +164,41 @@ describe('PiAiAdapter provider routing', () => {
-     expect(server.headers[0]?.['user-agent']).toBe(userAgent())
-   })
- 
-+  it('stamps the session identity on OpenCode routes only', async () => {
-+    const openCode = await mockServer([{ events: textEvents }])
-+    const other = await mockServer([{ events: textEvents }])
-+    const ctx = new Context()
-+    await ctx.plugin(LlmRuntime)
-+    ctx.llm.registerAdapter(['opencode-go', 'deepseek'], new PiAiAdapter({
-+      profiles: () => resolveProfiles({
-+        'opencode-go': { apiKeyEnv: 'PI_TEST_KEY', baseURL: openCode.url },
-+        deepseek: { apiKeyEnv: 'PI_TEST_KEY', baseURL: other.url },
-+      }),
-+      resolveApiKey: () => Promise.resolve('test-key'),
-+      auth: memoryAuth(),
-+    }))
-+
-+    await assemble(ctx, {
-+      provider: 'opencode-go',
-+      model: 'glm-5.3',
-+      messages: [],
-+      sessionId: 'session-open' as never,
-+    })
-+    await assemble(ctx, {
-+      provider: 'deepseek',
-+      model: 'deepseek-v4-flash',
-+      messages: [],
-+      sessionId: 'session-other' as never,
-+    })
-+
-+    // OpenCode's gateway rejects a request that carries no conversation identity.
-+    expect(openCode.headers[0]?.['x-opencode-session']).toBe('session-open')
-+    expect(openCode.headers[0]?.['x-deepseek-harness-session-id']).toBe('session-open')
-+    // Other routes keep their wire shape: the stamp is OpenCode's contract.
-+    expect(other.headers[0]?.['x-opencode-session']).toBeUndefined()
-+    expect(other.headers[0]?.['x-deepseek-harness-session-id']).toBeUndefined()
-+  })
-+
-   it('forwards common stream options and profile reasoning', async () => {
-     const server = await mockServer([{ events: textEvents }])
-     const ctx = await harness(server.url, {
 diff --git a/packages/session/session-log-deepseek/README.i18n.yaml b/packages/session/session-log-deepseek/README.i18n.yaml
 index 3fec12ee52..a1eee2836c 100644
 --- a/packages/session/session-log-deepseek/README.i18n.yaml
